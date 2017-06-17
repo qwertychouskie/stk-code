@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stkgui>
+    <div x="1%" y="1%" width="98%" height="98%" layout="vertical-row" >
+
+        <header text_align="center" width="80%" align="center" text="SuperTuxKart Options"/>
+        <spacer height="15" width="10"/>
+
+        <tabs id="options_choice" height="10%" max_height="110" x="2%" width="98%" align="center">
+            <icon-button id="tab_video" width="128" height="128" icon="gui/options_video.png"/>
+            <icon-button id="tab_audio" width="128" height="128" icon="gui/options_audio.png"/>
+            <icon-button id="tab_ui" width="128" height="128" icon="gui/options_ui.png"/>
+            <icon-button id="tab_players" width="128" height="128" icon="gui/options_players.png"/>
+            <icon-button id="tab_controls" width="128" height="128" icon="gui/options_input.png"/>
+            <icon-button id="tab_advanced" width="128" height="128" icon="gui/options_advanced.png"
+                    I18N="Section in the settings menu" text="Advanced settings"/>
+        </tabs>
+
+        <box proportion="1" width="100%" layout="vertical-row">
+
+            <spacer height="5" width="10" />
+
+            <label I18N="In the advanced settings" text="WARNING: Changing any of these settings could result in crashes, bugs, etc.  Change at your own risk!" align="center"/>
+
+            <div layout="horizontal-row" width="100%" height="fit">
+                <checkbox id="artistdebug"/>
+                <spacer width="20" height="100%" />
+                <label height="100%" I18N="In the advanced settings" text="Enable Artist Debug Mode"/>
+            </div>
+
+            <div layout="horizontal-row" width="100%" height="fit">
+                <checkbox id="ogl2"/>
+                <spacer width="20" height="100%" />
+                <label height="100%" I18N="In the advanced settings" text="Force legacy renderer (OpenGL 2.1)"/>
+            </div>
+
+            <div layout="horizontal-row" width="100%" height="fit">
+                <checkbox id="azdo"/>
+                <spacer width="20" height="100%" />
+                <label height="100%" I18N="In the advanced settings" text="Enable 'Approaching Zero Driver Overhead' mode (if supported, HIGHLY EXPERIMENTAL!)"/>
+            </div>
+
+            <div layout="horizontal-row" width="100%" height="fit">
+                <checkbox id="sdsm"/>
+                <spacer width="20" height="100%" />
+                <label height="100%" I18N="In the advanced settings" text="Enable Sampled Distribued Shadow Map (buggy)"/>
+            </div>
+
+            <div layout="horizontal-row" width="100%" height="fit">
+                <checkbox id="esm"/>
+                <spacer width="20" height="100%" />
+                <label height="100%" I18N="In the advanced settings" text="Enable Exponential Shadow Map (better but slower)"/>
+            </div>
+
+        </box>
+    </div>
+
+    <icon-button id="back" x="0" y="0" height="8%" icon="gui/back.png"/>
+</stkgui>
