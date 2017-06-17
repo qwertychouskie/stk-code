@@ -35,6 +35,7 @@
 #include "states_screens/options_screen_audio.hpp"
 #include "states_screens/options_screen_input.hpp"
 #include "states_screens/options_screen_ui.hpp"
+#include "states_screens/options_screen_advanced.hpp"
 #include "states_screens/state_manager.hpp"
 #include "states_screens/user_screen.hpp"
 #include "utils/string_utils.hpp"
@@ -570,6 +571,8 @@ void OptionsScreenVideo::eventCallback(Widget* widget, const std::string& name,
             screen = OptionsScreenInput::getInstance();
         else if (selection == "tab_ui")
             screen = OptionsScreenUI::getInstance();
+        else if (selection == "tab_advanced")
+            screen = OptionsScreenAdvanced::getInstance();
         if(screen)
             StateManager::get()->replaceTopMostScreen(screen);
     }

@@ -12,6 +12,7 @@
             <icon-button id="tab_ui" width="128" height="128" icon="gui/options_ui.png"/>
             <icon-button id="tab_players" width="128" height="128" icon="gui/options_players.png"/>
             <icon-button id="tab_controls" width="128" height="128" icon="gui/options_input.png"/>
+            <icon-button id="tab_advanced" width="128" height="128" icon="gui/options_advanced.png"/>
         </tabs>
 
         <box proportion="1" width="100%" layout="vertical-row">

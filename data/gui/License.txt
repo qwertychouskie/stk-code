@@ -7,6 +7,8 @@ Except :
 main_*.png icons, hourglass, back, back_addons, next_addons, package.png
     released under Creative-Commons BY-SA 3, By yeKcim (Anthony Carré)
 
+options_advanced.png CC-BY-SA 3 QwertyChouskie, combo of main_options.png and options_*.png background
+
 mode_tt, released under Creative-Commons BY-SA 3, incorporatings artwork from yeKcim and onyum.com,
          modified by Totoplus62
 
