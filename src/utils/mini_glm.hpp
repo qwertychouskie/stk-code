@@ -327,6 +327,48 @@ namespace MiniGLM
         return ret;
     }   // extractNormalizedSignedFloats
     // ------------------------------------------------------------------------
+    inline std::array<float, 4> extract4SignedFloats(uint32_t packed)
+    {
+        std::array<float, 4> ret;
+        int part = packed & 1023;
+        if (part & 512)
+        {
+            ret[0] = (float)(1024 - part) * (-1.0f / 512.0f);
+        }
+        else
+        {
+            ret[0] = (float)part * (1.0f / 511.0f);
+        }
+        part = (packed >> 10) & 1023;
+        if (part & 512)
+        {
+            ret[1] = (float)(1024 - part) * (-1.0f / 512.0f);
+        }
+        else
+        {
+            ret[1] = (float)part * (1.0f / 511.0f);
+        }
+        part = (packed >> 20) & 1023;
+        if (part & 512)
+        {
+            ret[2] = (float)(1024 - part) * (-1.0f / 512.0f);
+        }
+        else
+        {
+            ret[2] = (float)part * (1.0f / 511.0f);
+        }
+        part = (packed >> 30) & 3;
+        if (part & 2)
+        {
+            ret[3] = (float)(4 - part) * (-1.0f / 2.0f);
+        }
+        else
+        {
+            ret[3] = (float)part;
+        }
+        return ret;
+    }   // extract4SignedFloats
+    // ------------------------------------------------------------------------
     // Please normalize vector and quaternion before compressing
     // ------------------------------------------------------------------------
     inline uint32_t compressVector3(const irr::core::vector3df& vec)

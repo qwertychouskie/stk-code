@@ -18,6 +18,8 @@
 #ifndef HEADER_SP_MESH_LOADER_HPP
 #define HEADER_SP_MESH_LOADER_HPP
 
+#include "sp/sp_animation.hpp"
+
 #include <IMeshLoader.h>
 #include <ISceneManager.h>
 #include <ISkinnedMesh.h>
@@ -30,54 +32,7 @@ using namespace irr;
 class SPMeshLoader : public scene::IMeshLoader
 {
 private:
-    // ------------------------------------------------------------------------
-    struct LocRotScale
-    {
-        core::vector3df m_loc;
 
-        core::quaternion m_rot;
-
-        core::vector3df m_scale;
-        // --------------------------------------------------------------------
-        inline core::matrix4 toMatrix() const
-        {
-            core::matrix4 lm, sm, rm;
-            lm.setTranslation(m_loc);
-            sm.setScale(m_scale);
-            m_rot.getMatrix_transposed(rm);
-            return lm * rm * sm;
-        }
-        // --------------------------------------------------------------------
-        void read(irr::io::IReadFile* spm);
-
-    };
-    struct Armature
-    {
-        unsigned m_joint_used;
-
-        std::vector<std::string> m_joint_names;
-
-        std::vector<core::matrix4> m_joint_matrices;
-
-        std::vector<core::matrix4> m_interpolated_matrices;
-
-        std::vector<std::pair<core::matrix4, bool> > m_world_matrices;
-
-        std::vector<int> m_parent_infos;
-
-        std::vector<std::pair<int, std::vector<LocRotScale> > >
-            m_frame_pose_matrices;
-
-        // --------------------------------------------------------------------
-        void read(irr::io::IReadFile* spm);
-        // --------------------------------------------------------------------
-        void getPose(float frame, core::matrix4* dest);
-        // --------------------------------------------------------------------
-        void getInterpolatedMatrices(float frame);
-        // --------------------------------------------------------------------
-        core::matrix4 getWorldMatrix(const std::vector<core::matrix4>& matrix,
-                                     unsigned id);
-    };
     // ------------------------------------------------------------------------
     unsigned m_bind_frame, m_joint_count;//, m_frame_count;
     // ------------------------------------------------------------------------

@@ -526,7 +526,7 @@ bool CentralVideoSettings::isDefferedEnabled() const
 }
 
 bool CentralVideoSettings::supportsHardwareSkinning() const
-{
+{return false;
     return !GraphicsRestrictions::isDisabled(GraphicsRestrictions::GR_HARDWARE_SKINNING);
 }
 

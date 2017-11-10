@@ -348,6 +348,13 @@ scene::IMesh* MeshTools::createMeshWithTangents(scene::IMesh* mesh,
     if (!mesh)
         return 0;
 
+    scene::ISkinnedMesh* sm = dynamic_cast<scene::ISkinnedMesh*>(mesh);
+    if (sm)
+    {
+        createSkinnedMeshWithTangents(sm, predicate);
+        return sm;
+    }
+
     // copy mesh and fill data into SMeshBufferTangents
 
     const u32 mesh_buffer_count = mesh->getMeshBufferCount();

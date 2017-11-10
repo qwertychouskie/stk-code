@@ -140,7 +140,7 @@ public:
             glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, getVertexPitchFromType(tp), (GLvoid*)36);
             // Bitangent
             glEnableVertexAttribArray(6);
-            glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, getVertexPitchFromType(tp), (GLvoid*)48);
+            glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, getVertexPitchFromType(tp), (GLvoid*)48);
             break;
         case video::EVT_SKINNED_MESH:
             glEnableVertexAttribArray(0);
@@ -150,13 +150,15 @@ public:
             glEnableVertexAttribArray(2);
             glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, getVertexPitchFromType(tp), (GLvoid*)24);
             glEnableVertexAttribArray(3);
-            glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, getVertexPitchFromType(tp), (GLvoid*)28);
+            glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, getVertexPitchFromType(tp), (GLvoid*)28);
             glEnableVertexAttribArray(4);
-            glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, getVertexPitchFromType(tp), (GLvoid*)44);
+            glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, getVertexPitchFromType(tp), (GLvoid*)36);
+            glEnableVertexAttribArray(11);
+            glVertexAttribPointer(11, 4, GL_FLOAT, GL_FALSE, getVertexPitchFromType(tp), (GLvoid*)48);
             glEnableVertexAttribArray(5);
-            glVertexAttribIPointer(5, 4, GL_SHORT, getVertexPitchFromType(tp), (GLvoid*)60);
+            glVertexAttribIPointer(5, 4, GL_SHORT, getVertexPitchFromType(tp), (GLvoid*)64);
             glEnableVertexAttribArray(6);
-            glVertexAttribPointer(6, 4, GL_HALF_FLOAT, GL_FALSE, getVertexPitchFromType(tp), (GLvoid*)68);
+            glVertexAttribPointer(6, 4, GL_HALF_FLOAT, GL_FALSE, getVertexPitchFromType(tp), (GLvoid*)72);
             break;
         }
     }
