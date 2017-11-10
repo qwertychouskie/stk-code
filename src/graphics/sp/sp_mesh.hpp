@@ -18,184 +18,125 @@
 #ifndef HEADER_SP_MESH_HPP
 #define HEADER_SP_MESH_HPP
 
-#include "sp/sp_mesh_buffer.hpp"
 
+#include <ISkinnedMesh.h>
 #include <vector>
 
 using namespace irr;
 using namespace scene;
 
-class SPMeshBuffer : public IMeshBuffer
+class SPMeshBuffer;
+class SPMeshLoader;
+
+class SPMesh : public ISkinnedMesh
 {
+friend class SPMeshLoader;
 private:
-    video::SMaterial m_material;
-
-    std::vector<video::S3DVertexSkinnedMesh> m_vertices;
-
-    std::vector<uint16_t> m_indices;
+    std::vector<SPMeshBuffer*> m_buffer;
 
     core::aabbox3d<f32> m_bounding_box;
 
+    float m_fps;
+
+    float m_last_frame;
+
+    bool m_skinned_last_frame;
+
+    unsigned m_bind_frame, m_total_joints, m_joint_using, m_frame_count;
+
+    std::vector<Armature> m_all_armatures;
+
 public:
-    SPMeshBuffer()
-    {
-#ifdef _DEBUG
-        setDebugName("SMeshBuffer");
-#endif
-    }
     // ------------------------------------------------------------------------
-    video::S3DVertexSkinnedMesh* getSPMVertex()
-    {
-        return m_vertices.data();
-    }
+    SPMesh();
     // ------------------------------------------------------------------------
-    void addSPMVertex(const video::S3DVertexSkinnedMesh& v)
-    {
-        m_vertices.push_back(v);
-    }
+    virtual ~SPMesh();
     // ------------------------------------------------------------------------
-    void setIndices(std::vector<uint16_t>& indices)
-    {
-        m_indices = std::move(indices);
-    }
+    virtual u32 getFrameCount() const;
     // ------------------------------------------------------------------------
-    virtual const video::SMaterial& getMaterial() const
-    {
-        return m_material;
-    }
+    virtual f32 getAnimationSpeed() const;
     // ------------------------------------------------------------------------
-    virtual video::SMaterial& getMaterial()
-    {
-        return m_material;
-    }
+    virtual void setAnimationSpeed(f32 fps);
     // ------------------------------------------------------------------------
-    virtual const void* getVertices() const
-    {
-        return m_vertices.data();
-    }
+    virtual IMesh* getMesh(s32 frame, s32 detailLevel=255,
+                           s32 startFrameLoop=-1, s32 endFrameLoop=-1)
+                                                               { return this; }
     // ------------------------------------------------------------------------
-    virtual void* getVertices()
-    {
-        return m_vertices.data();
-    }
+    virtual void animateMesh(f32 frame, f32 blend);
     // ------------------------------------------------------------------------
-    virtual u32 getVertexCount() const
-    {
-        return m_vertices.size();
-    }
+    virtual void skinMesh(f32 strength=1.f, SkinningCallback sc = NULL,
+                          int offset = -1) {}
     // ------------------------------------------------------------------------
-    virtual video::E_INDEX_TYPE getIndexType() const
-    {
-        return video::EIT_16BIT;
-    }
+    virtual u32 getMeshBufferCount() const;
     // ------------------------------------------------------------------------
-    virtual const u16* getIndices() const
-    {
-        return m_indices.data();
-    }
+    virtual IMeshBuffer* getMeshBuffer(u32 nr) const;
     // ------------------------------------------------------------------------
-    virtual u16* getIndices()
-    {
-        return m_indices.data();
-    }
+    virtual IMeshBuffer* getMeshBuffer( const video::SMaterial &material) const;
     // ------------------------------------------------------------------------
-    virtual u32 getIndexCount() const
-    {
-        return m_indices.size();
-    }
+    virtual const core::aabbox3d<f32>& getBoundingBox() const;
     // ------------------------------------------------------------------------
-    virtual const core::aabbox3d<f32>& getBoundingBox() const
-    {
-        return m_bounding_box;
-    }
+    virtual void setBoundingBox( const core::aabbox3df& box);
     // ------------------------------------------------------------------------
-    virtual void setBoundingBox(const core::aabbox3df& box)
-    {
-        m_bounding_box = box;
-    }
+    virtual void setMaterialFlag(video::E_MATERIAL_FLAG flag, bool newvalue) {}
     // ------------------------------------------------------------------------
-    virtual void recalculateBoundingBox()
-    {
-        if (m_vertices.empty())
-        {
-            m_bounding_box.reset(0.0f, 0.0f, 0.0f);
-        }
-        else
-        {
-            m_bounding_box.reset(m_vertices[0].m_position);
-            for (u32 i = 1; i < m_vertices.size(); i++)
-            {
-                m_bounding_box.addInternalPoint(m_vertices[i].m_position);
-            }
-        }
-    }
+    virtual void setHardwareMappingHint(E_HARDWARE_MAPPING newMappingHint,
+                                        E_BUFFER_TYPE buffer) {}
     // ------------------------------------------------------------------------
-    virtual video::E_VERTEX_TYPE getVertexType() const
-    {
-        return video::EVT_SKINNED_MESH;
-    }
+    virtual void setDirty(E_BUFFER_TYPE buffer=EBT_VERTEX_AND_INDEX) {}
     // ------------------------------------------------------------------------
-    virtual const core::vector3df& getPosition(u32 i) const
-    {
-        return m_vertices[i].m_position;
-    }
+    virtual E_ANIMATED_MESH_TYPE getMeshType() const { }
     // ------------------------------------------------------------------------
-    virtual core::vector3df& getPosition(u32 i)
-    {
-        return m_vertices[i].m_position;
-    }
+    virtual u32 getJointCount() const;
     // ------------------------------------------------------------------------
-    virtual const core::vector3df& getNormal(u32 i) const
-    {
-        static core::vector3df unused;
-        return unused;
-    }
+    virtual const c8* getJointName(u32 number) const;
     // ------------------------------------------------------------------------
-    virtual core::vector3df& getNormal(u32 i)
-    {
-        static core::vector3df unused;
-        return unused;
-    }
+    virtual s32 getJointNumber(const c8* name) const;
     // ------------------------------------------------------------------------
-    virtual const core::vector2df& getTCoords(u32 i) const
-    {
-        static core::vector2df unused;
-        return unused;
-    }
+    virtual bool useAnimationFrom(const ISkinnedMesh *mesh) { return true; }
     // ------------------------------------------------------------------------
-    virtual core::vector2df& getTCoords(u32 i)
-    {
-        static core::vector2df unused;
-        return unused;
-    }
+    virtual void updateNormalsWhenAnimating(bool on) {}
     // ------------------------------------------------------------------------
-    virtual scene::E_PRIMITIVE_TYPE getPrimitiveType() const
-    {
-        return EPT_TRIANGLES;
-    }
+    virtual void setInterpolationMode(E_INTERPOLATION_MODE mode) {}
     // ------------------------------------------------------------------------
-    virtual void append(const void* const vertices, u32 numm_vertices,
-                        const u16* const indices, u32 numm_indices) {}
+    virtual void convertMeshToTangents(bool(*predicate)(IMeshBuffer*)) {}
     // ------------------------------------------------------------------------
-    virtual void append(const IMeshBuffer* const other) {}
+    virtual bool isStatic() { return false; }
     // ------------------------------------------------------------------------
-    virtual E_HARDWARE_MAPPING getHardwareMappingHint_Vertex() const
-    {
-        return EHM_NEVER;
-    }
+    virtual bool setHardwareSkinning(bool on) { return true; }
     // ------------------------------------------------------------------------
-    virtual E_HARDWARE_MAPPING getHardwareMappingHint_Index() const
-    {
-        return EHM_NEVER;
-    }
+    virtual core::array<SSkinMeshBuffer*> &getMeshBuffers()
+                              { return *(core::array<SSkinMeshBuffer*>*)NULL; }
     // ------------------------------------------------------------------------
-    virtual void setHardwareMappingHint(E_HARDWARE_MAPPING,
-                                        E_BUFFER_TYPE Buffer) {}
+    virtual core::array<SJoint*> &getAllJoints();
     // ------------------------------------------------------------------------
-    virtual void setDirty(E_BUFFER_TYPE Buffer=EBT_VERTEX_AND_INDEX) {}
+    virtual const core::array<SJoint*> &getAllJoints() const;
     // ------------------------------------------------------------------------
-    virtual u32 getChangedID_Vertex() const { return 0; }
+    virtual void finalize() {}
     // ------------------------------------------------------------------------
-    virtual u32 getChangedID_Index() const { return 0; }
+    virtual SSkinMeshBuffer *addMeshBuffer() { return NULL; }
+    // ------------------------------------------------------------------------
+    virtual SJoint *addJoint(SJoint *parent) { return NULL; }
+    // ------------------------------------------------------------------------
+    virtual SPositionKey *addPositionKey(SJoint *joint) { return NULL; }
+    // ------------------------------------------------------------------------
+    virtual SRotationKey *addRotationKey(SJoint *joint) { return NULL; }
+    // ------------------------------------------------------------------------
+    virtual SScaleKey *addScaleKey(SJoint *joint) { return NULL; }
+    // ------------------------------------------------------------------------
+    virtual SWeight *addWeight(SJoint *joint) { return NULL; }
+    // ------------------------------------------------------------------------
+    virtual void updateBoundingBox(void);
+    // ------------------------------------------------------------------------
+    void recoverJointsFromMesh(core::array<IBoneSceneNode*> &jointChildSceneNodes);
+    // ------------------------------------------------------------------------
+    void transferJointsToMesh(const core::array<IBoneSceneNode*> &jointChildSceneNodes);
+    // ------------------------------------------------------------------------
+    void transferOnlyJointsHintsToMesh(const core::array<IBoneSceneNode*> &jointChildSceneNodes);
+    // ------------------------------------------------------------------------
+    void addJoints(core::array<IBoneSceneNode*> &jointChildSceneNodes,
+                   IAnimatedMeshSceneNode* node,
+                   ISceneManager* smgr);
+    // ------------------------------------------------------------------------
 
 };
+#endif

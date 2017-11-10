@@ -17,6 +17,7 @@
 
 #include "graphics/sp_mesh_loader.hpp"
 
+#include "graphics/sp/sp_mesh.hpp"
 #include "graphics/sp/sp_mesh_buffer.hpp"
 #include "graphics/central_settings.hpp"
 #include "graphics/stk_tex_manager.hpp"
@@ -39,6 +40,7 @@ bool SPMeshLoader::isALoadableFileExtension(const io::path& filename) const
 // ----------------------------------------------------------------------------
 scene::IAnimatedMesh* SPMeshLoader::createMesh(io::IReadFile* f)
 {
+    const bool real_spm = CVS->isGLSL();
     if (!IS_LITTLE_ENDIAN)
     {
         Log::error("SPMeshLoader", "Not little endian machine.");
@@ -50,9 +52,9 @@ scene::IAnimatedMesh* SPMeshLoader::createMesh(io::IReadFile* f)
     }
     m_bind_frame = 0;
     m_joint_count = 0;
-    //m_frame_count = 0;
+    m_frame_count = 0;
     m_mesh = NULL;
-    m_mesh = m_scene_manager->createSkinnedMesh();
+    m_mesh = real_spm ? new SPMesh() : m_scene_manager->createSkinnedMesh();
     io::IFileSystem* fs = m_scene_manager->getFileSystem();
     std::string base_path = fs->getFileDir(f->getFileName()).c_str();
     std::string header;
@@ -172,10 +174,20 @@ scene::IAnimatedMesh* SPMeshLoader::createMesh(io::IReadFile* f)
             f->read(&indices_count, 4);
             f->read(&mat_id, 2);
             assert(mat_id < mat_map.size());
-            decompress(f, vertices_count, indices_count, read_normal,
-                read_vcolor, read_tangent, std::get<1>(mat_map[mat_id]),
-                std::get<2>(mat_map[mat_id]), vt,
-                std::get<0>(mat_map[mat_id]));
+            if (real_spm)
+            {
+                decompressSPM(f, vertices_count, indices_count, read_normal,
+                    read_vcolor, read_tangent, std::get<1>(mat_map[mat_id]),
+                    std::get<2>(mat_map[mat_id]), vt,
+                    std::get<0>(mat_map[mat_id]));
+            }
+            else
+            {
+                decompress(f, vertices_count, indices_count, read_normal,
+                    read_vcolor, read_tangent, std::get<1>(mat_map[mat_id]),
+                    std::get<2>(mat_map[mat_id]), vt,
+                    std::get<0>(mat_map[mat_id]));
+            }
             mat_size--;
         }
         if (header == "SPMS")
@@ -204,6 +216,94 @@ scene::IAnimatedMesh* SPMeshLoader::createMesh(io::IReadFile* f)
     m_joints.clear();
     return m_mesh;
 }   // createMesh
+
+// ----------------------------------------------------------------------------
+void SPMeshLoader::decompressSPM(irr::io::IReadFile* spm,
+                                 unsigned vertices_count,
+                                 unsigned indices_count, bool read_normal,
+                                 bool read_vcolor, bool read_tangent,
+                                 bool uv_one, bool uv_two, SPVertexType vt,
+                                 const video::SMaterial& m)
+{
+    assert(vertices_count != 0);
+    assert(indices_count != 0);
+
+    SPMeshBuffer* mb = new SPMeshBuffer();
+    static_cast<SPMesh*>(m_mesh)->m_buffer.push_back(mb);
+    const unsigned idx_size = vertices_count > 255 ? 2 : 1;
+    for (unsigned i = 0; i < vertices_count; i++)
+    {
+        video::S3DVertexSkinnedMesh vertex = {};
+        // 3 * float position
+        spm->read(&vertex.m_position, 12);
+        if (read_normal)
+        {
+            spm->read(&vertex.m_normal, 4);
+        }
+        if (read_vcolor)
+        {
+            // Color identifier
+            uint8_t ci;
+            spm->read(&ci, 1);
+            if (ci == 128)
+            {
+                // All white
+                vertex.m_color = video::SColor(255, 255, 255, 255);
+            }
+            else
+            {
+                uint8_t r, g, b;
+                spm->read(&r, 1);
+                spm->read(&g, 1);
+                spm->read(&b, 1);
+                vertex.m_color = video::SColor(255, r, g, b);
+            }
+        }
+        else
+        {
+            vertex.m_color = video::SColor(255, 255, 255, 255);
+        }
+        if (uv_one)
+        {
+            spm->read(&vertex.m_all_uvs[0], 4);
+            if (uv_two)
+            {
+                spm->read(&vertex.m_all_uvs[2], 4);
+            }
+            if (read_tangent)
+            {
+                spm->read(&vertex.m_tangent, 4);
+            }
+        }
+        if (vt == SPVT_SKINNED)
+        {
+            spm->read(&vertex.m_joint_idx[0], 16);
+        }
+        mb->addSPMVertex(vertex);
+    }
+    if (m.TextureLayer[0].Texture != NULL)
+    {
+        mb->setMaterial(m);
+    }
+    std::vector<uint16_t> indices;
+    indices.resize(indices_count);
+    if (idx_size == 2)
+    {
+        spm->read(indices.data(), indices_count * 2);
+    }
+    else
+    {
+        std::vector<uint8_t> tmp_idx;
+        tmp_idx.resize(indices_count);
+        spm->read(tmp_idx.data(), indices_count);
+        for (unsigned i = 0; i < indices_count; i++)
+        {
+            indices[i] = tmp_idx[i];
+        }
+    }
+    mb->setIndices(indices);
+
+}   // decompressSPM
 
 // ----------------------------------------------------------------------------
 void SPMeshLoader::decompress(irr::io::IReadFile* spm, unsigned vertices_count,
@@ -351,12 +451,6 @@ void SPMeshLoader::decompress(irr::io::IReadFile* spm, unsigned vertices_count,
 // ----------------------------------------------------------------------------
 void SPMeshLoader::createAnimationData(irr::io::IReadFile* spm)
 {
-    if (m_joints.empty())
-    {
-        Log::error("SPMeshLoader", "No joints are added.");
-        return;
-    }
-    assert(m_joints.size() == m_mesh->getMeshBufferCount());
     uint8_t armature_size = 0;
     spm->read(&armature_size, 1);
     assert(armature_size > 0);
@@ -369,8 +463,8 @@ void SPMeshLoader::createAnimationData(irr::io::IReadFile* spm)
     }
     for (unsigned i = 0; i < armature_size; i++)
     {
-        //m_frame_count = std::max(m_frame_count,
-        //    (unsigned)m_all_armatures[i].m_frame_pose_matrices.back().first);
+        m_frame_count = std::max(m_frame_count,
+            (unsigned)m_all_armatures[i].m_frame_pose_matrices.back().first);
         m_joint_count += m_all_armatures[i].m_joint_used;
     }
 
@@ -382,6 +476,13 @@ void SPMeshLoader::createAnimationData(irr::io::IReadFile* spm)
             &m_to_bind_pose_matrices[accumulated_joints]);
         accumulated_joints += m_all_armatures[i].m_joint_used;
     }
+
+    // Only for legacy device
+    if (m_joints.empty())
+    {
+        return;
+    }
+    assert(m_joints.size() == m_mesh->getMeshBufferCount());
     for (unsigned i = 0; i < m_to_bind_pose_matrices.size(); i++)
     {
         m_to_bind_pose_matrices[i].makeInverse();
@@ -420,6 +521,11 @@ void SPMeshLoader::createAnimationData(irr::io::IReadFile* spm)
 // ----------------------------------------------------------------------------
 void SPMeshLoader::convertIrrlicht()
 {
+    // Only for legacy device
+    if (m_joints.empty())
+    {
+        return;
+    }
     unsigned total_joints = 0;
     for (unsigned i = 0; i < m_all_armatures.size(); i++)
     {

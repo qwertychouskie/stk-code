@@ -20,8 +20,8 @@
 
 #include "utils/types.hpp"
 
-#include "IMeshBuffer.h"
-#include "S3DVertex.h"
+#include <IMeshBuffer.h>
+#include <S3DVertex.h>
 
 #include <vector>
 
@@ -60,6 +60,11 @@ public:
     void setIndices(std::vector<uint16_t>& indices)
     {
         m_indices = std::move(indices);
+    }
+    // ------------------------------------------------------------------------
+    void setMaterial(const video::SMaterial& m)
+    {
+        m_material = m;
     }
     // ------------------------------------------------------------------------
     virtual const video::SMaterial& getMaterial() const

@@ -34,7 +34,7 @@ class SPMeshLoader : public scene::IMeshLoader
 private:
 
     // ------------------------------------------------------------------------
-    unsigned m_bind_frame, m_joint_count;//, m_frame_count;
+    unsigned m_bind_frame, m_joint_count, m_frame_count;
     // ------------------------------------------------------------------------
     std::vector<Armature> m_all_armatures;
     // ------------------------------------------------------------------------
@@ -50,6 +50,12 @@ private:
                     unsigned indices_count, bool read_normal, bool read_vcolor,
                     bool read_tangent, bool uv_one, bool uv_two,
                     SPVertexType vt, const video::SMaterial& m);
+    // ------------------------------------------------------------------------
+    void decompressSPM(irr::io::IReadFile* spm, unsigned vertices_count,
+                       unsigned indices_count, bool read_normal,
+                       bool read_vcolor, bool read_tangent, bool uv_one,
+                       bool uv_two, SPVertexType vt,
+                       const video::SMaterial& m);
     // ------------------------------------------------------------------------
     void createAnimationData(irr::io::IReadFile* spm);
     // ------------------------------------------------------------------------
