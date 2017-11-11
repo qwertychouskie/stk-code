@@ -21,11 +21,20 @@
 #include "graphics/sp/sp_mesh_buffer.hpp"
 #include "utils/mini_glm.hpp"
 
+#include <algorithm>
+
 // ----------------------------------------------------------------------------
 SPMesh::SPMesh()
 {
-
+    m_fps = 0.025f;
+    m_last_frame = 0.0f;
+    m_skinned_last_frame = false;
+    m_bind_frame = 0;
+    m_total_joints = 0;
+    m_joint_using = 0;
+    m_frame_count = 0;
 }   // SPMesh
+
 // ----------------------------------------------------------------------------
 SPMesh::~SPMesh()
 {
@@ -37,3 +46,80 @@ SPMesh::~SPMesh()
         }
     }
 }   // ~SPMesh
+
+// ----------------------------------------------------------------------------
+IMeshBuffer* SPMesh::getMeshBuffer(u32 nr) const
+{
+    if (nr < m_buffer.size())
+    {
+        return m_buffer[nr];
+    }
+    return NULL;
+}   // getMeshBuffer
+
+// ----------------------------------------------------------------------------
+IMeshBuffer* SPMesh::getMeshBuffer(const video::SMaterial &material) const
+{
+    for (unsigned i = 0; i < m_buffer.size(); i++)
+    {
+        if (m_buffer[i]->getMaterial() == material)
+        {
+            return m_buffer[i];
+        }
+    }
+    return NULL;
+}   // getMeshBuffer
+
+// ----------------------------------------------------------------------------
+const c8* SPMesh::getJointName(u32 number) const
+{
+    if (number >= m_joint_using)
+    {
+        return "";
+    }
+    int i = 0;
+    int j = number;
+    while (j >= int(m_all_armatures[i].m_joint_used))
+    {
+        j -= int(m_all_armatures[i].m_joint_used);
+        i++;
+    }
+    return m_all_armatures.at(i).m_joint_names[j].c_str();
+
+}   // getJointName
+
+// ----------------------------------------------------------------------------
+s32 SPMesh::getJointIDWithArm(const c8* name, unsigned* arm_id) const
+{
+    for (unsigned i = 0; i < m_all_armatures.size(); i++)
+    {
+        const Armature& arm = m_all_armatures[i];
+        auto found = std::find(arm.m_joint_names.begin(),
+            arm.m_joint_names.end(), name);
+        if (found != arm.m_joint_names.end())
+        {
+            if (arm_id != NULL)
+            {
+                *arm_id = i;
+            }
+            return (int)(found - arm.m_joint_names.begin());
+        }
+    }
+    return -1;
+}   // getJointIDWithArm
+
+// ----------------------------------------------------------------------------
+void SPMesh::animateMesh(f32 frame, f32 blend)
+{
+}   // animateMesh
+
+// ----------------------------------------------------------------------------
+void SPMesh::updateBoundingBox()
+{
+    m_bounding_box.reset(0.0f, 0.0f, 0.0f);
+    for (unsigned i = 0; i < m_buffer.size(); i++)
+    {
+        m_buffer[i]->recalculateBoundingBox();
+        m_bounding_box.addInternalBox(m_buffer[i]->getBoundingBox());
+    }
+}   // updateBoundingBox

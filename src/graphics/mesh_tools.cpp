@@ -30,9 +30,11 @@
 #include <IMeshBuffer.h>
 #include <SSkinMeshBuffer.h>
 
-void MeshTools::minMax3D(scene::IMesh* mesh, Vec3 *min, Vec3 *max) {
-
-    Vec3 extend;
+void MeshTools::minMax3D(scene::IMesh* mesh, Vec3 *min, Vec3 *max)
+{
+    *min = mesh->getBoundingBox().MinEdge;
+    *max = mesh->getBoundingBox().MaxEdge;
+/*    Vec3 extend;
     *min = Vec3( 999999.9f);
     *max = Vec3(-999999.9f);
     for(unsigned int i=0; i<mesh->getMeshBufferCount(); i++)
@@ -86,7 +88,7 @@ void MeshTools::minMax3D(scene::IMesh* mesh, Vec3 *min, Vec3 *max) {
             Log::warn("Tools", "minMax3D: Ignoring type '%d'!\n",
                       mb->getVertexType());
         }
-    }  // for i<getMeshBufferCount
+    }  // for i<getMeshBufferCount*/
 }   // minMax3D
 
 // Copied from irrlicht
@@ -345,6 +347,7 @@ scene::IMesh* MeshTools::createMeshWithTangents(scene::IMesh* mesh,
                                                 bool angle_weighted,
                                                 bool calculate_tangents)
 {
+    return mesh;
     if (!mesh)
         return 0;
 
@@ -489,5 +492,6 @@ scene::IMesh* MeshTools::createMeshWithTangents(scene::IMesh* mesh,
 void MeshTools::createSkinnedMeshWithTangents(scene::ISkinnedMesh* mesh,
                                               bool(*predicate)(scene::IMeshBuffer*))
 {
+    return;
     mesh->convertMeshToTangents(predicate);
 }

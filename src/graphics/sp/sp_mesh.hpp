@@ -18,7 +18,7 @@
 #ifndef HEADER_SP_MESH_HPP
 #define HEADER_SP_MESH_HPP
 
-
+#include <cassert>
 #include <ISkinnedMesh.h>
 #include <vector>
 
@@ -52,11 +52,11 @@ public:
     // ------------------------------------------------------------------------
     virtual ~SPMesh();
     // ------------------------------------------------------------------------
-    virtual u32 getFrameCount() const;
+    virtual u32 getFrameCount() const { return m_frame_count; }
     // ------------------------------------------------------------------------
-    virtual f32 getAnimationSpeed() const;
+    virtual f32 getAnimationSpeed() const { return m_fps; }
     // ------------------------------------------------------------------------
-    virtual void setAnimationSpeed(f32 fps);
+    virtual void setAnimationSpeed(f32 fps) { m_fps = fps; }
     // ------------------------------------------------------------------------
     virtual IMesh* getMesh(s32 frame, s32 detailLevel=255,
                            s32 startFrameLoop=-1, s32 endFrameLoop=-1)
@@ -67,15 +67,18 @@ public:
     virtual void skinMesh(f32 strength=1.f, SkinningCallback sc = NULL,
                           int offset = -1) {}
     // ------------------------------------------------------------------------
-    virtual u32 getMeshBufferCount() const;
+    virtual u32 getMeshBufferCount() const
+                                          { return (unsigned)m_buffer.size(); }
     // ------------------------------------------------------------------------
     virtual IMeshBuffer* getMeshBuffer(u32 nr) const;
     // ------------------------------------------------------------------------
-    virtual IMeshBuffer* getMeshBuffer( const video::SMaterial &material) const;
+    virtual IMeshBuffer* getMeshBuffer(const video::SMaterial &material) const;
     // ------------------------------------------------------------------------
-    virtual const core::aabbox3d<f32>& getBoundingBox() const;
+    virtual const core::aabbox3d<f32>& getBoundingBox() const
+                                                     { return m_bounding_box; }
     // ------------------------------------------------------------------------
-    virtual void setBoundingBox( const core::aabbox3df& box);
+    virtual void setBoundingBox(const core::aabbox3df& box)
+                                                      { m_bounding_box = box; }
     // ------------------------------------------------------------------------
     virtual void setMaterialFlag(video::E_MATERIAL_FLAG flag, bool newvalue) {}
     // ------------------------------------------------------------------------
@@ -84,13 +87,17 @@ public:
     // ------------------------------------------------------------------------
     virtual void setDirty(E_BUFFER_TYPE buffer=EBT_VERTEX_AND_INDEX) {}
     // ------------------------------------------------------------------------
-    virtual E_ANIMATED_MESH_TYPE getMeshType() const { }
+    virtual E_ANIMATED_MESH_TYPE getMeshType() const { return EAMT_SKINNED; }
     // ------------------------------------------------------------------------
-    virtual u32 getJointCount() const;
+    virtual u32 getJointCount() const { return m_joint_using; }
     // ------------------------------------------------------------------------
     virtual const c8* getJointName(u32 number) const;
     // ------------------------------------------------------------------------
-    virtual s32 getJointNumber(const c8* name) const;
+    virtual s32 getJointNumber(const c8* name) const
+    {
+        // Real SPM doesn't use this
+        return -1;
+    }
     // ------------------------------------------------------------------------
     virtual bool useAnimationFrom(const ISkinnedMesh *mesh) { return true; }
     // ------------------------------------------------------------------------
@@ -100,18 +107,32 @@ public:
     // ------------------------------------------------------------------------
     virtual void convertMeshToTangents(bool(*predicate)(IMeshBuffer*)) {}
     // ------------------------------------------------------------------------
-    virtual bool isStatic() { return false; }
+    virtual bool isStatic() { return m_frame_count == 0; }
     // ------------------------------------------------------------------------
     virtual bool setHardwareSkinning(bool on) { return true; }
     // ------------------------------------------------------------------------
     virtual core::array<SSkinMeshBuffer*> &getMeshBuffers()
-                              { return *(core::array<SSkinMeshBuffer*>*)NULL; }
+    {
+        assert(false);
+        return *(core::array<SSkinMeshBuffer*>*)NULL;
+    }
     // ------------------------------------------------------------------------
-    virtual core::array<SJoint*> &getAllJoints();
+    virtual core::array<SJoint*> &getAllJoints()
+    {
+        assert(false);
+        return *(core::array<SJoint*>*)NULL;
+    }
     // ------------------------------------------------------------------------
-    virtual const core::array<SJoint*> &getAllJoints() const;
+    virtual const core::array<SJoint*> &getAllJoints() const
+    {
+        assert(false);
+        return *(core::array<SJoint*>*)NULL;
+    }
     // ------------------------------------------------------------------------
-    virtual void finalize() {}
+    virtual void finalize()
+    {
+        updateBoundingBox();
+    }
     // ------------------------------------------------------------------------
     virtual SSkinMeshBuffer *addMeshBuffer() { return NULL; }
     // ------------------------------------------------------------------------
@@ -136,6 +157,8 @@ public:
     void addJoints(core::array<IBoneSceneNode*> &jointChildSceneNodes,
                    IAnimatedMeshSceneNode* node,
                    ISceneManager* smgr);
+    // ------------------------------------------------------------------------
+    s32 getJointIDWithArm(const c8* name, unsigned* arm_id) const;
     // ------------------------------------------------------------------------
 
 };

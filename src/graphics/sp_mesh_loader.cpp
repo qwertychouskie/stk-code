@@ -210,6 +210,20 @@ scene::IAnimatedMesh* SPMeshLoader::createMesh(io::IReadFile* f)
         uint16_t pre_computed_size = 0;
         f->read(&pre_computed_size, 2);
     }
+    if (real_spm)
+    {
+        SPMesh* spm = static_cast<SPMesh*>(m_mesh);
+        spm->m_bind_frame = m_bind_frame;
+        spm->m_joint_using = m_joint_count;
+        spm->m_frame_count = m_frame_count;
+        for (unsigned i = 0; i < m_all_armatures.size(); i++)
+        {
+            // This is diffferent from m_joint_using
+            spm->m_total_joints +=
+                (unsigned)m_all_armatures[i].m_joint_names.size();
+        }
+        spm->m_all_armatures = std::move(m_all_armatures);
+    }
     m_mesh->finalize();
     m_all_armatures.clear();
     m_to_bind_pose_matrices.clear();
@@ -239,6 +253,11 @@ void SPMeshLoader::decompressSPM(irr::io::IReadFile* spm,
         if (read_normal)
         {
             spm->read(&vertex.m_normal, 4);
+        }
+        else
+        {
+            // 0, 1, 0
+            vertex.m_normal = 0x1FF << 10;
         }
         if (read_vcolor)
         {
@@ -274,10 +293,25 @@ void SPMeshLoader::decompressSPM(irr::io::IReadFile* spm,
             {
                 spm->read(&vertex.m_tangent, 4);
             }
+            else
+            {
+                // 0, 0, 1
+                vertex.m_tangent = 0x1FF;
+            }
         }
         if (vt == SPVT_SKINNED)
         {
             spm->read(&vertex.m_joint_idx[0], 16);
+            if (vertex.m_joint_idx[0] == -1 ||
+                vertex.m_weight[0] == 0 ||
+                // -0.0 in half float (16bit)
+                vertex.m_weight[0] == 32768)
+            {
+                // For out skinned mesh shader
+                vertex.m_joint_idx[0] = -32767;
+                // 1.0 in half float (16bit)
+                vertex.m_weight[0] = 15360;
+            }
         }
         mb->addSPMVertex(vertex);
     }
