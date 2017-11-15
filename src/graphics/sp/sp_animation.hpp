@@ -30,6 +30,10 @@
 #include <string>
 
 using namespace irr;
+
+namespace SP
+{
+
 struct LocRotScale
 {
     core::vector3df m_loc;
@@ -218,5 +222,7 @@ struct Armature
         return m_world_matrices[id].first;
     }
 };
+
+}
 
 #endif

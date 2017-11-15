@@ -18,6 +18,7 @@
 #ifndef HEADER_SP_MESH_BUFFER_HPP
 #define HEADER_SP_MESH_BUFFER_HPP
 
+#include "graphics/gl_headers.hpp"
 #include "utils/types.hpp"
 
 #include <IMeshBuffer.h>
@@ -28,10 +29,17 @@
 using namespace irr;
 using namespace scene;
 
+class Material;
+
+namespace SP
+{
+
 class SPMeshBuffer : public IMeshBuffer
 {
 private:
     video::SMaterial m_material;
+
+    Material* m_stk_material;
 
     std::vector<video::S3DVertexSkinnedMesh> m_vertices;
 
@@ -44,6 +52,7 @@ public:
     {
 #ifdef _DEBUG
         setDebugName("SMeshBuffer");
+        m_stk_material = NULL;
 #endif
     }
     // ------------------------------------------------------------------------
@@ -207,5 +216,7 @@ public:
     virtual u32 getChangedID_Index() const { return 0; }
 
 };
+
+}
 
 #endif

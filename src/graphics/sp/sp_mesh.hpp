@@ -22,15 +22,20 @@
 #include <ISkinnedMesh.h>
 #include <vector>
 
+
 using namespace irr;
 using namespace scene;
 
-class SPMeshBuffer;
 class SPMeshLoader;
+
+namespace SP
+{
+class SPMeshBuffer;
+class Armature;
 
 class SPMesh : public ISkinnedMesh
 {
-friend class SPMeshLoader;
+friend class ::SPMeshLoader;
 private:
     std::vector<SPMeshBuffer*> m_buffer;
 
@@ -44,7 +49,7 @@ private:
 
     unsigned m_bind_frame, m_total_joints, m_joint_using, m_frame_count;
 
-    std::vector<Armature> m_all_armatures;
+    std::vector<SP::Armature> m_all_armatures;
 
 public:
     // ------------------------------------------------------------------------
@@ -129,10 +134,7 @@ public:
         return *(core::array<SJoint*>*)NULL;
     }
     // ------------------------------------------------------------------------
-    virtual void finalize()
-    {
-        updateBoundingBox();
-    }
+    virtual void finalize();
     // ------------------------------------------------------------------------
     virtual SSkinMeshBuffer *addMeshBuffer() { return NULL; }
     // ------------------------------------------------------------------------
@@ -148,6 +150,8 @@ public:
     // ------------------------------------------------------------------------
     virtual void updateBoundingBox(void);
     // ------------------------------------------------------------------------
+    std::vector<Armature>& getArmatures() { return m_all_armatures; }
+    // ------------------------------------------------------------------------
     void recoverJointsFromMesh(core::array<IBoneSceneNode*> &jointChildSceneNodes);
     // ------------------------------------------------------------------------
     void transferJointsToMesh(const core::array<IBoneSceneNode*> &jointChildSceneNodes);
@@ -162,4 +166,6 @@ public:
     // ------------------------------------------------------------------------
 
 };
+
+}
 #endif

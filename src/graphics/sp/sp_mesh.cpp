@@ -23,6 +23,8 @@
 
 #include <algorithm>
 
+namespace SP
+{
 // ----------------------------------------------------------------------------
 SPMesh::SPMesh()
 {
@@ -123,3 +125,25 @@ void SPMesh::updateBoundingBox()
         m_bounding_box.addInternalBox(m_buffer[i]->getBoundingBox());
     }
 }   // updateBoundingBox
+
+// ----------------------------------------------------------------------------
+void SPMesh::finalize()
+{
+    updateBoundingBox();
+    for (Armature& arm : getArmatures())
+    {
+        arm.getInterpolatedMatrices((float)m_bind_frame);
+        for (auto& p : arm.m_world_matrices)
+        {
+            p.second = false;
+        }
+        for (unsigned i = 0; i < arm.m_joint_names.size(); i++)
+        {
+            core::matrix4 m;
+            arm.getWorldMatrix(arm.m_interpolated_matrices, i).getInverse(m);
+            arm.m_joint_matrices[i] = m;
+        }
+    }
+}   // finalize
+
+}

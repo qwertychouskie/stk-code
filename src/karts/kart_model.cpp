@@ -32,6 +32,8 @@
 #include "graphics/mesh_tools.hpp"
 #include "graphics/render_info.hpp"
 #include "graphics/stk_animated_mesh.hpp"
+#include "graphics/sp/sp_animation.hpp"
+#include "graphics/sp/sp_mesh.hpp"
 #include "io/file_manager.hpp"
 #include "io/xml_node.hpp"
 #include "karts/abstract_kart.hpp"
@@ -1223,11 +1225,6 @@ void KartModel::initInverseBoneMatrices()
         // Only need for >= 3 version of kart
         return;
     }
-    // Due to irrlicht mesh doesn't expose bone name, we have to create a
-    // dummy aniamted node
-    // All bone matrices are configured in straight frame (as in exporting)
-    scene::IAnimatedMeshSceneNode* node = irr_driver->getSceneManager()
-        ->addAnimatedMeshSceneNode(m_mesh);
     float striaght_frame = (float)m_animation_frame[AF_STRAIGHT];
     if (m_animation_frame[AF_STRAIGHT] == -1)
     {
@@ -1235,30 +1232,56 @@ void KartModel::initInverseBoneMatrices()
             m_model_filename.c_str());
         striaght_frame = 0.0f;
     }
-
-    const unsigned total_joint = node->getJointCount();
-    for (unsigned i = 0; i < total_joint; i++)
+    using namespace SP;
+    SPMesh* spm = dynamic_cast<SPMesh*>(m_mesh);
+    if (spm)
     {
-        node->setCurrentFrame(striaght_frame);
-        node->OnAnimate(0);
-        scene::IBoneSceneNode* bone = node->getJointNode(i);
-        bone->updateAbsolutePosition();
-        node->setCurrentFrame(striaght_frame);
-        node->OnAnimate(0);
-        bone->updateAbsolutePosition();
-        core::matrix4 inv;
-        bone->getAbsoluteTransformation().getInverse(inv);
-        const std::string bone_name = bone->getName();
-        auto ret = m_inverse_bone_matrices.find(bone_name);
-        if (ret != m_inverse_bone_matrices.end())
+        for (Armature& arm : spm->getArmatures())
         {
-            Log::warn("KartModel", "%s has duplicated bone, name: %s,"
-                " attachment may not work correctly.",
-                m_model_filename.c_str(), bone_name.c_str());
+            arm.getInterpolatedMatrices(striaght_frame);
+            for (auto& p : arm.m_world_matrices)
+            {
+                p.second = false;
+            }
+            for (unsigned i = 0; i < arm.m_joint_names.size(); i++)
+            {
+                core::matrix4 m;
+                arm.getWorldMatrix(arm.m_interpolated_matrices, i)
+                    .getInverse(m);
+                m_inverse_bone_matrices[arm.m_joint_names[i]] = m;
+            }
         }
-        m_inverse_bone_matrices[bone_name] = inv;
     }
-    node->remove();
+    else
+    {
+        // Due to irrlicht mesh doesn't expose bone name, we have to create a
+        // dummy aniamted node
+        // All bone matrices are configured in straight frame (as in exporting)
+        scene::IAnimatedMeshSceneNode* node = irr_driver->getSceneManager()
+            ->addAnimatedMeshSceneNode(m_mesh);
+        const unsigned total_joint = node->getJointCount();
+        for (unsigned i = 0; i < total_joint; i++)
+        {
+            node->setCurrentFrame(striaght_frame);
+            node->OnAnimate(0);
+            scene::IBoneSceneNode* bone = node->getJointNode(i);
+            bone->updateAbsolutePosition();
+            node->setCurrentFrame(striaght_frame);
+            node->OnAnimate(0);
+            bone->updateAbsolutePosition();
+            core::matrix4 inv;
+            bone->getAbsoluteTransformation().getInverse(inv);
+            const std::string bone_name = bone->getName();
+            auto ret = m_inverse_bone_matrices.find(bone_name);
+            if (ret != m_inverse_bone_matrices.end())
+            {
+                Log::warn("KartModel", "%s has duplicated bone, name: %s,"
+                    " attachment may not work correctly.",
+                    m_model_filename.c_str(), bone_name.c_str());
+            }
+            m_inverse_bone_matrices[bone_name] = inv;
+        }
+    }
 }   // initInverseBoneMatrices
 
 //-----------------------------------------------------------------------------

@@ -54,7 +54,7 @@ scene::IAnimatedMesh* SPMeshLoader::createMesh(io::IReadFile* f)
     m_joint_count = 0;
     m_frame_count = 0;
     m_mesh = NULL;
-    m_mesh = real_spm ? new SPMesh() : m_scene_manager->createSkinnedMesh();
+    m_mesh = real_spm ? new SP::SPMesh() : m_scene_manager->createSkinnedMesh();
     io::IFileSystem* fs = m_scene_manager->getFileSystem();
     std::string base_path = fs->getFileDir(f->getFileName()).c_str();
     std::string header;
@@ -212,7 +212,7 @@ scene::IAnimatedMesh* SPMeshLoader::createMesh(io::IReadFile* f)
     }
     if (real_spm)
     {
-        SPMesh* spm = static_cast<SPMesh*>(m_mesh);
+        SP::SPMesh* spm = static_cast<SP::SPMesh*>(m_mesh);
         spm->m_bind_frame = m_bind_frame;
         spm->m_joint_using = m_joint_count;
         spm->m_frame_count = m_frame_count;
@@ -242,6 +242,7 @@ void SPMeshLoader::decompressSPM(irr::io::IReadFile* spm,
     assert(vertices_count != 0);
     assert(indices_count != 0);
 
+    using namespace SP;
     SPMeshBuffer* mb = new SPMeshBuffer();
     static_cast<SPMesh*>(m_mesh)->m_buffer.push_back(mb);
     const unsigned idx_size = vertices_count > 255 ? 2 : 1;
@@ -295,8 +296,8 @@ void SPMeshLoader::decompressSPM(irr::io::IReadFile* spm,
             }
             else
             {
-                // 0, 0, 1
-                vertex.m_tangent = 0x1FF;
+                // 0, 0, 1, 1 (bitangent sign)
+                vertex.m_tangent = 0x1FF << 20 | 1 << 30;
             }
         }
         if (vt == SPVT_SKINNED)

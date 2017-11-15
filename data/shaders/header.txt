@@ -64,5 +64,23 @@ layout (std140) uniform LightingData
     float rL22;
 };
 
+layout (std140) uniform SPMatrices
+{
+    mat4 u_view_matrix;
+    mat4 u_projection_matrix;
+    mat4 u_inverse_view_matrix;
+    mat4 u_inverse_projection_view_matrix;
+    mat4 u_projection_view_matrix;
+    mat4 u_shadow_projection_view_matrices[4];
+    vec2 u_screen;
+};
+
+layout (std140) uniform SPFogData
+{
+    // x: fog_start, y: fog_end, z: fog_max
+    vec4 u_fog_data;
+    vec4 u_fog_color;
+};
+
 #endif
 #endif // HEADER_TXT
