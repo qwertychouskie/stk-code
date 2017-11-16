@@ -19,6 +19,7 @@
 #define HEADER_SP_MESH_BUFFER_HPP
 
 #include "graphics/gl_headers.hpp"
+#include "graphics/sp/sp_instanced_data.hpp"
 #include "utils/types.hpp"
 
 #include <IMeshBuffer.h>
@@ -47,13 +48,67 @@ private:
 
     core::aabbox3d<f32> m_bounding_box;
 
+    std::vector<SPInstancedData> m_ins_dat;
+
+    unsigned m_gl_instance_size;
+
+    GLuint m_vao, m_ibo, m_vbo, m_ins_array;
+
+    bool m_uploaded;
+
 public:
     SPMeshBuffer()
     {
 #ifdef _DEBUG
         setDebugName("SMeshBuffer");
-        m_stk_material = NULL;
 #endif
+        m_stk_material = NULL;
+        m_gl_instance_size = 1;
+        glGenVertexArrays(1, &m_vao);
+        glGenBuffers(1, &m_ibo);
+        glGenBuffers(1, &m_vbo);
+        glGenBuffers(1, &m_ins_array);
+        m_uploaded = false;
+    }
+    // ------------------------------------------------------------------------
+    ~SPMeshBuffer()
+    {
+        glDeleteVertexArrays(1, &m_vao);
+        glDeleteBuffers(1, &m_ibo);
+        glDeleteBuffers(1, &m_vbo);
+        glDeleteBuffers(1, &m_ins_array);
+    }
+    // ------------------------------------------------------------------------
+    void initDrawMaterial();
+    // ------------------------------------------------------------------------
+    void uploadVBOIBO(bool skinned);
+    // ------------------------------------------------------------------------
+    void addInstanceData(const SPInstancedData& id)
+    {
+        if (m_uploaded)
+        {
+            m_ins_dat.clear();
+            m_uploaded = false;
+        }
+        m_ins_dat.push_back(id);
+    }
+    // ------------------------------------------------------------------------
+    void uploadInstanceData()
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, m_ins_array);
+        if (m_ins_dat.size() > m_gl_instance_size)
+        {
+            m_gl_instance_size = m_ins_dat.size() * 2;
+            glBufferData(GL_ARRAY_BUFFER, m_gl_instance_size * 32, NULL,
+                GL_DYNAMIC_DRAW);
+        }
+        void* ptr = glMapBufferRange(GL_ARRAY_BUFFER, 0,
+            m_ins_dat.size() * 32, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT |
+            GL_MAP_INVALIDATE_BUFFER_BIT);
+        memcpy(ptr, m_ins_dat.data(), m_ins_dat.size() * 32);
+        glUnmapBuffer(GL_ARRAY_BUFFER);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        m_uploaded = true;
     }
     // ------------------------------------------------------------------------
     video::S3DVertexSkinnedMesh* getSPMVertex()

@@ -57,6 +57,7 @@ const unsigned int VCLAMP = 2;
  */
 Material::Material(const XMLNode *node, bool deprecated)
 {
+    m_shader_name = "solid";
     m_shader_type = SHADERTYPE_SOLID;
     m_deprecated = deprecated;
     m_installed = false;
@@ -164,6 +165,11 @@ Material::Material(const XMLNode *node, bool deprecated)
     node->get("water-splash",        &m_water_splash       );
     node->get("jump",                &m_is_jump_texture    );
     node->get("has-gravity",         &m_has_gravity        );
+    node->get("layer-two-tex",       &m_layer_two_tex      );
+
+    core::stringc layer_two_tex(m_layer_two_tex.c_str());
+    layer_two_tex.make_lower();
+    m_layer_two_tex = layer_two_tex.c_str();
 
     if (m_collision_reaction != NORMAL)
     {
@@ -180,7 +186,7 @@ Material::Material(const XMLNode *node, bool deprecated)
         }
     }
 
-    s = "";
+    s = "solid";
     if (node->get("shader", &s))
     {
         if (s == "solid")
@@ -229,10 +235,10 @@ Material::Material(const XMLNode *node, bool deprecated)
             node->get("splatting-texture-3", &m_splatting_texture_3);
             node->get("splatting-texture-4", &m_splatting_texture_4);
         }
-        else
-        {
-            Log::warn("Material", "Unknown shader type <%s> for <%s>", s.c_str(), m_texname.c_str());
-        }
+        //else
+        //{
+        //    Log::warn("Material", "Unknown shader type <%s> for <%s>", s.c_str(), m_texname.c_str());
+        //}
     }
     else
     {
@@ -359,9 +365,18 @@ Material::Material(const XMLNode *node, bool deprecated)
         // ---- End backwards compatibility
     }
 
-    if (m_shader_type == SHADERTYPE_SOLID)
+    m_shader_name = s.empty() ? "solid" : s;
+    if (m_shader_name == "solid")
     {
         node->get("normal-map", &m_normal_map_tex);
+        if (!m_normal_map_tex.empty())
+        {
+            m_shader_name = "normalmap";
+        }
+    }
+    else if (m_shader_name == "normal_map")
+    {
+        m_shader_name = "normalmap";
     }
 
     if (m_disable_z_write && m_shader_type != SHADERTYPE_ALPHA_BLEND && m_shader_type != SHADERTYPE_ADDITIVE)
@@ -431,6 +446,7 @@ video::ITexture* Material::getTexture(bool srgb, bool premul_alpha)
 Material::Material(const std::string& fname, bool is_full_path,
                    bool complain_if_not_found, bool load_texture)
 {
+    m_shader_name = "solid";
     m_deprecated = false;
     m_installed = false;
     init();

@@ -273,6 +273,10 @@ private:
     void  initCustomSFX(const XMLNode *sfx);
     void  initParticlesEffect(const XMLNode *node);
 
+    // SP usage
+    std::string      m_shader_name;
+    std::string      m_layer_two_tex;
+
 public:
           Material(const XMLNode *node, bool deprecated);
           Material(const std::string& fname,
@@ -421,7 +425,22 @@ public:
     /** True if this texture should have the U coordinates mirrored. */
     char getMirrorAxisInReverse() const { return m_mirror_axis_when_reverse; }
     // ------------------------------------------------------------------------
-    const std::string getAlphaMask() const                 { return m_mask; }
+    const std::string& getAlphaMask() const                 { return m_mask; }
+    // ------------------------------------------------------------------------
+    const std::string& getGlossMap() const             { return m_gloss_map; }
+    // ------------------------------------------------------------------------
+    const std::string& getNormalMap() const       { return m_normal_map_tex; }
+    // ------------------------------------------------------------------------
+    const std::string& getColorizationMask() const
+                                               { return m_colorization_mask; }
+    // ------------------------------------------------------------------------
+    const std::string& getShaderName() const
+                                                     { return m_shader_name; }
+    // ------------------------------------------------------------------------
+    const std::string& getLayerTwoTexture() const
+                                                   { return m_layer_two_tex; }
+    // ------------------------------------------------------------------------
+    bool use2UV() const                   { return !m_layer_two_tex.empty(); }
 };
 
 

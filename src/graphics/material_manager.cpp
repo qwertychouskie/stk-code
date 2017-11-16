@@ -79,7 +79,8 @@ Material* MaterialManager::getMaterialFor(video::ITexture* t,
 }
 
 //-----------------------------------------------------------------------------
-Material* MaterialManager::getMaterialFor(video::ITexture* t)
+Material* MaterialManager::getMaterialFor(video::ITexture* t,
+                                          const std::string& lay_two_tex_lc)
 {
     const io::path& img_path = t->getName().getInternalName();
 
@@ -90,6 +91,13 @@ Material* MaterialManager::getMaterialFor(video::ITexture* t)
         {
             if (m_materials[i]->getTexFullPath() == img_path.c_str())
             {
+                if (!lay_two_tex_lc.empty())
+                {
+                    if (m_materials[i]->getLayerTwoTexture() != lay_two_tex_lc)
+                    {
+                        continue;
+                    }
+                }
                 return m_materials[i];
             }
         }
@@ -103,6 +111,13 @@ Material* MaterialManager::getMaterialFor(video::ITexture* t)
         {
             if (m_materials[i]->getTexFname() == image.c_str())
             {
+                if (!lay_two_tex_lc.empty())
+                {
+                    if (m_materials[i]->getLayerTwoTexture() != lay_two_tex_lc)
+                    {
+                        continue;
+                    }
+                }
                 return m_materials[i];
             }
         }   // for i
