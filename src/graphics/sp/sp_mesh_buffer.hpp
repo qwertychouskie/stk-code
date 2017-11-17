@@ -83,9 +83,11 @@ public:
 #endif
     }
     // ------------------------------------------------------------------------
+    void bindVAO() const                          { glBindVertexArray(m_vao); }
+    // ------------------------------------------------------------------------
     void initDrawMaterial();
     // ------------------------------------------------------------------------
-    void uploadVBOIBO(bool skinned);
+    void uploadGLMesh(bool skinned);
     // ------------------------------------------------------------------------
     void addInstanceData(const SPInstancedData& id)
     {

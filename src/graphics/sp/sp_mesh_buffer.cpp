@@ -30,8 +30,8 @@ namespace SP
 void SPMeshBuffer::initDrawMaterial()
 {
 #ifndef SERVER_ONLY
-    // layer 1, uv 1 texture (white default if none)
-    // layer 2, uv 2 texture (white default if none)
+    // layer 1, uv 1 texture (white default if none), reported by .spm
+    // layer 2, uv 2 texture (white default if none), reported by .spm
     core::stringc layer_two = m_material.getTexture(1) ?
         m_material.getTexture(1)->getName().getPtr() : "";
     layer_two.make_lower();
@@ -66,6 +66,7 @@ void SPMeshBuffer::initDrawMaterial()
             (irr::video::SColor(0, 0, 0, 0)));
     }
 
+    // Below all textures are reported by material_manager
     // Splatting different case, 3 4 5 6 are 1 2 3 4 splatting detail
     if (m_stk_material->getShaderName() == "splatting")
     {
@@ -144,13 +145,138 @@ void SPMeshBuffer::initDrawMaterial()
 #endif
 }   // initDrawMaterial
 // ----------------------------------------------------------------------------
-void SPMeshBuffer::uploadVBOIBO(bool skinned)
+void SPMeshBuffer::uploadGLMesh(bool skinned)
 {
 #ifndef SERVER_ONLY
     bool use_2_uv = m_stk_material->use2UV();
     bool use_tangents = !m_stk_material->getNormalMap().empty();
-        const unsigned pitch = getVertexPitch(m_vt) - (use_tangents ? 0 : 8);
+    const unsigned pitch = 48 - (use_tangents ? 0 : 4) - (use_2_uv ? 0 : 4) -
+        (skinned ? 0 : 16);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    unsigned v_size = m_vertices.size() * pitch;
+    glBufferData(GL_ARRAY_BUFFER, v_size, NULL, GL_DYNAMIC_DRAW);
+    v_size = 0;
+    size_t offset = 0;
+    for (unsigned i = 0 ; i < m_vertices.size(); i++)
+    {
+        offset = 0;
+        glBufferSubData(GL_ARRAY_BUFFER, v_size, 16, &m_vertices[i]);
+        offset += 16;
+        /*if (sp_vc_srgb_cor)
+        {
+            video::SColorf tmp(tmp_vertex.m_color);
+            tmp.r = powf(tmp.r, 2.2f);
+            tmp.g = powf(tmp.g, 2.2f);
+            tmp.b = powf(tmp.b, 2.2f);
+            tmp.a = powf(tmp.a, 2.2f);
+            tmp_vertex.m_color = tmp.toSColor();
+        }*/
+        glBufferSubData(GL_ARRAY_BUFFER, v_size + offset, 8,
+            &m_vertices[i].m_color);
+        offset += 8;
+        if (use_2_uv)
+        {
+            glBufferSubData(GL_ARRAY_BUFFER, v_size + offset, 4,
+                &m_vertices[i].m_all_uvs[2]);
+            offset += 4;
+        }
+        if (use_tangents)
+        {
+            glBufferSubData(GL_ARRAY_BUFFER, v_size + offset, 4,
+                &m_vertices[i].m_tangent);
+            offset += 4;
+        }
+        if (skinned)
+        {
+            glBufferSubData(GL_ARRAY_BUFFER, v_size + offset, 16,
+                &m_vertices[i].m_joint_idx[0]);
+        }
+        v_size += pitch;
+    }
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * 2,
+        m_indices.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, m_ins_array);
+    glBufferData(GL_ARRAY_BUFFER, m_gl_instance_size * 32, NULL,
+        GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    offset = 0;
+    bindVAO();
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    // Position
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, pitch, (void*)offset);
+    offset += 12;
+    // Normal
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 4, GL_INT_2_10_10_10_REV, GL_TRUE, pitch,
+        (void*)offset);
+    offset += 4;
+    // Vertex color
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, pitch,
+        (void*)offset);
+    offset += 4;
+    // 1st texture coordinates
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 2, GL_HALF_FLOAT, GL_FALSE, pitch, (void*)offset);
+    offset += 4;
+    if (use_2_uv)
+    {
+        // 2nd texture coordinates
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 2, GL_HALF_FLOAT, GL_FALSE, pitch,
+            (void*)offset);
+        offset += 4;
+    }
+    if (use_tangents)
+    {
+        // Tangent and bi-tanget sign
+        glEnableVertexAttribArray(5);
+        glVertexAttribPointer(5, 4, GL_INT_2_10_10_10_REV, GL_TRUE, pitch,
+            (void*)offset);
+        offset += 4;
+    }
+    if (skinned)
+    {
+        // 4 Joint indices
+        glEnableVertexAttribArray(6);
+        glVertexAttribIPointer(6, 4, GL_SHORT, pitch, (void*)offset);
+        offset += 8;
+        // 4 Joint weights
+        glEnableVertexAttribArray(7);
+        glVertexAttribPointer(7, 4, GL_HALF_FLOAT, GL_FALSE, pitch,
+            (void*)offset);
+    }
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
+    glBindBuffer(GL_ARRAY_BUFFER, m_ins_array);
+    // Origin
+    glEnableVertexAttribArray(7);
+    glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, 32, (void*)0);
+    glVertexAttribDivisorARB(7, 1);
+    // Rotation (quaternion)
+    glEnableVertexAttribArray(8);
+    glVertexAttribPointer(8, 4, GL_INT_2_10_10_10_REV, GL_TRUE, pitch,
+        (void*)12);
+    glVertexAttribDivisorARB(8, 1);
+    // Scale
+    glEnableVertexAttribArray(9);
+    glVertexAttribPointer(9, 4, GL_HALF_FLOAT, GL_FALSE, 32, (void*)16);
+    glVertexAttribDivisorARB(9, 1);
+    // Misc data (texture translation and colorization info)
+    glEnableVertexAttribArray(10);
+    glVertexAttribPointer(10, 4, GL_BYTE, GL_TRUE, 32, (void*)24);
+    glVertexAttribDivisorARB(10, 1);
+    // Skinning offset
+    glEnableVertexAttribArray(11);
+    glVertexAttribIPointer(11, 1, GL_INT, 32, (void*)28);
+    glVertexAttribDivisorARB(11, 1);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 #endif
-}   // uploadVBOIBO
+}   // uploadGLMesh
 
 }

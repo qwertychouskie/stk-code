@@ -187,6 +187,7 @@ Material::Material(const XMLNode *node, bool deprecated)
     }
 
     s = "solid";
+    node->get("normal-map", &m_normal_map_tex);
     if (node->get("shader", &s))
     {
         if (s == "solid")
@@ -235,7 +236,6 @@ Material::Material(const XMLNode *node, bool deprecated)
             node->get("splatting-texture-3", &m_splatting_texture_3);
             node->get("splatting-texture-4", &m_splatting_texture_4);
         }
-        node->get("normal-map", &m_normal_map_tex);
         //else
         //{
         //    Log::warn("Material", "Unknown shader type <%s> for <%s>", s.c_str(), m_texname.c_str());
