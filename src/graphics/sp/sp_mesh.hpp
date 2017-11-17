@@ -19,6 +19,7 @@
 #define HEADER_SP_MESH_HPP
 
 #include <cassert>
+#include <IAnimatedMeshSceneNode.h>
 #include <ISkinnedMesh.h>
 #include <vector>
 

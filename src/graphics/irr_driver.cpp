@@ -1028,10 +1028,12 @@ scene::IMesh *IrrDriver::getMesh(const std::string &filename)
  */
 void IrrDriver::setAllMaterialFlags(scene::IMesh *mesh) const
 {
+#ifndef SERVER_ONLY
     if (CVS->isGLSL())
     {
         return;
     }
+#endif
     unsigned int n=mesh->getMeshBufferCount();
     for(unsigned int i=0; i<n; i++)
     {

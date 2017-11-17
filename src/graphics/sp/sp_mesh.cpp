@@ -15,9 +15,8 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "graphics/sp_mesh_loader.hpp"
-
 #include "graphics/sp/sp_mesh.hpp"
+#include "graphics/sp/sp_animation.hpp"
 #include "graphics/sp/sp_mesh_buffer.hpp"
 #include "utils/mini_glm.hpp"
 
@@ -143,6 +142,13 @@ void SPMesh::finalize()
             arm.getWorldMatrix(arm.m_interpolated_matrices, i).getInverse(m);
             arm.m_joint_matrices[i] = m;
         }
+    }
+    m_bounding_box.reset(0.0f, 0.0f, 0.0f);
+    for (unsigned i = 0; i < m_buffer.size(); i++)
+    {
+        m_buffer[i]->recalculateBoundingBox();
+        m_bounding_box.addInternalBox(m_buffer[i]->getBoundingBox());
+        m_buffer[i]->initDrawMaterial();
     }
 }   // finalize
 

@@ -64,19 +64,23 @@ public:
 #endif
         m_stk_material = NULL;
         m_gl_instance_size = 1;
+#ifndef SERVER_ONLY
         glGenVertexArrays(1, &m_vao);
         glGenBuffers(1, &m_ibo);
         glGenBuffers(1, &m_vbo);
         glGenBuffers(1, &m_ins_array);
+#endif
         m_uploaded = false;
     }
     // ------------------------------------------------------------------------
     ~SPMeshBuffer()
     {
+#ifndef SERVER_ONLY
         glDeleteVertexArrays(1, &m_vao);
         glDeleteBuffers(1, &m_ibo);
         glDeleteBuffers(1, &m_vbo);
         glDeleteBuffers(1, &m_ins_array);
+#endif
     }
     // ------------------------------------------------------------------------
     void initDrawMaterial();
@@ -95,6 +99,7 @@ public:
     // ------------------------------------------------------------------------
     void uploadInstanceData()
     {
+#ifndef SERVER_ONLY
         glBindBuffer(GL_ARRAY_BUFFER, m_ins_array);
         if (m_ins_dat.size() > m_gl_instance_size)
         {
@@ -108,6 +113,7 @@ public:
         memcpy(ptr, m_ins_dat.data(), m_ins_dat.size() * 32);
         glUnmapBuffer(GL_ARRAY_BUFFER);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
+#endif
         m_uploaded = true;
     }
     // ------------------------------------------------------------------------

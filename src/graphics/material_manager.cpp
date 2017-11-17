@@ -67,7 +67,13 @@ MaterialManager::~MaterialManager()
     {
         delete it->second;
     }
+    for (std::map<std::string, Material*> ::iterator it =
+         m_sp_materials.begin(); it != m_sp_materials.end(); it++)
+    {
+        delete it->second;
+    }
     m_default_materials.clear();
+    m_sp_materials.clear();
 }   // ~MaterialManager
 
 //-----------------------------------------------------------------------------
@@ -160,7 +166,19 @@ void MaterialManager::setAllMaterialFlags(video::ITexture* t,
 }   // setAllMaterialFlags
 
 //-----------------------------------------------------------------------------
+Material* MaterialManager::getSPMaterial(const std::string& shader_name)
+{
+    auto ret = m_sp_materials.find(shader_name);
+    if (ret != m_sp_materials.end())
+    {
+        return ret->second;
+    }
+    Material* m = new Material("Default", false, false, false, shader_name);
+    m_sp_materials[shader_name] = m;
+    return m;
+}   // getSPMaterial
 
+//-----------------------------------------------------------------------------
 Material* MaterialManager::getDefaultMaterial(video::E_MATERIAL_TYPE shader_type)
 {
     auto it = m_default_materials.find(shader_type);

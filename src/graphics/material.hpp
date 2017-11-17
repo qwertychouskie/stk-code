@@ -282,7 +282,8 @@ public:
           Material(const std::string& fname,
                    bool is_full_path=false,
                    bool complain_if_not_found=true,
-                   bool load_texture = true);
+                   bool load_texture = true,
+                   const std::string& shader_name = "solid");
          ~Material ();
 
     void unloadTexture();
@@ -434,11 +435,20 @@ public:
     const std::string& getColorizationMask() const
                                                { return m_colorization_mask; }
     // ------------------------------------------------------------------------
-    const std::string& getShaderName() const
-                                                     { return m_shader_name; }
+    const std::string& getShaderName() const         { return m_shader_name; }
+    // ------------------------------------------------------------------------
+    const std::string& getSplatting1() const { return m_splatting_texture_1; }
+    // ------------------------------------------------------------------------
+    const std::string& getSplatting2() const { return m_splatting_texture_2; }
+    // ------------------------------------------------------------------------
+    const std::string& getSplatting3() const { return m_splatting_texture_3; }
+    // ------------------------------------------------------------------------
+    const std::string& getSplatting4() const { return m_splatting_texture_4; }
     // ------------------------------------------------------------------------
     const std::string& getLayerTwoTexture() const
                                                    { return m_layer_two_tex; }
+    // ------------------------------------------------------------------------
+    bool backFaceCulling() const                { return m_backface_culling; }
     // ------------------------------------------------------------------------
     bool use2UV() const                   { return !m_layer_two_tex.empty(); }
 };

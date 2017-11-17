@@ -235,6 +235,7 @@ Material::Material(const XMLNode *node, bool deprecated)
             node->get("splatting-texture-3", &m_splatting_texture_3);
             node->get("splatting-texture-4", &m_splatting_texture_4);
         }
+        node->get("normal-map", &m_normal_map_tex);
         //else
         //{
         //    Log::warn("Material", "Unknown shader type <%s> for <%s>", s.c_str(), m_texname.c_str());
@@ -368,7 +369,6 @@ Material::Material(const XMLNode *node, bool deprecated)
     m_shader_name = s.empty() ? "solid" : s;
     if (m_shader_name == "solid")
     {
-        node->get("normal-map", &m_normal_map_tex);
         if (!m_normal_map_tex.empty())
         {
             m_shader_name = "normalmap";
@@ -444,9 +444,10 @@ video::ITexture* Material::getTexture(bool srgb, bool premul_alpha)
  *  \param is_full_path If the fname contains the full path.
  */
 Material::Material(const std::string& fname, bool is_full_path,
-                   bool complain_if_not_found, bool load_texture)
+                   bool complain_if_not_found, bool load_texture,
+                   const std::string& shader_name)
 {
-    m_shader_name = "solid";
+    m_shader_name = shader_name;
     m_deprecated = false;
     m_installed = false;
     init();
@@ -778,185 +779,27 @@ void  Material::setMaterialProperties(video::SMaterial *m, scene::IMeshBuffer* m
                   m_texname.c_str());
     }
 
-#ifndef SERVER_ONLY
     // Backface culling
     if(!m_backface_culling)
         m->setFlag(video::EMF_BACK_FACE_CULLING, false);
 
-    if (CVS->isGLSL())
+    if (race_manager->getReverseTrack() &&
+        m_mirror_axis_when_reverse != ' ')
     {
-        ITexture *tex;
-        ITexture *glossytex;
-        STKTexManager* stm = STKTexManager::getInstance();
-        if (m_gloss_map.size() > 0 && CVS->isDefferedEnabled())
+        if (m_mirrorred_mesh_buffers.find((void*)mb) == m_mirrorred_mesh_buffers.end())
         {
-            TexConfig gtc(false/*srgb*/, false/*premul_alpha*/);
-            glossytex = stm->getTexture(m_gloss_map, &gtc);
-        }
-        else
-        {
-            glossytex = stm->STKTexManager::getInstance()->getUnicolorTexture(SColor(0, 0, 0, 0));
-        }
-
-        if (!m->getTexture(2))
-        {
-            // Only set colorization mask if not set
-            ITexture *colorization_mask_tex =
-                stm->STKTexManager::getInstance()->getUnicolorTexture(SColor(0, 0, 0, 0));
-            if (m_colorization_mask.size() > 0)
+            m_mirrorred_mesh_buffers[(void*)mb] = true;
+            //irr::video::S3DVertex* mbVertices = (video::S3DVertex*)mb->getVertices();
+            for (unsigned int i = 0; i < mb->getVertexCount(); i++)
             {
-                TexConfig cmtc(false/*srgb*/, false/*premul_alpha*/,
-                    true/*mesh_tex*/, false/*set_material*/,
-                    true/*color_mask*/);
-                colorization_mask_tex = stm->getTexture(m_colorization_mask,
-                    &cmtc);
+                core::vector2df &tc = mb->getTCoords(i);
+                if (m_mirror_axis_when_reverse == 'V')
+                    tc.Y = 1 - tc.Y;
+                else
+                    tc.X = 1 - tc.X;
             }
-            m->setTexture(2, colorization_mask_tex);
         }
-
-
-        if (race_manager->getReverseTrack() &&
-            m_mirror_axis_when_reverse != ' ')
-        {
-            if (m_mirrorred_mesh_buffers.find((void*)mb) == m_mirrorred_mesh_buffers.end())
-            {
-                m_mirrorred_mesh_buffers[(void*)mb] = true;
-                //irr::video::S3DVertex* mbVertices = (video::S3DVertex*)mb->getVertices();
-                for (unsigned int i = 0; i < mb->getVertexCount(); i++)
-                {
-                    core::vector2df &tc = mb->getTCoords(i);
-                    if (m_mirror_axis_when_reverse == 'V')
-                        tc.Y = 1 - tc.Y;
-                    else
-                        tc.X = 1 - tc.X;
-                }
-            }
-        }   // reverse track and texture needs mirroring
-
-
-        switch (m_shader_type)
-        {
-        case SHADERTYPE_SOLID_UNLIT:
-            m->MaterialType = Shaders::getShader(ES_OBJECT_UNLIT);
-            m->setTexture(1, glossytex);
-            return;
-        case SHADERTYPE_ALPHA_TEST:
-            m->MaterialType = video::EMT_TRANSPARENT_ALPHA_CHANNEL_REF;
-            m->setTexture(1, glossytex);
-            return;
-        case SHADERTYPE_ALPHA_BLEND:
-            m->MaterialType = video::EMT_ONETEXTURE_BLEND;
-            m->MaterialTypeParam =
-                pack_textureBlendFunc(video::EBF_SRC_ALPHA,
-                video::EBF_ONE_MINUS_SRC_ALPHA,
-                video::EMFN_MODULATE_1X,
-                video::EAS_TEXTURE | video::EAS_VERTEX_COLOR);
-            return;
-        case SHADERTYPE_ADDITIVE:
-            m->MaterialType = video::EMT_ONETEXTURE_BLEND;
-            m->MaterialTypeParam = pack_textureBlendFunc(video::EBF_SRC_ALPHA,
-                video::EBF_ONE,
-                video::EMFN_MODULATE_1X,
-                video::EAS_TEXTURE |
-                video::EAS_VERTEX_COLOR);
-            return;
-        case SHADERTYPE_SPHERE_MAP:
-            m->MaterialType = Shaders::getShader(ES_SPHERE_MAP);
-            m->setTexture(1, glossytex);
-            return;
-        case SHADERTYPE_SPLATTING:
-        {
-            TexConfig stc(true/*srgb*/, false/*premul_alpha*/,
-                true/*mesh_tex*/, false/*set_material*/);
-            tex = stm->getTexture(m_splatting_texture_1, &stc);
-            m->setTexture(3, tex);
-
-            if (m_splatting_texture_2.size() > 0)
-            {
-                tex = stm->getTexture(m_splatting_texture_2, &stc);
-            }
-            m->setTexture(4, tex);
-
-            if (m_splatting_texture_3.size() > 0)
-            {
-                tex = stm->getTexture(m_splatting_texture_3, &stc);
-            }
-            m->setTexture(5, tex);
-
-            if (m_splatting_texture_4.size() > 0)
-            {
-                TexConfig s4tc(false/*srgb*/, false/*premul_alpha*/,
-                    true/*mesh_tex*/, false/*set_material*/);
-                tex = stm->getTexture(m_splatting_texture_4, &s4tc);
-            }
-            m->setTexture(6, tex);
-            m->setTexture(7, glossytex);
-
-            // Material and shaders
-            m->MaterialType = Shaders::getShader(ES_SPLATTING);
-            return;
-        }
-        case SHADERTYPE_WATER:
-            m->setTexture(1, irr_driver->getTexture(FileManager::TEXTURE,
-                "waternormals.jpg"));
-            m->setTexture(2, irr_driver->getTexture(FileManager::TEXTURE,
-                "waternormals2.jpg"));
-
-            ((WaterShaderProvider *)Shaders::getCallback(ES_WATER))->
-                setSpeed(m_water_shader_speed_1 / 100.0f, m_water_shader_speed_2 / 100.0f);
-
-            m->MaterialType = Shaders::getShader(ES_WATER);
-            return;
-        case SHADERTYPE_VEGETATION:
-            // Only one grass speed & amplitude per map for now
-            ((GrassShaderProvider *)Shaders::getCallback(ES_GRASS))->
-                setSpeed(m_grass_speed);
-            ((GrassShaderProvider *)Shaders::getCallback(ES_GRASS))->
-                setAmplitude(m_grass_amplitude);
-            m->MaterialType = Shaders::getShader(ES_GRASS_REF);
-            m->setTexture(1, glossytex);
-            return;
-        default:
-            break;
-        }
-
-        if (!m->getTexture(0))
-        {
-            m->setTexture(0,
-                stm->STKTexManager::getInstance()->getUnicolorTexture(SColor(255, 255, 255, 255)));
-        }
-
-        if (m_normal_map_tex.size() > 0)
-        {
-            if (CVS->isDefferedEnabled())
-            {
-                TexConfig nmtc(false/*srgb*/, false/*premul_alpha*/,
-                    true/*mesh_tex*/, false/*set_material*/,
-                    false/*color_mask*/, true/*normal_map*/);
-                tex = stm->getTexture(m_normal_map_tex, &nmtc);
-            }
-            else
-                tex = stm->STKTexManager::getInstance()->getUnicolorTexture(SColor(0, 0, 0, 0));
-            m->setTexture(3, tex);
-
-            // Material and shaders
-            m->MaterialType = Shaders::getShader(ES_NORMAL_MAP);
-            m->setTexture(1, glossytex);
-            return;
-        }
-
-        // Detail map : move it to slot 3 and add glossy to slot 2
-        // Sometimes the material will be parsed twice, in this case we dont want to swap 1 and 2 again.
-        if (mb && mb->getVertexType() == video::EVT_2TCOORDS)
-        {
-            if (m->getTexture(1) != glossytex)
-                m->setTexture(3, m->getTexture(1));
-            if (!m->getTexture(3))
-                m->setTexture(3, stm->STKTexManager::getInstance()->getUnicolorTexture(SColor(255, 255, 255, 255)));
-        }
-        m->setTexture(1, glossytex);
-    }
-#endif
+    }   // reverse track and texture needs mirroring
 
     if (m_shader_type == SHADERTYPE_SOLID_UNLIT)
     {

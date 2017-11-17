@@ -18,7 +18,7 @@
 #ifndef HEADER_SP_MESH_LOADER_HPP
 #define HEADER_SP_MESH_LOADER_HPP
 
-#include "sp/sp_animation.hpp"
+#include "graphics/sp/sp_animation.hpp"
 
 #include <IMeshLoader.h>
 #include <ISceneManager.h>
