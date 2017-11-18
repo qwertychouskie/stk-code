@@ -35,6 +35,7 @@
 #include "graphics/skybox.hpp"
 #include "graphics/stk_mesh_scene_node.hpp"
 #include "graphics/spherical_harmonics.hpp"
+#include "graphics/sp/sp_base.hpp"
 #include "items/item_manager.hpp"
 #include "items/powerup_manager.hpp"
 #include "modes/world.hpp"
@@ -58,8 +59,8 @@ void ShaderBasedRenderer::setRTT(RTT* rtts)
                                  rtts->getDepthStencilTexture());
         m_geometry_passes->setFirstPassRenderTargets(prefilled_textures,
             rtts->getPrefilledHandles());
+        SP::setPrefilledTextures(prefilled_textures);
     }
-    
     m_rtts = rtts;
 } //setRTT
 
@@ -636,7 +637,8 @@ ShaderBasedRenderer::ShaderBasedRenderer()
         m_geometry_passes = new GeometryPasses<GL3DrawPolicy>();
         Log::info("ShaderBasedRenderer", "Geometry will be rendered with GL3 policy.");
     }
-
+    SP::init();
+    SP::initSTKShadowMatrices(&m_shadow_matrices);
     m_post_processing = new PostProcessing(irr_driver->getVideoDriver());    
 }
 
@@ -661,6 +663,7 @@ ShaderBasedRenderer::~ShaderBasedRenderer()
     delete m_skybox;
     delete m_rtts;
     ShaderFilesManager::kill();
+    SP::destroy();
 }
 
 // ----------------------------------------------------------------------------

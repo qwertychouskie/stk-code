@@ -338,12 +338,11 @@ void ShadowMatrices::computeMatrixesAndCameras(scene::ICameraSceneNode *const ca
     const float oldfar = camnode->getFarValue();
     const float oldnear = camnode->getNearValue();
 
-    float tmp[16 * 9 + 2];
-    memcpy(tmp, irr_driver->getViewMatrix().pointer(),          16 * sizeof(float));
-    memcpy(&tmp[16], irr_driver->getProjMatrix().pointer(),     16 * sizeof(float));
-    memcpy(&tmp[32], irr_driver->getInvViewMatrix().pointer(),  16 * sizeof(float));
-    memcpy(&tmp[48], irr_driver->getInvProjMatrix().pointer(),  16 * sizeof(float));
-    memcpy(&tmp[64], irr_driver->getProjViewMatrix().pointer(), 16 * sizeof(float));
+    memcpy(m_mat_ubo, irr_driver->getViewMatrix().pointer(),          16 * sizeof(float));
+    memcpy(&m_mat_ubo[16], irr_driver->getProjMatrix().pointer(),     16 * sizeof(float));
+    memcpy(&m_mat_ubo[32], irr_driver->getInvViewMatrix().pointer(),  16 * sizeof(float));
+    memcpy(&m_mat_ubo[48], irr_driver->getInvProjMatrix().pointer(),  16 * sizeof(float));
+    memcpy(&m_mat_ubo[64], irr_driver->getProjViewMatrix().pointer(), 16 * sizeof(float));
 
     m_sun_cam->render();
     for (unsigned i = 0; i < 4; i++)
@@ -469,27 +468,28 @@ void ShadowMatrices::computeMatrixesAndCameras(scene::ICameraSceneNode *const ca
 
         size_t size = m_sun_ortho_matrices.size();
         for (unsigned i = 0; i < size; i++)
-            memcpy(&tmp[16 * i + 80],
+            memcpy(&m_mat_ubo[16 * i + 80],
                    m_sun_ortho_matrices[i].pointer(),
                    16 * sizeof(float));
     }
 
+    m_mat_ubo[144] = float(width);
+    m_mat_ubo[145] = float(height);
+
     if(!CVS->isARBUniformBufferObjectUsable())
         return;
 
-    tmp[144] = float(width);
-    tmp[145] = float(height);
     glBindBuffer(GL_UNIFORM_BUFFER,
                  SharedGPUObjects::getViewProjectionMatricesUBO());
     if (CVS->isSDSMEnabled())
     {
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, (16 * 5) * sizeof(float), tmp);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, (16 * 5) * sizeof(float), m_mat_ubo);
         glBufferSubData(GL_UNIFORM_BUFFER, (16 * 9) * sizeof(float),
-                        2 * sizeof(float), &tmp[144]);
+                        2 * sizeof(float), &m_mat_ubo[144]);
     }
     else
         glBufferSubData(GL_UNIFORM_BUFFER, 0, (16 * 9 + 2) * sizeof(float),
-                        tmp);
+                        m_mat_ubo);
 }   // computeMatrixesAndCameras
 
 // ----------------------------------------------------------------------------

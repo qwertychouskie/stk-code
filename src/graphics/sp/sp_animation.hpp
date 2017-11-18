@@ -25,6 +25,7 @@
 #include <matrix4.h>
 #include <quaternion.h>
 
+#include <array>
 #include <cassert>
 #include <vector>
 #include <string>
@@ -41,7 +42,7 @@ struct LocRotScale
     core::quaternion m_rot;
 
     core::vector3df m_scale;
-    // --------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     inline core::matrix4 toMatrix() const
     {
         core::matrix4 lm, sm, rm;
@@ -50,7 +51,7 @@ struct LocRotScale
         m_rot.getMatrix(rm);
         return lm * rm * sm;
     }
-    // --------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     void read(irr::io::IReadFile* spm)
     {
         float tmp[10];
@@ -79,7 +80,7 @@ struct Armature
     std::vector<std::pair<int, std::vector<LocRotScale> > >
         m_frame_pose_matrices;
 
-    // --------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     void read(irr::io::IReadFile* spm)
     {
         LocRotScale lrs;
@@ -137,7 +138,23 @@ struct Armature
             }
         }
     }
-    // --------------------------------------------------------------------
+    // ------------------------------------------------------------------------
+    /* Because matrix4 in windows is not 64 bytes */
+    void getPose(float frame, std::array<float, 16>* dest)
+    {
+        getInterpolatedMatrices(frame);
+        for (auto& p : m_world_matrices)
+        {
+            p.second = false;
+        }
+        for (unsigned i = 0; i < m_joint_used; i++)
+        {
+            core::matrix4 m = getWorldMatrix(m_interpolated_matrices, i) *
+                m_joint_matrices[i];
+            memcpy(&dest[i], m.pointer(), 64);
+        }
+    }
+    // ------------------------------------------------------------------------
     void getPose(float frame, core::matrix4* dest)
     {
         getInterpolatedMatrices(frame);
@@ -151,7 +168,7 @@ struct Armature
                 m_joint_matrices[i];
         }
     }
-    // --------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     void getInterpolatedMatrices(float frame)
     {
         if (frame < float(m_frame_pose_matrices.front().first) ||
@@ -201,7 +218,7 @@ struct Armature
             m_interpolated_matrices[i] = interpolated.toMatrix();
         }
     }
-    // --------------------------------------------------------------------
+    // ------------------------------------------------------------------------
     core::matrix4 getWorldMatrix(const std::vector<core::matrix4>& matrix,
                                  unsigned id)
     {

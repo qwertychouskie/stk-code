@@ -34,7 +34,7 @@ namespace irr
 }
 
 
-class ShaderBasedRenderer;
+class ShadowMatrices;
 
 namespace SP
 {
@@ -85,6 +85,8 @@ class SPMeshNode;
 class SPShader;
 class SPMeshBuffer;
 
+extern GLuint sp_mat_ubo;
+extern GLuint sp_fog_ubo;
 extern std::vector<GLuint> sp_prefilled_tex;
 extern unsigned sp_solid_poly_count;
 extern unsigned sp_shadow_poly_count;
@@ -109,11 +111,11 @@ inline void setVertexColorSRGBCorrection(bool val)
     sp_vc_srgb_cor = val;
 }
 // ----------------------------------------------------------------------------
-void loadShaders();
+void init();
 // ----------------------------------------------------------------------------
 void addShader(SPShader*);
 // ----------------------------------------------------------------------------
-void destroyShaders();
+void destroy();
 // ----------------------------------------------------------------------------
 GLuint getSampler(SamplerType);
 // ----------------------------------------------------------------------------
@@ -157,7 +159,7 @@ void cleanAllMeshBuffer();
 // ----------------------------------------------------------------------------
 void updateTransformation();
 // ----------------------------------------------------------------------------
-void initSTKShaderBasedRenderer(ShaderBasedRenderer*);
+void initSTKShadowMatrices(ShadowMatrices*);
 // ----------------------------------------------------------------------------
 void prepareScene();
 // ----------------------------------------------------------------------------
@@ -166,6 +168,8 @@ void unsynchronisedUpdate();
 void addDynamicDrawCall(SPDynamicDrawCall*);
 // ----------------------------------------------------------------------------
 void removeDynamicDrawCall(SPDynamicDrawCall*);
+// ----------------------------------------------------------------------------
+void update();
 
 }
 

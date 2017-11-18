@@ -42,6 +42,7 @@
 #include "graphics/render_target.hpp"
 #include "graphics/stk_tex_manager.hpp"
 #include "graphics/vao_manager.hpp"
+#include "graphics/sp/sp_base.hpp"
 #include "io/file_manager.hpp"
 #include "io/xml_node.hpp"
 #include "items/item.hpp"
@@ -50,7 +51,7 @@
 #include "karts/kart_properties.hpp"
 #include "modes/linear_world.hpp"
 #include "modes/easter_egg_hunt.hpp"
-#include "modes/world.hpp"
+#include "modes/profile_world.hpp"
 #include "physics/physical_object.hpp"
 #include "physics/physics.hpp"
 #include "physics/triangle_mesh.hpp"
@@ -1726,6 +1727,25 @@ void Track::loadTrackModel(bool reverse_track, unsigned int mode_id)
         node->get("fog-start-height", &m_fog_height_start);
         node->get("fog-end-height",   &m_fog_height_end);
     }
+
+#ifndef SERVER_ONLY
+    if (!ProfileWorld::isNoGraphics())
+    {
+        glBindBuffer(GL_UNIFORM_BUFFER, SP::sp_mat_ubo);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, 4, &m_fog_start);
+        glBufferSubData(GL_UNIFORM_BUFFER, 4, 4, &m_fog_end);
+        glBufferSubData(GL_UNIFORM_BUFFER, 8, 4, &m_fog_max);
+        float val = (float)m_fog_color.getRed() / 255.0f;
+        glBufferSubData(GL_UNIFORM_BUFFER, 16, 4, &val);
+        val = (float)m_fog_color.getGreen() / 255.0f;
+        glBufferSubData(GL_UNIFORM_BUFFER, 20, 4, &val);
+        val = (float)m_fog_color.getBlue() / 255.0f;
+        glBufferSubData(GL_UNIFORM_BUFFER, 24, 4, &val);
+        val = 0.0f;
+        glBufferSubData(GL_UNIFORM_BUFFER, 28, 4, &val);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+#endif
 
     if (const XMLNode *node = root->getNode("lightshaft"))
     {

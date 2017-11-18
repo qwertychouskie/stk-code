@@ -160,19 +160,23 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
     for (unsigned i = 0 ; i < m_vertices.size(); i++)
     {
         offset = 0;
-        glBufferSubData(GL_ARRAY_BUFFER, v_size, 16, &m_vertices[i]);
+        glBufferSubData(GL_ARRAY_BUFFER, v_size, 16,
+            &m_vertices[i].m_position.X);
         offset += 16;
-        /*if (sp_vc_srgb_cor)
+        video::SColor vc = m_vertices[i].m_color;
+        if (CVS->isDefferedEnabled() ||
+            CVS->isARBSRGBFramebufferUsable())
         {
-            video::SColorf tmp(tmp_vertex.m_color);
+            video::SColorf tmp(vc);
             tmp.r = powf(tmp.r, 2.2f);
             tmp.g = powf(tmp.g, 2.2f);
             tmp.b = powf(tmp.b, 2.2f);
             tmp.a = powf(tmp.a, 2.2f);
-            tmp_vertex.m_color = tmp.toSColor();
-        }*/
-        glBufferSubData(GL_ARRAY_BUFFER, v_size + offset, 8,
-            &m_vertices[i].m_color);
+            vc = tmp.toSColor();
+        }
+        glBufferSubData(GL_ARRAY_BUFFER, v_size + offset, 4, &vc);
+        glBufferSubData(GL_ARRAY_BUFFER, v_size + offset, 4,
+            &m_vertices[i].m_all_uvs[0]);
         offset += 8;
         if (use_2_uv)
         {

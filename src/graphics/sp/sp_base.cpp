@@ -19,15 +19,16 @@
 #include "config/user_config.hpp"
 #include "graphics/central_settings.hpp"
 #include "graphics/shader_based_renderer.hpp"
+#include "graphics/shared_gpu_objects.hpp"
+#include "graphics/shadow_matrices.hpp"
 #include "graphics/irr_driver.hpp"
 #include "graphics/shaders.hpp"
 #include "graphics/stk_tex_manager.hpp"
-
 #include "graphics/sp/sp_per_object_uniform.hpp"
-
 #include "graphics/sp/sp_shader.hpp"
 #include "graphics/sp/sp_uniform_assigner.hpp"
 #include "tracks/track.hpp"
+#include "modes/profile_world.hpp"
 #include "utils/log.hpp"
 #include "utils/profiler.hpp"
 #include "utils/string_utils.hpp"
@@ -45,7 +46,7 @@ namespace SP
 {
 
 // ----------------------------------------------------------------------------
-ShaderBasedRenderer* g_stk_sbr = NULL;
+ShadowMatrices* g_stk_sm = NULL;
 // ----------------------------------------------------------------------------
 bool sp_culling = true;
 // ----------------------------------------------------------------------------
@@ -96,11 +97,14 @@ int sp_cur_shadow_cascade = 0;
 // ----------------------------------------------------------------------------
 bool sp_null_device = false;
 // ----------------------------------------------------------------------------
-void initSTKShaderBasedRenderer(ShaderBasedRenderer* sbr)
+void initSTKShadowMatrices(ShadowMatrices* sm)
 {
-    g_stk_sbr = sbr;
-}   // initSTKShaderBasedRenderer
-
+    g_stk_sm = sm;
+}   // initSTKShadowMatrices
+// ----------------------------------------------------------------------------
+GLuint sp_mat_ubo = 0;
+// ----------------------------------------------------------------------------
+GLuint sp_fog_ubo = 0;
 // ----------------------------------------------------------------------------
 bool destroyingSectors()
 {
@@ -117,7 +121,7 @@ void shadowCascadeUniformAssigner(SPUniformAssigner* ua)
 // ----------------------------------------------------------------------------
 void rsmUniformAssigner(SPUniformAssigner* ua)
 {
-    //ua->setValue(g_stk_sbr->getShadowMatrices()->getRSMMatrix());
+    ua->setValue(g_stk_sm->getRSMMatrix());
 }   // rsmUniformAssigner
 
 // ----------------------------------------------------------------------------
@@ -176,19 +180,26 @@ void addShader(SPShader* shader)
 //}   // initNullSPMaterial
 
 // ----------------------------------------------------------------------------
-void loadShaders()
+void init()
 {
-
-    if (sp_null_device)
+    if (ProfileWorld::isNoGraphics())
     {
         return;
     }
 #ifndef SERVER_ONLY
 
-#ifdef USE_GLES2
-    glBindBufferBase(skinning_target, 3, g_skinning_buffer);
-#endif
+    glGenBuffers(1, &sp_mat_ubo);
+    glBindBuffer(GL_UNIFORM_BUFFER, sp_mat_ubo);
+    glBufferData(GL_UNIFORM_BUFFER, (16 * 9 + 2) * sizeof(float), NULL,
+        GL_STREAM_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 2, sp_mat_ubo);
 
+    glGenBuffers(1, &sp_fog_ubo);
+    glBindBuffer(GL_UNIFORM_BUFFER, sp_fog_ubo);
+    glBufferData(GL_UNIFORM_BUFFER, 8 * sizeof(float), NULL, GL_STREAM_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 3, sp_fog_ubo);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     for (unsigned st = ST_NEAREST; st < ST_COUNT; st++)
     {
@@ -323,7 +334,56 @@ void loadShaders()
         }
     }
 
-    SPShader* shader = new SPShader("solid_skinned");
+
+#endif
+}   // init
+
+// ----------------------------------------------------------------------------
+void destroy()
+{
+    if (sp_null_device)
+    {
+        return;
+    }
+
+    for (SPShader* s : g_shaders)
+    {
+        delete s;
+    }
+    g_shaders.clear();
+#ifndef SERVER_ONLY
+    glDeleteBuffers(1, &sp_mat_ubo);
+    glDeleteBuffers(1, &sp_fog_ubo);
+    glDeleteSamplers((unsigned)g_samplers.size() - 1, g_samplers.data());
+#endif
+}   // destroy
+
+// ----------------------------------------------------------------------------
+GLuint getSampler(SamplerType st)
+{
+    assert(st < ST_COUNT);
+    return g_samplers[st];
+}   // getSampler
+
+// ----------------------------------------------------------------------------
+SPShader* getGlowShader()
+{
+    return g_glow_shader;
+}   // getGlowShader
+
+// ----------------------------------------------------------------------------
+SPShader* getSPShader(const std::string& name)
+{
+    auto it = std::find_if(g_shaders.begin(), g_shaders.end(),
+        [&name](const SPShader* s) { return s->getName() == name; });
+    if (it == g_shaders.end())
+        return NULL;
+    return *it;
+}   // getSPShader
+
+void unused()
+{
+/*    SPShader* shader = new SPShader("solid_skinned");
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_object_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
@@ -761,7 +821,7 @@ void loadShaders()
         });
     g_shaders.push_back(shader);
 
-    shader = new SPShader("alphablend_skinned", 1, true/*transparent_shader*/);
+    shader = new SPShader("alphablend_skinned", 1, true);
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
@@ -779,7 +839,7 @@ void loadShaders()
         ->addAssignerFunction("fog_enabled", fogUniformAssigner);
     g_shaders.push_back(shader);
 
-    shader = new SPShader("alphablend", 1, true/*transparent_shader*/);
+    shader = new SPShader("alphablend", 1, true);
     shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
@@ -794,7 +854,7 @@ void loadShaders()
         ->addAssignerFunction("fog_enabled", fogUniformAssigner);
     g_shaders.push_back(shader);
 
-    shader = new SPShader("additive_skinned", 1, true/*transparent_shader*/);
+    shader = new SPShader("additive_skinned", 1, true);
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
@@ -812,7 +872,7 @@ void loadShaders()
         ->addAssignerFunction("fog_enabled", fogUniformAssigner);
     g_shaders.push_back(shader);
 
-    shader = new SPShader("additive", 1, true/*transparent_shader*/);
+    shader = new SPShader("additive", 1, true);
     shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
@@ -827,7 +887,7 @@ void loadShaders()
         ->addAssignerFunction("fog_enabled", fogUniformAssigner);
     g_shaders.push_back(shader);
 
-    shader = new SPShader("ghost_kart", 1, true/*transparent_shader*/);
+    shader = new SPShader("ghost_kart", 1, true);
     shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
@@ -842,7 +902,7 @@ void loadShaders()
         ->addAssignerFunction("fog_enabled", fogUniformAssigner);
     g_shaders.push_back(shader);
 
-    shader = new SPShader("ghost_kart_skinned", 1, true/*transparent_shader*/);
+    shader = new SPShader("ghost_kart_skinned", 1, true);
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
@@ -867,50 +927,8 @@ void loadShaders()
     g_glow_shader->linkShaderFiles(RP_1ST);
     g_glow_shader->use(RP_1ST);
     g_glow_shader->addBasicUniforms(RP_1ST);
-    g_shaders.push_back(g_glow_shader);
-#endif
-}   // loadShaders
-
-// ----------------------------------------------------------------------------
-void destroyShaders()
-{
-    if (sp_null_device)
-    {
-        return;
-    }
-
-    for (SPShader* s : g_shaders)
-    {
-        delete s;
-    }
-    g_shaders.clear();
-#ifndef SERVER_ONLY
-    glDeleteSamplers((unsigned)g_samplers.size() - 1, g_samplers.data());
-#endif
-}   // destroyShaders
-
-// ----------------------------------------------------------------------------
-GLuint getSampler(SamplerType st)
-{
-    assert(st < ST_COUNT);
-    return g_samplers[st];
-}   // getSampler
-
-// ----------------------------------------------------------------------------
-SPShader* getGlowShader()
-{
-    return g_glow_shader;
-}   // getGlowShader
-
-// ----------------------------------------------------------------------------
-SPShader* getSPShader(const std::string& name)
-{
-    auto it = std::find_if(g_shaders.begin(), g_shaders.end(),
-        [&name](const SPShader* s) { return s->getName() == name; });
-    if (it == g_shaders.end())
-        return NULL;
-    return *it;
-}   // getSPShader
+    g_shaders.push_back(g_glow_shader);*/
+}
 
 /*// ----------------------------------------------------------------------------
 std::shared_ptr<SPMaterial> addSPMaterial(const std::shared_ptr<SPMaterial>& m)
