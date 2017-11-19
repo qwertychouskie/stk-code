@@ -29,7 +29,6 @@ SPMesh::SPMesh()
 {
     m_fps = 0.025f;
     m_last_frame = 0.0f;
-    m_skinned_last_frame = false;
     m_bind_frame = 0;
     m_total_joints = 0;
     m_joint_using = 0;
@@ -110,8 +109,21 @@ s32 SPMesh::getJointIDWithArm(const c8* name, unsigned* arm_id) const
 }   // getJointIDWithArm
 
 // ----------------------------------------------------------------------------
-void SPMesh::animateMesh(f32 frame, f32 blend)
+void SPMesh::getSkinningMatrices(f32 frame, std::array<float, 16>* dest)
 {
+    if (m_last_frame == frame)
+    {
+        return;
+    }
+
+    m_last_frame = frame;
+    unsigned accumulated_joints = 0;
+    for (unsigned i = 0; i < m_all_armatures.size(); i++)
+    {
+        m_all_armatures[i].getPose(frame, &dest[accumulated_joints]);
+        accumulated_joints += m_all_armatures[i].m_joint_used;
+    }
+
 }   // animateMesh
 
 // ----------------------------------------------------------------------------

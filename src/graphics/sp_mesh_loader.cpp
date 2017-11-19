@@ -612,6 +612,7 @@ void SPMeshLoader::convertIrrlicht()
                     .m_frame_pose_matrices[k].second[j].m_scale;
                 joints[total_joints + j]->PositionKeys.push_back({frame, pos});
                 joints[total_joints + j]->RotationKeys.push_back({frame,
+                    // Reverse for broken irrlicht quaternion
                     core::quaternion(q.X, q.Y, q.Z, -q.W)});
                 joints[total_joints + j]->ScaleKeys.push_back({frame, scl});
             }

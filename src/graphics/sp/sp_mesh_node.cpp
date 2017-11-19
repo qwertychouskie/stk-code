@@ -19,7 +19,9 @@
 #include "graphics/sp/sp_mesh.hpp"
 #include "graphics/sp/sp_animation.hpp"
 #include "graphics/sp/sp_mesh_buffer.hpp"
+#include "graphics/irr_driver.hpp"
 
+#include "../../lib/irrlicht/source/Irrlicht/CBoneSceneNode.h"
 #include <algorithm>
 
 namespace SP
@@ -43,6 +45,7 @@ SPMeshNode::SPMeshNode(IAnimatedMesh* mesh, ISceneNode* parent,
 // ----------------------------------------------------------------------------
 SPMeshNode::~SPMeshNode()
 {
+    cleanJoints();
 }   // ~SPMeshNode
 
 // ----------------------------------------------------------------------------
@@ -60,16 +63,32 @@ void SPMeshNode::setMesh(irr::scene::IAnimatedMesh* mesh)
 {
     m_mesh = static_cast<SPMesh*>(mesh);
     CAnimatedMeshSceneNode::setMesh(mesh);
-    m_joint_nodes.clear();
+    cleanJoints();
     if (!m_mesh->isStatic())
     {
-        
+        unsigned bone_idx = 0;
+        m_skinning_matrices.resize(m_mesh->getJointCount());
+        for (Armature& arm : m_mesh->getArmatures())
+        {
+            for (const std::string& bone_name : arm.m_joint_names)
+            {
+                m_joint_nodes[bone_name] = new CBoneSceneNode(this,
+                    irr_driver->getSceneManager(), 0, bone_idx++,
+                    bone_name.c_str());
+            }
+        }
     }
 }   // setMesh
 
 // ----------------------------------------------------------------------------
 IBoneSceneNode* SPMeshNode::getJointNode(const c8* joint_name)
 {
+    auto ret = m_joint_nodes.find(joint_name);
+    if (ret != m_joint_nodes.end())
+    {
+        return ret->second;
+    }
+    return NULL;
 }   // getJointNode
 
 // ----------------------------------------------------------------------------
@@ -84,12 +103,24 @@ void SPMeshNode::OnAnimate(u32 time_ms)
 }   // OnAnimate
 
 // ----------------------------------------------------------------------------
-IMesh* SPMeshNode::getMeshForCurrentFrame(SkinningCallback sc,
-                                                      int offset)
+IMesh* SPMeshNode::getMeshForCurrentFrame(SkinningCallback sc, int offset)
 {
+    if (m_mesh->isStatic())
+    {
+        return m_mesh;
+    }
+    m_mesh->getSkinningMatrices(getFrameNr(), m_skinning_matrices.data());
+    updateAbsolutePosition();
 
+    for (Armature& arm : m_mesh->getArmatures())
+    {
+        for (unsigned i = 0; i < arm.m_joint_names.size(); i++)
+        {
+            m_joint_nodes.at(arm.m_joint_names[i])->setAbsoluteTransformation
+                (AbsoluteTransformation * arm.m_world_matrices[i].first);
+        }
+    }
     return m_mesh;
-
 }   // getMeshForCurrentFrame
 
 }

@@ -18,7 +18,8 @@
 #ifndef HEADER_SP_MESH_NODE_HPP
 #define HEADER_SP_MESH_NODE_HPP
 
-#include "../lib/irrlicht/source/Irrlicht/CAnimatedMeshSceneNode.h"
+#include "../../lib/irrlicht/source/Irrlicht/CAnimatedMeshSceneNode.h"
+#include <array>
 #include <cassert>
 #include <string>
 #include <vector>
@@ -46,6 +47,20 @@ private:
     int m_skinning_offset;
 
     bool m_animated;
+
+    std::vector<std::array<float, 16> > m_skinning_matrices;
+
+    // ------------------------------------------------------------------------
+    void cleanJoints()
+    {
+        for (auto& p : m_joint_nodes)
+        {
+            p.second->remove();
+        }
+        m_joint_nodes.clear();
+        m_skinning_matrices.clear();
+    }
+
 public:
     // ------------------------------------------------------------------------
     SPMeshNode(IAnimatedMesh* mesh, ISceneNode* parent, ISceneManager* mgr,
@@ -62,6 +77,8 @@ public:
     virtual void setMesh(irr::scene::IAnimatedMesh* mesh);
     // ------------------------------------------------------------------------
     virtual void OnAnimate(u32 time_ms);
+    // ------------------------------------------------------------------------
+    virtual void animateJoints(bool calculate_absolute_positions = true) {}
     // ------------------------------------------------------------------------
     virtual irr::scene::IMesh* getMeshForCurrentFrame(SkinningCallback sc = NULL,
                                                       int offset = -1);

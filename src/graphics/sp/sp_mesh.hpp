@@ -18,6 +18,7 @@
 #ifndef HEADER_SP_MESH_HPP
 #define HEADER_SP_MESH_HPP
 
+#include <array>
 #include <cassert>
 #include <IAnimatedMeshSceneNode.h>
 #include <ISkinnedMesh.h>
@@ -46,8 +47,6 @@ private:
 
     float m_last_frame;
 
-    bool m_skinned_last_frame;
-
     unsigned m_bind_frame, m_total_joints, m_joint_using, m_frame_count;
 
     std::vector<SP::Armature> m_all_armatures;
@@ -68,7 +67,7 @@ public:
                            s32 startFrameLoop=-1, s32 endFrameLoop=-1)
                                                                { return this; }
     // ------------------------------------------------------------------------
-    virtual void animateMesh(f32 frame, f32 blend);
+    virtual void animateMesh(f32 frame, f32 blend) {}
     // ------------------------------------------------------------------------
     virtual void skinMesh(f32 strength=1.f, SkinningCallback sc = NULL,
                           int offset = -1) {}
@@ -153,15 +152,7 @@ public:
     // ------------------------------------------------------------------------
     std::vector<Armature>& getArmatures() { return m_all_armatures; }
     // ------------------------------------------------------------------------
-    void recoverJointsFromMesh(core::array<IBoneSceneNode*> &jointChildSceneNodes);
-    // ------------------------------------------------------------------------
-    void transferJointsToMesh(const core::array<IBoneSceneNode*> &jointChildSceneNodes);
-    // ------------------------------------------------------------------------
-    void transferOnlyJointsHintsToMesh(const core::array<IBoneSceneNode*> &jointChildSceneNodes);
-    // ------------------------------------------------------------------------
-    void addJoints(core::array<IBoneSceneNode*> &jointChildSceneNodes,
-                   IAnimatedMeshSceneNode* node,
-                   ISceneManager* smgr);
+    void getSkinningMatrices(f32 frame, std::array<float, 16>* dest);
     // ------------------------------------------------------------------------
     s32 getJointIDWithArm(const c8* name, unsigned* arm_id) const;
     // ------------------------------------------------------------------------
