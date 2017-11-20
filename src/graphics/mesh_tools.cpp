@@ -32,9 +32,7 @@
 
 void MeshTools::minMax3D(scene::IMesh* mesh, Vec3 *min, Vec3 *max)
 {
-    *min = mesh->getBoundingBox().MinEdge;
-    *max = mesh->getBoundingBox().MaxEdge;
-/*    Vec3 extend;
+    Vec3 extend;
     *min = Vec3( 999999.9f);
     *max = Vec3(-999999.9f);
     for(unsigned int i=0; i<mesh->getMeshBufferCount(); i++)
@@ -83,12 +81,26 @@ void MeshTools::minMax3D(scene::IMesh* mesh, Vec3 *min, Vec3 *max)
                 max->max(c);
             }   // for j
         }
+        else if (mb->getVertexType() == video::EVT_SKINNED_MESH)
+        {
+            u16 *mbIndices = mb->getIndices();
+            video::S3DVertexSkinnedMesh* mbVertices=(irr::video::S3DVertexSkinnedMesh*)mb->getVertices();
+            for (unsigned int j=0; j<mb->getIndexCount(); j+=1)
+            {
+                int indx=mbIndices[j];
+                Vec3 c(mbVertices[indx].m_position.X,
+                       mbVertices[indx].m_position.Y,
+                       mbVertices[indx].m_position.Z  );
+                min->min(c);
+                max->max(c);
+            }   // for j
+        }
         else
         {
             Log::warn("Tools", "minMax3D: Ignoring type '%d'!\n",
                       mb->getVertexType());
         }
-    }  // for i<getMeshBufferCount*/
+    }  // for i<getMeshBufferCount
 }   // minMax3D
 
 // Copied from irrlicht

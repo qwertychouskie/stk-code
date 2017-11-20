@@ -1,4 +1,5 @@
 //  SuperTuxKart - a fun racing game with go-kart
+//  SuperTuxKart - a fun racing game with go-kart
 //  Copyright (C) 2017 SuperTuxKart-Team
 //
 //  This program is free software; you can redistribute it and/or
@@ -25,6 +26,9 @@
 #include "graphics/shaders.hpp"
 #include "graphics/stk_tex_manager.hpp"
 #include "graphics/sp/sp_per_object_uniform.hpp"
+#include "graphics/sp/sp_mesh.hpp"
+#include "graphics/sp/sp_mesh_buffer.hpp"
+#include "graphics/sp/sp_mesh_node.hpp"
 #include "graphics/sp/sp_shader.hpp"
 #include "graphics/sp/sp_uniform_assigner.hpp"
 #include "tracks/track.hpp"
@@ -57,11 +61,12 @@ std::vector<SPShader*> g_shaders;
 // ----------------------------------------------------------------------------
 SPShader* g_glow_shader = NULL;
 // ----------------------------------------------------------------------------
+std::unordered_map<SPMeshBuffer*, std::vector<SPMeshNode*> > g_instances;
 // ----------------------------------------------------------------------------
-/*typedef std::vector<std::pair<SPShader*, std::vector<std::pair<SPMaterial*,
-    std::vector<SPDrawCall*> > > > > DrawCall;
+typedef std::unordered_map<SPShader*, std::unordered_map<video::SMaterial,
+    std::vector<SPMeshBuffer*> > > DrawCall;
 
-DrawCall g_draw_calls[DCT_COUNT];*/
+DrawCall g_draw_calls[DCT_COUNT];
 // ----------------------------------------------------------------------------
 std::array<GLuint, ST_COUNT> g_samplers;
 // ----------------------------------------------------------------------------
