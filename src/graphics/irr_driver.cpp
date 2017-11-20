@@ -1424,7 +1424,6 @@ scene::IAnimatedMeshSceneNode *IrrDriver::addAnimatedMesh(scene::IAnimatedMesh *
             core::vector3df(0, 0, 0),
             core::vector3df(1, 1, 1),
             /*addIfMeshIsZero*/true);
-        node->setMesh(mesh);
     }
     return node;
 
