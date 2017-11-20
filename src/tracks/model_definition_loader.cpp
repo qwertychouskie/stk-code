@@ -141,7 +141,7 @@ LODNode* ModelDefinitionLoader::instanciateAsLOD(const XMLNode* node, scene::ISc
                 //cache.push_back(a_mesh);
                 irr_driver->grabAllTextures(a_mesh);
                 m_track->addCachedMesh(a_mesh);
-                scene::IMeshSceneNode* scene_node = irr_driver
+                scene::ISceneNode* scene_node = irr_driver
                     ->addMesh(a_mesh, group[m].m_model_file, NULL, ri);
 
                 m_track->handleAnimatedTextures(scene_node, *group[m].m_xml);

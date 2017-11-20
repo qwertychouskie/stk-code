@@ -38,7 +38,7 @@ SPMeshNode::SPMeshNode(IAnimatedMesh* mesh, ISceneNode* parent,
 {
     m_mesh = NULL;
     m_mesh_render_info = render_info;
-    m_animated = !m_mesh->isStatic();
+    m_animated = !static_cast<SPMesh*>(mesh)->isStatic();
     m_skinning_offset = -1;
 }   // SPMeshNode
 
@@ -94,7 +94,7 @@ IBoneSceneNode* SPMeshNode::getJointNode(const c8* joint_name)
 // ----------------------------------------------------------------------------
 void SPMeshNode::OnAnimate(u32 time_ms)
 {
-    if (m_mesh->isStatic())
+    if (m_mesh->isStatic() || !m_animated)
     {
         IAnimatedMeshSceneNode::OnAnimate(time_ms);
         return;
@@ -105,7 +105,7 @@ void SPMeshNode::OnAnimate(u32 time_ms)
 // ----------------------------------------------------------------------------
 IMesh* SPMeshNode::getMeshForCurrentFrame(SkinningCallback sc, int offset)
 {
-    if (m_mesh->isStatic())
+    if (m_mesh->isStatic() || !m_animated)
     {
         return m_mesh;
     }
@@ -122,5 +122,8 @@ IMesh* SPMeshNode::getMeshForCurrentFrame(SkinningCallback sc, int offset)
     }
     return m_mesh;
 }   // getMeshForCurrentFrame
+
+// ----------------------------------------------------------------------------
+
 
 }

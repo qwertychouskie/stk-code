@@ -1729,7 +1729,7 @@ void Track::loadTrackModel(bool reverse_track, unsigned int mode_id)
     }
 
 #ifndef SERVER_ONLY
-    if (!ProfileWorld::isNoGraphics())
+    if (!ProfileWorld::isNoGraphics() && CVS->isGLSL())
     {
         glBindBuffer(GL_UNIFORM_BUFFER, SP::sp_mat_ubo);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, 4, &m_fog_start);

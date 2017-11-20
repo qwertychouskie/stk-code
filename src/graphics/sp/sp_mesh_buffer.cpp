@@ -257,26 +257,26 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
     glBindBuffer(GL_ARRAY_BUFFER, m_ins_array);
     // Origin
-    glEnableVertexAttribArray(7);
-    glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, 32, (void*)0);
-    glVertexAttribDivisorARB(7, 1);
-    // Rotation (quaternion)
     glEnableVertexAttribArray(8);
-    glVertexAttribPointer(8, 4, GL_INT_2_10_10_10_REV, GL_TRUE, pitch,
-        (void*)12);
+    glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, 32, (void*)0);
     glVertexAttribDivisorARB(8, 1);
-    // Scale
+    // Rotation (quaternion)
     glEnableVertexAttribArray(9);
-    glVertexAttribPointer(9, 4, GL_HALF_FLOAT, GL_FALSE, 32, (void*)16);
+    glVertexAttribPointer(9, 4, GL_INT_2_10_10_10_REV, GL_TRUE, pitch,
+        (void*)12);
     glVertexAttribDivisorARB(9, 1);
-    // Misc data (texture translation and colorization info)
+    // Scale (4 half floats, .w unused for padding)
     glEnableVertexAttribArray(10);
-    glVertexAttribPointer(10, 4, GL_BYTE, GL_TRUE, 32, (void*)24);
+    glVertexAttribPointer(10, 4, GL_HALF_FLOAT, GL_FALSE, 32, (void*)16);
     glVertexAttribDivisorARB(10, 1);
-    // Skinning offset
+    // Misc data (texture translation and colorization info)
     glEnableVertexAttribArray(11);
-    glVertexAttribIPointer(11, 1, GL_INT, 32, (void*)28);
+    glVertexAttribPointer(11, 4, GL_BYTE, GL_TRUE, 32, (void*)24);
     glVertexAttribDivisorARB(11, 1);
+    // Skinning offset
+    glEnableVertexAttribArray(12);
+    glVertexAttribIPointer(12, 1, GL_INT, 32, (void*)28);
+    glVertexAttribDivisorARB(12, 1);
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);

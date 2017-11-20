@@ -1259,6 +1259,7 @@ void KartModel::initInverseBoneMatrices()
         // All bone matrices are configured in straight frame (as in exporting)
         scene::IAnimatedMeshSceneNode* node = irr_driver->getSceneManager()
             ->addAnimatedMeshSceneNode(m_mesh);
+        node->setMesh(m_mesh);
         const unsigned total_joint = node->getJointCount();
         for (unsigned i = 0; i < total_joint; i++)
         {

@@ -37,6 +37,8 @@
 #include "graphics/stk_animated_mesh.hpp"
 #include "graphics/stk_mesh_loader.hpp"
 #include "graphics/sp_mesh_loader.hpp"
+#include "graphics/sp/sp_mesh.hpp"
+#include "graphics/sp/sp_mesh_node.hpp"
 #include "graphics/stk_mesh_scene_node.hpp"
 #include "graphics/stk_tex_manager.hpp"
 #include "graphics/stk_texture.hpp"
@@ -1170,11 +1172,11 @@ scene::IParticleSystemSceneNode *IrrDriver::addParticleNode(bool default_emitter
  *  since the node is not optimised.
  *  \param mesh The mesh to add.
  */
-scene::IMeshSceneNode *IrrDriver::addMesh(scene::IMesh *mesh,
-                                          const std::string& debug_name,
-                                          scene::ISceneNode *parent,
-                                          RenderInfo* render_info,
-                                          bool all_parts_colorized)
+scene::ISceneNode *IrrDriver::addMesh(scene::IMesh *mesh,
+                                      const std::string& debug_name,
+                                      scene::ISceneNode *parent,
+                                      RenderInfo* render_info,
+                                      bool all_parts_colorized)
 {
 #ifdef SERVER_ONLY
     return m_scene_manager->addMeshSceneNode(mesh, parent);
@@ -1185,14 +1187,23 @@ scene::IMeshSceneNode *IrrDriver::addMesh(scene::IMesh *mesh,
     if (!parent)
       parent = m_scene_manager->getRootSceneNode();
 
-    scene::IMeshSceneNode* node = new STKMeshSceneNode(mesh, parent,
-                                                       m_scene_manager, -1,
-                                                       debug_name,
-                                                       core::vector3df(0, 0, 0),
-                                                       core::vector3df(0, 0, 0),
-                                                       core::vector3df(1.0f, 1.0f, 1.0f),
-                                                       true, render_info,
-                                                       all_parts_colorized);
+    scene::ISceneNode* node = NULL;
+    if (SP::SPMesh* spm = dynamic_cast<SP::SPMesh*>(mesh))
+    {
+        SP::SPMeshNode* spmn = new SP::SPMeshNode(spm, parent, m_scene_manager,
+            -1, debug_name, core::vector3df(0, 0, 0), core::vector3df(0, 0, 0),
+            core::vector3df(1.0f, 1.0f, 1.0f), render_info);
+        spmn->setMesh(spm);
+        spmn->setAnimationState(false);
+        node = spmn;
+    }
+    else
+    {
+        node = new STKMeshSceneNode(mesh, parent, m_scene_manager, -1,
+            debug_name, core::vector3df(0, 0, 0), core::vector3df(0, 0, 0),
+            core::vector3df(1.0f, 1.0f, 1.0f), true, render_info,
+            all_parts_colorized);
+    }
     node->drop();
 
     return node;
@@ -1389,27 +1400,34 @@ scene::IAnimatedMeshSceneNode *IrrDriver::addAnimatedMesh(scene::IAnimatedMesh *
     const std::string& debug_name, scene::ISceneNode* parent,
     RenderInfo* render_info, bool all_parts_colorized)
 {
+    scene::IAnimatedMeshSceneNode* node;
 #ifndef SERVER_ONLY
-    if (!CVS->isGLSL())
+    SP::SPMesh* spm = dynamic_cast<SP::SPMesh*>(mesh);
+    if (CVS->isGLSL() && spm)
     {
+        if (!parent)
+        {
+            parent = m_scene_manager->getRootSceneNode();
+        }
+        SP::SPMeshNode* spmn = new SP::SPMeshNode(spm, parent, m_scene_manager,
+            -1, debug_name, core::vector3df(0, 0, 0), core::vector3df(0, 0, 0),
+            core::vector3df(1.0f, 1.0f, 1.0f), render_info);
+        spmn->drop();
+        spmn->setMesh(mesh);
+        node = spmn;
+    }
+    else
 #endif
-        return m_scene_manager->addAnimatedMeshSceneNode(mesh, parent, -1,
+    {
+        node = m_scene_manager->addAnimatedMeshSceneNode(mesh, parent, -1,
             core::vector3df(0, 0, 0),
             core::vector3df(0, 0, 0),
             core::vector3df(1, 1, 1),
             /*addIfMeshIsZero*/true);
-#ifndef SERVER_ONLY
+        node->setMesh(mesh);
     }
-
-    if (!parent)
-        parent = m_scene_manager->getRootSceneNode();
-    scene::IAnimatedMeshSceneNode* node =
-        new STKAnimatedMesh(mesh, parent, m_scene_manager, -1, debug_name,
-        core::vector3df(0, 0, 0), core::vector3df(0, 0, 0),
-        core::vector3df(1, 1, 1), render_info, all_parts_colorized);
-    node->drop();
     return node;
-#endif
+
 }   // addAnimatedMesh
 
 // ----------------------------------------------------------------------------

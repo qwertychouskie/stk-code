@@ -31,6 +31,7 @@
 #include "graphics/stk_animated_mesh.hpp"
 #include "graphics/stk_mesh.hpp"
 #include "graphics/stk_particle.hpp"
+#include "graphics/sp/sp_mesh_node.hpp"
 #include "tracks/track.hpp"
 #include "utils/profiler.hpp"
 
@@ -174,19 +175,23 @@ void DrawCalls::handleSTKCommon(scene::ISceneNode *Node,
                                 ShadowMatrices& shadow_matrices)
 {
     STKMeshCommon* node = dynamic_cast<STKMeshCommon*>(Node);
-    if (!node)
-        return;
-    node->updateNoGL();
-    m_deferred_update.push_back(node);
-
-    if (node->isImmediateDraw())
+    if (node)
     {
-        if (!isCulledPrecise(cam, Node, irr_driver->getBoundingBoxesViz()))
-            ImmediateDraw->push_back(Node);
-        return;
+        node->updateNoGL();
+        m_deferred_update.push_back(node);
+    
+        if (node->isImmediateDraw())
+        {
+            if (!isCulledPrecise(cam, Node, irr_driver->getBoundingBoxesViz()))
+                ImmediateDraw->push_back(Node);
+        }
     }
+    else
+    {
+    }
+    
 
-    bool culled_for_cams[6] = { true, true, true, true, true, true };
+/*    bool culled_for_cams[6] = { true, true, true, true, true, true };
     culled_for_cams[0] = isCulledPrecise(cam, Node,
         irr_driver->getBoundingBoxesViz());
 
@@ -259,7 +264,7 @@ void DrawCalls::handleSTKCommon(scene::ISceneNode *Node,
         (!culled_for_cams[0] || !culled_for_cams[1] || !culled_for_cams[2] ||
         !culled_for_cams[3] || !culled_for_cams[4] || !culled_for_cams[5]))
     {
-        skinning_offset = getSkinningOffset() + 1/*reserved identity matrix*/;
+        skinning_offset = getSkinningOffset() + 1;
         if (skinning_offset + am->getTotalJoints() >
             (int)stk_config->m_max_skinning_bones)
         {
@@ -544,7 +549,7 @@ void DrawCalls::handleSTKCommon(scene::ISceneNode *Node,
                 }
             }
         }
-    }
+    }*/
 }
 
 // ----------------------------------------------------------------------------

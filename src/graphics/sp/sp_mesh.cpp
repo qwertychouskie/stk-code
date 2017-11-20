@@ -124,7 +124,7 @@ void SPMesh::getSkinningMatrices(f32 frame, std::array<float, 16>* dest)
         accumulated_joints += m_all_armatures[i].m_joint_used;
     }
 
-}   // animateMesh
+}   // getSkinningMatrices
 
 // ----------------------------------------------------------------------------
 void SPMesh::updateBoundingBox()
