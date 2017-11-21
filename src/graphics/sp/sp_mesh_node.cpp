@@ -128,12 +128,13 @@ IMesh* SPMeshNode::getMeshForCurrentFrame(SkinningCallback sc, int offset)
 // ----------------------------------------------------------------------------
 SPShader* SPMeshNode::getShader(unsigned mesh_buffer_id) const
 {
+    //return SP::getSPShader("solid");
     if (!m_mesh || mesh_buffer_id < m_mesh->getMeshBufferCount())
     {
         const std::string sn = (m_shader_override.empty() ?
             m_mesh->getSPMeshBuffer(mesh_buffer_id)->getSTKMaterial()
-            ->getShaderName() : m_shader_override) +
-            (m_animated ? "_skinned" : "");
+            ->getShaderName() : m_shader_override);// +
+            //(m_animated ? "_skinned" : "");
         return SP::getSPShader(sn);
     }
     return NULL;

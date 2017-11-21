@@ -21,6 +21,7 @@
 #include "graphics/sp/sp_base.hpp"
 #include "graphics/sp/sp_uniform_assigner.hpp"
 #include "utils/no_copy.hpp"
+#include "utils/string_utils.hpp"
 
 #include <ITexture.h>
 #include <string>
@@ -97,27 +98,10 @@ void SPShader::linkShaderFiles(RenderPass rp)
 }   // linkShaderFiles
 
 // ----------------------------------------------------------------------------
-void SPShader::addTexture(SamplerType st, GLuint texture_type,
-                          const std::string& name, RenderPass rp)
+void SPShader::addAllTextures(RenderPass rp)
 {
 #ifndef SERVER_ONLY
-    const char* s = name.c_str();
-    GLuint loc = glGetUniformLocation(m_program[rp], s);
-    if (loc == GL_INVALID_INDEX)
-    {
-        Log::warn("SPShader", "Missing texture %s in shader files.", s);
-        return;
-    }
-    const unsigned i = m_samplers[rp].size() + m_prefilled_samplers[rp].size();
-    glUniform1i(loc, i);
-    m_samplers[rp].emplace_back(i, name, st, texture_type);
-#endif
-}   // addTexture
-
-// ----------------------------------------------------------------------------
-void SPShader::addPrefilledTextures(RenderPass rp)
-{
-#ifndef SERVER_ONLY
+    // Built-in prefilled shaders first
     for (auto &p : g_prefilled_names)
     {
         const char* s = p.first.c_str();
@@ -126,8 +110,7 @@ void SPShader::addPrefilledTextures(RenderPass rp)
         {
             continue;
         }
-        const unsigned i = m_samplers[rp].size() +
-            m_prefilled_samplers[rp].size();
+        const unsigned i = m_prefilled_samplers[rp].size();
         glUniform1i(loc, i);
 #ifdef USE_GLES2
         m_prefilled_samplers[rp].emplace_back(i, p.first, p.second.second,
@@ -137,6 +120,23 @@ void SPShader::addPrefilledTextures(RenderPass rp)
             p.second.second == ST_TEXTURE_BUFFER ?
             GL_TEXTURE_BUFFER : GL_TEXTURE_2D);
 #endif
+    }
+
+    // Add tex_layer_0-7 if exists in shader, sampler is always ST_TRILINEAR,
+    // texture type is always GL_TEXTURE_2D
+    for (unsigned i = 0; i < irr::video::MATERIAL_MAX_TEXTURES; i++)
+    {
+        std::string texture_name = "tex_layer_";
+        texture_name += StringUtils::toString(i);
+        GLuint loc = glGetUniformLocation(m_program[rp], texture_name.c_str());
+        if (loc == GL_INVALID_INDEX)
+        {
+            continue;
+        }
+        const unsigned idx =
+            unsigned(m_prefilled_samplers[rp].size() + m_samplers[rp].size());
+        glUniform1i(loc, idx);
+        m_samplers[rp].emplace_back(i, idx);
     }
 #endif
 }   // addPrefilledTextures
@@ -188,26 +188,15 @@ void SPShader::bindPrefilledTextures(RenderPass rp)
 }   // bindPrefilledTextures
 
 // ----------------------------------------------------------------------------
-void SPShader::bindTextures(const std::unordered_map<std::string,
-                            irr::video::ITexture*>& t, RenderPass rp)
+void SPShader::bindTextures(const irr::video::SMaterial& m, RenderPass rp)
 {
 #ifndef SERVER_ONLY
     for (auto& p : m_samplers[rp])
     {
-        glActiveTexture(GL_TEXTURE0 + std::get<0>(p));
-        auto it = t.find(std::get<1>(p));
-        if (it != t.end() && it->second != NULL)
-        {
-            glBindTexture(std::get<3>(p), it->second->getOpenGLTextureName());
-        }
-        else
-        {
-            glBindTexture(std::get<3>(p),
-                STKTexManager::getInstance()
-                ->getUnicolorTexture(irr::video::SColor(0, 0, 0, 0))
-                ->getOpenGLTextureName());
-        }
-        glBindSampler(std::get<0>(p), getSampler(std::get<2>(p)));
+        glActiveTexture(GL_TEXTURE0 + p.first);
+        glBindTexture(GL_TEXTURE_2D,
+            m.TextureLayer[p.second].Texture->getOpenGLTextureName());
+        glBindSampler(p.first, getSampler(ST_TRILINEAR));
     }
 #endif
 }   // bindTextures

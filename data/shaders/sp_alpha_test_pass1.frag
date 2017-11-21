@@ -1,18 +1,22 @@
-uniform sampler2D layer_one_tex;
-uniform sampler2D gloss_map;
+// spm layer 1 texture
+uniform sampler2D tex_layer_0;
+// gloss map
+uniform sampler2D tex_layer_2;
 
-in vec3 nor;
+in vec3 normal;
 in vec2 uv;
-out vec3 EncodedNormal;
+out vec3 o_encoded_normal;
 
 #stk_include "utils/encode_normal.frag"
 
 void main()
 {
-    vec4 col = texture(layer_one_tex, uv);
+    vec4 col = texture(tex_layer_0, uv);
     if (col.a < 0.5)
+    {
         discard;
-    float gloss = texture(gloss_map, uv).x;
-    EncodedNormal.xy = 0.5 * EncodeNormal(normalize(nor)) + 0.5;
-    EncodedNormal.z = gloss;
+    }
+    float gloss = texture(tex_layer_2, uv).x;
+    o_encoded_normal.xy = 0.5 * EncodeNormal(normalize(normal)) + 0.5;
+    o_encoded_normal.z = gloss;
 }

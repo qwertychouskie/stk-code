@@ -183,12 +183,82 @@ void addShader(SPShader* shader)
     g_shaders[shader->getName()] = shader;
 }   // addShader
 
+
 // ----------------------------------------------------------------------------
-//void initNullSPMaterial()
-//{
-//    g_null_material = std::make_shared<SP::SPMaterial>((video::ITexture*)NULL);
-//    g_materials.push_back(g_null_material);
-//}   // initNullSPMaterial
+void loadShaders()
+{
+    SPShader* shader = new SPShader("solid");
+
+    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_object_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addAllTextures(RP_1ST);
+
+    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
+    shader->addShaderFile("sp_object_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
+    shader->linkShaderFiles(RP_2ND);
+    shader->use(RP_2ND);
+    shader->addBasicUniforms(RP_2ND);
+    shader->addAllTextures(RP_2ND); 
+
+    addShader(shader);
+
+    shader = new SPShader("alphatest");
+
+    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_alpha_test_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addAllTextures(RP_1ST);
+
+    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
+    shader->addShaderFile("sp_alpha_test_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
+    shader->linkShaderFiles(RP_2ND);
+    shader->use(RP_2ND);
+    shader->addBasicUniforms(RP_2ND);
+    shader->addAllTextures(RP_2ND); 
+
+    addShader(shader);
+
+    shader = new SPShader("unlit");
+
+    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_alpha_test_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addAllTextures(RP_1ST);
+
+    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
+    shader->addShaderFile("sp_unlit.frag", GL_FRAGMENT_SHADER, RP_2ND);
+    shader->linkShaderFiles(RP_2ND);
+    shader->use(RP_2ND);
+    shader->addBasicUniforms(RP_2ND);
+    shader->addAllTextures(RP_2ND); 
+
+    addShader(shader);
+
+    shader = new SPShader("normalmap");
+
+    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_normal_map.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addAllTextures(RP_1ST);
+
+    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
+    shader->addShaderFile("sp_object_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
+    shader->linkShaderFiles(RP_2ND);
+    shader->use(RP_2ND);
+    shader->addBasicUniforms(RP_2ND);
+    shader->addAllTextures(RP_2ND); 
+
+    addShader(shader);
+}   // loadShaders
 
 // ----------------------------------------------------------------------------
 void init()
@@ -346,7 +416,7 @@ void init()
                 break;
         }
     }
-
+    loadShaders();
 
 #endif
 }   // init
@@ -549,6 +619,11 @@ void addObject(SPMeshNode* node)
     for (unsigned m = 0; m < node->getSPM()->getMeshBufferCount(); m++)
     {
         SPMeshBuffer* mb = node->getSPM()->getSPMeshBuffer(m);
+        SPShader* shader = node->getShader(m);
+        if (shader == NULL)
+        {
+            continue;
+        }
         core::aabbox3df bb = mb->getBoundingBox();
         model_matrix.transformBoxEx(bb);
         std::vector<bool> discard;
@@ -590,7 +665,7 @@ void addObject(SPMeshNode* node)
 }
 
 // ----------------------------------------------------------------------------
-void unused()
+void d()
 {
 /*    SPShader* shader = new SPShader("solid_skinned");
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);

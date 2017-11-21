@@ -74,13 +74,13 @@ void SPMeshBuffer::initDrawMaterial()
     {
         TexConfig stc(true/*srgb*/, false/*premul_alpha*/, true/*mesh_tex*/,
             false/*set_material*/);
-        m_material.setTexture(3, stktm->getTexture(m_stk_material
+        m_material.setTexture(2, stktm->getTexture(m_stk_material
             ->getSplatting1(), &stc));
-        m_material.setTexture(4, stktm->getTexture(m_stk_material
+        m_material.setTexture(3, stktm->getTexture(m_stk_material
             ->getSplatting2(), &stc));
-        m_material.setTexture(5, stktm->getTexture(m_stk_material
+        m_material.setTexture(4, stktm->getTexture(m_stk_material
             ->getSplatting3(), &stc));
-        m_material.setTexture(6, stktm->getTexture(m_stk_material
+        m_material.setTexture(5, stktm->getTexture(m_stk_material
             ->getSplatting4(), &stc));
     }
     else
@@ -93,7 +93,7 @@ void SPMeshBuffer::initDrawMaterial()
         {
             if (!m_stk_material->getGlossMap().empty())
             {
-                m_material.setTexture(3, stktm
+                m_material.setTexture(2, stktm
                     ->getTexture(m_stk_material->getGlossMap()));
             }
             if (!m_stk_material->getNormalMap().empty())
@@ -101,7 +101,7 @@ void SPMeshBuffer::initDrawMaterial()
                 TexConfig nmtc(false/*srgb*/, false/*premul_alpha*/,
                     true/*mesh_tex*/, false/*set_material*/,
                     false/*color_mask*/, true/*normal_map*/);
-                m_material.setTexture(4, stktm
+                m_material.setTexture(3, stktm
                     ->getTexture(m_stk_material->getNormalMap(), &nmtc));
             }
         }
@@ -111,13 +111,13 @@ void SPMeshBuffer::initDrawMaterial()
                 true/*mesh_tex*/, false/*set_material*/, true/*color_mask*/);
             if (!m_stk_material->getColorizationMask().empty())
             {
-                m_material.setTexture(5, stktm->getTexture(m_stk_material
+                m_material.setTexture(4, stktm->getTexture(m_stk_material
                     ->getColorizationMask(), &cmtc));
             }
         }
         else
         {
-            m_material.setTexture(5, stktm->getUnicolorTexture
+            m_material.setTexture(4, stktm->getUnicolorTexture
                 (irr::video::SColor(255, 255, 255, 255)));
         }
     }

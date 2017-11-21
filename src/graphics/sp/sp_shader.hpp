@@ -30,7 +30,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace irr { namespace video { class ITexture; } }
+#include <SMaterial.h>
 
 namespace SP
 {
@@ -80,8 +80,7 @@ private:
 
     GLuint m_program[RP_COUNT];
 
-    std::vector<std::tuple<unsigned, std::string, SamplerType,
-        GLuint> >m_samplers[RP_COUNT];
+    std::vector<std::pair<unsigned, unsigned> > m_samplers[RP_COUNT];
 
     std::vector<std::tuple<unsigned, std::string, SamplerType,
         GLuint> >m_prefilled_samplers[RP_COUNT];
@@ -139,10 +138,7 @@ public:
     // ------------------------------------------------------------------------
     void linkShaderFiles(RenderPass rp = RP_1ST);
     // ------------------------------------------------------------------------
-    void addTexture(SamplerType st, GLuint texture_type,
-                    const std::string& name, RenderPass rp = RP_1ST);
-    // ------------------------------------------------------------------------
-    void addPrefilledTextures(RenderPass rp = RP_1ST);
+    void addAllTextures(RenderPass rp = RP_1ST);
     // ------------------------------------------------------------------------
     void addCustomPrefilledTextures(SamplerType st, GLuint texture_type,
                                     const std::string& name,
@@ -151,8 +147,7 @@ public:
     // ------------------------------------------------------------------------
     void bindPrefilledTextures(RenderPass rp = RP_1ST);
     // ------------------------------------------------------------------------
-    void bindTextures(const std::unordered_map<std::string,
-                      irr::video::ITexture*>& t, RenderPass rp = RP_1ST);
+    void bindTextures(const irr::video::SMaterial& m, RenderPass rp = RP_1ST);
     // ------------------------------------------------------------------------
     void addBasicUniforms(RenderPass rp = RP_1ST)
     {

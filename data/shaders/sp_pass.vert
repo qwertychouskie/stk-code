@@ -9,7 +9,7 @@ layout(location = 9) in vec4 i_rotation;
 layout(location = 10) in vec4 i_scale;
 layout(location = 11) in vec4 i_misc_data;
 
-#stk_include "utils/getworldmatrix.vert"
+#stk_include "utils/get_world_location.vert"
 
 out vec3 tangent;
 out vec3 bitangent;
@@ -31,7 +31,7 @@ void main(void)
     bitangent = (u_view_matrix *
        // bitangent sign
       vec4(cross(world_normal, world_tangent) * i_tangent.w, 0.0)
-      )).xyz;
+      ).xyz;
     normal = (u_view_matrix * vec4(world_normal, 0.0)).xyz;
 
     uv = vec2(i_uv.x + i_misc_data.x, i_uv.y + i_misc_data.y);
@@ -39,6 +39,6 @@ void main(void)
 
     color = i_color;
     camdist = length(u_view_matrix * world_position);
-    color_change = misc_data.zw;
-    gl_Position = u_projection_view_matrix * world_position);
+    color_change = i_misc_data.zw;
+    gl_Position = u_projection_view_matrix * world_position;
 }
