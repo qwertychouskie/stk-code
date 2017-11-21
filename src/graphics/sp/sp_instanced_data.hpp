@@ -35,6 +35,7 @@ class SPInstancedData
 private:
     char m_data[32];
 
+public:
     // ------------------------------------------------------------------------
     SPInstancedData(const core::matrix4& model_mat,
                     const core::vector2df& texture_trans, float hue,

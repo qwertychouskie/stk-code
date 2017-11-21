@@ -36,6 +36,7 @@
 #include "graphics/stk_mesh_scene_node.hpp"
 #include "graphics/spherical_harmonics.hpp"
 #include "graphics/sp/sp_base.hpp"
+#include "graphics/sp/sp_shader.hpp"
 #include "items/item_manager.hpp"
 #include "items/powerup_manager.hpp"
 #include "modes/world.hpp"
@@ -286,7 +287,7 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
     }
 #endif // !defined(USE_GLES2)
 
-    PROFILER_PUSH_CPU_MARKER("- Solid Pass 1", 0xFF, 0x00, 0x00);
+
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LEQUAL);
     glEnable(GL_DEPTH_TEST);
@@ -298,7 +299,7 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
         m_rtts->getFBO(FBO_NORMAL_AND_DEPTHS).bind();
         glClearColor(0., 0., 0., 0.);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-        m_geometry_passes->renderSolidFirstPass(m_draw_calls);
+        SP::draw(SP::RP_1ST, SP::DCT_NORMAL);
     }
     else
     {
@@ -324,8 +325,6 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
 #endif
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
-    PROFILER_POP_CPU_MARKER();
-
 
 
     // Lights
@@ -379,7 +378,6 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
         PROFILER_POP_CPU_MARKER();
     }
 
-    PROFILER_PUSH_CPU_MARKER("- Solid Pass 2", 0x00, 0x00, 0xFF);
     if (CVS->isDefferedEnabled() || forceRTT)
     {
         m_rtts->getFBO(FBO_COLORS).bind();
@@ -395,8 +393,7 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
 
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
-    m_geometry_passes->renderSolidSecondPass(m_draw_calls);
-    PROFILER_POP_CPU_MARKER();
+    SP::draw(SP::RP_2ND, SP::DCT_NORMAL);
 
     if (irr_driver->getNormals())
     {
@@ -947,7 +944,7 @@ void ShaderBasedRenderer::renderToTexture(GL3RenderTarget *render_target,
 void ShaderBasedRenderer::preloadShaderFiles()
 {
     SharedGPUObjects::init();
-    ShaderFilesManager* sfm = ShaderFilesManager::getInstance();
+/*    ShaderFilesManager* sfm = ShaderFilesManager::getInstance();
 
     sfm->addShaderFile("object_pass.vert", GL_VERTEX_SHADER);
     sfm->addShaderFile("object_pass1.frag", GL_FRAGMENT_SHADER);
@@ -996,7 +993,7 @@ void ShaderBasedRenderer::preloadShaderFiles()
         sfm->addShaderFile("objectpass_spheremap.frag", GL_FRAGMENT_SHADER);
         sfm->addShaderFile("detailed_object_pass2.frag", GL_FRAGMENT_SHADER);
     }
-
+*/
 } //preloadShaderFiles
 
 #endif   // !SERVER_ONLY

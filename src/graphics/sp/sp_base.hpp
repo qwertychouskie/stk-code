@@ -168,8 +168,9 @@ void addDynamicDrawCall(SPDynamicDrawCall*);
 // ----------------------------------------------------------------------------
 void removeDynamicDrawCall(SPDynamicDrawCall*);
 // ----------------------------------------------------------------------------
-void update();
-
+void updateModelMatrix();
+// ----------------------------------------------------------------------------
+void uploadAll();
 }
 
 

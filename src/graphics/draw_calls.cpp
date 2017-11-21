@@ -657,6 +657,7 @@ void DrawCalls::prepareDrawCalls( ShadowMatrices& shadow_matrices,
     parseSceneManager(
         irr_driver->getSceneManager()->getRootSceneNode()->getChildren(),
         &m_immediate_draw_list, camnode, shadow_matrices);
+    SP::updateModelMatrix();
     PROFILER_POP_CPU_MARKER();
 
     irr_driver->setSkinningJoint(getSkinningOffset());
@@ -696,7 +697,7 @@ void DrawCalls::prepareDrawCalls( ShadowMatrices& shadow_matrices,
     break;
     }*/
 
-    PROFILER_PUSH_CPU_MARKER("- Animations/Buffer upload", 0x0, 0x0, 0x0);
+/*    PROFILER_PUSH_CPU_MARKER("- Animations/Buffer upload", 0x0, 0x0, 0x0);
 #ifdef USE_GLES2
     glBindTexture(GL_TEXTURE_2D, SharedGPUObjects::getSkinningTexture());
 #else
@@ -709,32 +710,18 @@ void DrawCalls::prepareDrawCalls( ShadowMatrices& shadow_matrices,
     glBindTexture(GL_TEXTURE_2D, 0);
 #else
     glBindBuffer(GL_TEXTURE_BUFFER, 0);
-#endif
+#endif*/
 
     PROFILER_PUSH_CPU_MARKER("- cpu particle upload", 0x3F, 0x03, 0x61);
     CPUParticleManager::getInstance()->uploadAll();
     PROFILER_POP_CPU_MARKER();
 
-    if (!CVS->supportsIndirectInstancingRendering())
-        return;
 
 #if !defined(USE_GLES2)
     PROFILER_PUSH_CPU_MARKER("- Draw Command upload", 0xFF, 0x0, 0xFF);
-    m_solid_cmd_buffer->fill(m_solid_pass_mesh);
-    m_glow_cmd_buffer->fill(&m_glow_pass_mesh);
-
-    irr_driver->setPhase(SHADOW_PASS);
-    m_shadow_cmd_buffer->fill(m_shadow_pass_mesh);
-    if (!shadow_matrices.isRSMMapAvail())
-    {
-        m_reflective_shadow_map_cmd_buffer->fill(m_reflective_shadow_map_mesh);
-    }
+    SP::uploadAll();
     PROFILER_POP_CPU_MARKER();
-    solid_poly_count = m_solid_cmd_buffer->getPolyCount();
-    shadow_poly_count = m_shadow_cmd_buffer->getPolyCount();    
 
-    if (CVS->supportsAsyncInstanceUpload())
-        glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
 #endif // !defined(USE_GLES2)
 }
 

@@ -88,6 +88,13 @@ public:
     // ------------------------------------------------------------------------
     void bindVAO() const                          { glBindVertexArray(m_vao); }
     // ------------------------------------------------------------------------
+    void draw() const
+    {
+        bindVAO();
+        glDrawElementsInstanced(GL_TRIANGLES, getIndexCount(),
+            GL_UNSIGNED_SHORT, 0, m_ins_dat.size());
+    }
+    // ------------------------------------------------------------------------
     void initDrawMaterial();
     // ------------------------------------------------------------------------
     void uploadGLMesh(bool skinned);

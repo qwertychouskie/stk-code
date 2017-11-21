@@ -25,6 +25,7 @@
 #include "graphics/irr_driver.hpp"
 #include "graphics/shaders.hpp"
 #include "graphics/stk_tex_manager.hpp"
+#include "graphics/sp/sp_instanced_data.hpp"
 #include "graphics/sp/sp_per_object_uniform.hpp"
 #include "graphics/sp/sp_mesh.hpp"
 #include "graphics/sp/sp_mesh_buffer.hpp"
@@ -65,8 +66,7 @@ std::unordered_map<std::string, SPShader*> g_shaders;
 // ----------------------------------------------------------------------------
 SPShader* g_glow_shader = NULL;
 // ----------------------------------------------------------------------------
-std::unordered_map<SPMeshBuffer*, std::vector<SPMeshNode*> >
-    g_instances[DCT_COUNT];
+std::unordered_map<SPMeshBuffer*, std::vector<SPMeshNode*> > g_instances;
 // ----------------------------------------------------------------------------
 // std::string is layer_1 and layer_2 texture name combined
 typedef std::unordered_map<SPShader*, std::unordered_map<std::string,
@@ -583,22 +583,11 @@ void prepareDrawCalls()
         mathPlaneFrustumf(g_frustums[3], g_stk_sm->getSunOrthoMatrices()[2]);
         mathPlaneFrustumf(g_frustums[4], g_stk_sm->getSunOrthoMatrices()[3]);
     }
-    for (auto& p : g_instances)
-    {
-        for (auto& q : p)
-        {
-            q.second.clear();
-        }
-    }
+
+    g_instances.clear();
     for (auto& p : g_draw_calls)
     {
-        for (auto& q : p)
-        {
-            for (auto& r : q.second)
-            {
-                r.second.clear();
-            }
-        }
+        p.clear();
     }
 #endif
 }
@@ -660,9 +649,176 @@ void addObject(SPMeshNode* node)
         {
             continue;
         }
+
+        g_instances[mb].push_back(node);
+        for (int dc_type = 0; dc_type < (g_handle_shadow ? 6 : 1); dc_type++)
+        {
+            if (discard[dc_type])
+            {
+                continue;
+            }
+            if (dc_type == 0)
+            {
+                sp_solid_poly_count += mb->getIndexCount() / 3;
+            }
+            else
+            {
+                sp_shadow_poly_count += mb->getIndexCount() / 3;
+            }
+            if (shader->isTransparent())
+            {
+                // All transparent draw calls go DCT_TRANSPARENT
+                if (dc_type == 0)
+                {
+                    auto& ret = g_draw_calls[DCT_TRANSPARENT][shader];
+                    ret[mb->getTextureCompare()].push_back(mb);
+                }
+                else
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                auto& ret = g_draw_calls[(DrawCallType)
+                    (dc_type == 0 ? dc_type : dc_type + 1)][shader];
+                ret[mb->getTextureCompare()].push_back(mb);
+            }
+        }
     }
 
 }
+
+// ----------------------------------------------------------------------------
+void updateModelMatrix()
+{
+    for (auto& p : g_instances)
+    {
+        for (auto& q : p.second)
+        {
+            p.first->addInstanceData(SPInstancedData
+                (q->getAbsoluteTransformation(),
+                core::vector2df(0,0), 0, 0, 0));
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
+void uploadAll()
+{
+#ifndef SERVER_ONLY
+    for (auto& p : g_instances)
+    {
+        p.first->uploadInstanceData();
+    }
+    glBindBuffer(GL_UNIFORM_BUFFER, sp_mat_ubo);
+    void* ptr = glMapBufferRange(GL_UNIFORM_BUFFER, 0,
+        (16 * 9 + 2) * sizeof(float), GL_MAP_WRITE_BIT |
+        GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+    memcpy(ptr, g_stk_sm->getMatricesData(), (16 * 9 + 2) * sizeof(float));
+    glUnmapBuffer(GL_UNIFORM_BUFFER);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+#endif
+}
+
+// ----------------------------------------------------------------------------
+void draw(RenderPass rp, DrawCallType dct)
+{
+#ifndef SERVER_ONLY
+    DrawCall* dc = NULL;
+    if (dct == DCT_TRANSPARENT)
+    {
+        dc = &g_draw_calls[DCT_TRANSPARENT];
+    }
+    else if (dct == DCT_GLOW)
+    {
+        dc = &g_draw_calls[DCT_GLOW];
+    }
+    else
+    {
+        switch (rp)
+        {
+        case RP_1ST:
+        case RP_2ND:
+            dc = &g_draw_calls[DCT_NORMAL];
+            break;
+        case RP_SHADOW:
+            if (dct == DCT_SHADOW1)
+                dc = &g_draw_calls[DCT_SHADOW1];
+            if (dct == DCT_SHADOW2)
+                dc = &g_draw_calls[DCT_SHADOW2];
+            if (dct == DCT_SHADOW3)
+                dc = &g_draw_calls[DCT_SHADOW3];
+            if (dct == DCT_SHADOW4)
+                dc = &g_draw_calls[DCT_SHADOW4];
+            break;
+        case RP_RSM:
+            assert(CVS->isGlobalIlluminationEnabled() &&
+                !g_stk_sm->isRSMMapAvail() && !g_draw_calls[DCT_RSM].empty());
+            dc = &g_draw_calls[DCT_RSM];
+            break;
+        default:
+            assert(false);
+            break;
+        }
+    }
+
+    std::stringstream profiler_name;
+    profiler_name << "SP::Draw " << dct << " with " << rp;
+    PROFILER_PUSH_CPU_MARKER(profiler_name.str().c_str(),
+        (uint8_t)(float(dct + rp + 2) / float(DCT_COUNT + RP_COUNT) * 255.0f),
+        (uint8_t)(float(dct + 1) / (float)DCT_COUNT * 255.0f) ,
+        (uint8_t)(float(rp + 1) / (float)RP_COUNT * 255.0f));
+    for (auto& p : *dc)
+    {
+        p.first->use(rp);
+        std::vector<SPUniformAssigner*> shader_uniforms;
+        p.first->setUniformsPerObject(static_cast<SPPerObjectUniform*>
+            (p.first), &shader_uniforms, rp);
+        p.first->bindPrefilledTextures(rp);
+        for (auto& q : p.second)
+        {
+            /*std::vector<SPUniformAssigner*> material_uniforms;
+            if (q.first != NULL)
+            {
+                p.first->setUniformsPerObject(static_cast<SPPerObjectUniform*>
+                    (q.first), &material_uniforms, rp);
+                
+            }*/
+            if (q.second.empty())
+            {
+                continue;
+            }
+            p.first->bindTextures(q.second[0]->getMaterial(), rp);
+            for (auto& draw_call : q.second)
+            {
+                /*std::vector<SPUniformAssigner*> draw_call_uniforms;
+                p.first->setUniformsPerObject(static_cast<SPPerObjectUniform*>
+                    (draw_call), &draw_call_uniforms, rp);
+                sp_draw_call_count++;*/
+                draw_call->draw();
+                /*for (SPUniformAssigner* ua : draw_call_uniforms)
+                {
+                    ua->reset();
+                }*/
+            }
+            /*for (SPUniformAssigner* ua : material_uniforms)
+            {
+                ua->reset();
+            }*/
+        }
+        for (SPUniformAssigner* ua : shader_uniforms)
+        {
+            ua->reset();
+        }
+        p.first->unuse(rp);
+    }
+    glBindVertexArray(0);
+    PROFILER_POP_CPU_MARKER();
+#endif
+}   // draw
+
+//-----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
 void d()

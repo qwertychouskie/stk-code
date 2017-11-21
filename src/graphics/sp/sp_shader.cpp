@@ -193,10 +193,10 @@ void SPShader::bindTextures(const irr::video::SMaterial& m, RenderPass rp)
 #ifndef SERVER_ONLY
     for (auto& p : m_samplers[rp])
     {
-        glActiveTexture(GL_TEXTURE0 + p.first);
+        glActiveTexture(GL_TEXTURE0 + p.second);
         glBindTexture(GL_TEXTURE_2D,
-            m.TextureLayer[p.second].Texture->getOpenGLTextureName());
-        glBindSampler(p.first, getSampler(ST_TRILINEAR));
+            m.TextureLayer[p.first].Texture->getOpenGLTextureName());
+        glBindSampler(p.second, getSampler(ST_TRILINEAR));
     }
 #endif
 }   // bindTextures
