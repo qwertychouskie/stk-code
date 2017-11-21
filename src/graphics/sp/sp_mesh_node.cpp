@@ -16,10 +16,12 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "graphics/sp/sp_mesh_node.hpp"
+#include "graphics/sp/sp_base.hpp"
 #include "graphics/sp/sp_mesh.hpp"
 #include "graphics/sp/sp_animation.hpp"
 #include "graphics/sp/sp_mesh_buffer.hpp"
 #include "graphics/irr_driver.hpp"
+#include "graphics/material.hpp"
 
 #include "../../lib/irrlicht/source/Irrlicht/CBoneSceneNode.h"
 #include <algorithm>
@@ -124,6 +126,17 @@ IMesh* SPMeshNode::getMeshForCurrentFrame(SkinningCallback sc, int offset)
 }   // getMeshForCurrentFrame
 
 // ----------------------------------------------------------------------------
-
+SPShader* SPMeshNode::getShader(unsigned mesh_buffer_id) const
+{
+    if (!m_mesh || mesh_buffer_id < m_mesh->getMeshBufferCount())
+    {
+        const std::string sn = (m_shader_override.empty() ?
+            m_mesh->getSPMeshBuffer(mesh_buffer_id)->getSTKMaterial()
+            ->getShaderName() : m_shader_override) +
+            (m_animated ? "_skinned" : "");
+        return SP::getSPShader(sn);
+    }
+    return NULL;
+}   // getShader
 
 }

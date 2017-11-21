@@ -161,8 +161,9 @@ void ShadowMatrices::addLight(const core::vector3df &pos)
 // ----------------------------------------------------------------------------
 void ShadowMatrices::updateSunOrthoMatrices()
 {
-    for (unsigned i = 0; i < m_sun_ortho_matrices.size(); i++)
-        m_sun_ortho_matrices[i] *= irr_driver->getInvViewMatrix();
+    // Use the original value for culling
+    //for (unsigned i = 0; i < m_sun_ortho_matrices.size(); i++)
+    //    m_sun_ortho_matrices[i] *= irr_driver->getInvViewMatrix();
 }   // updateSunOrthoMatrices
 
 // ============================================================================

@@ -136,8 +136,7 @@ std::shared_ptr<SPMaterial> getSPNullMaterial();
 // ----------------------------------------------------------------------------
 SPMaterial* getSPMaterial(const std::string& name);
 // ----------------------------------------------------------------------------
-void prepareDrawCalls(const irr::scene::ICameraSceneNode*,
-                      bool shadow = false);
+void prepareDrawCalls();
 // ----------------------------------------------------------------------------
 void draw(RenderPass, DrawCallType dct = DCT_NORMAL);
 // ----------------------------------------------------------------------------

@@ -32,6 +32,7 @@ class RenderInfo;
 namespace SP
 {
 class SPMesh;
+class SPShader;
 
 class SPMeshNode : public irr::scene::CAnimatedMeshSceneNode
 {
@@ -49,6 +50,8 @@ private:
     bool m_animated;
 
     std::vector<std::array<float, 16> > m_skinning_matrices;
+
+    std::string m_shader_override;
 
     // ------------------------------------------------------------------------
     void cleanJoints()
@@ -103,6 +106,10 @@ public:
     void setSkinningOffset(int offset)  { m_skinning_offset = offset; }
     // ------------------------------------------------------------------------
     void setAnimationState(bool val);
+    // ------------------------------------------------------------------------
+    SPShader* getShader(unsigned mesh_buffer_id) const;
+    // ------------------------------------------------------------------------
+    void setShaderOverride(const std::string& so)   { m_shader_override = so; }
 };
 
 }

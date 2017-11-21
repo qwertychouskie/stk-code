@@ -817,7 +817,6 @@ void ShaderBasedRenderer::render(float dt)
         
         PROFILER_PUSH_CPU_MARKER("UBO upload", 0x0, 0xFF, 0x0);
         computeMatrixesAndCameras(camnode, m_rtts->getWidth(), m_rtts->getHeight());
-        m_shadow_matrices.updateSunOrthoMatrices();
         if(CVS->isARBUniformBufferObjectUsable())
             uploadLightingData();
         PROFILER_POP_CPU_MARKER();

@@ -89,6 +89,8 @@ public:
     // ------------------------------------------------------------------------
     void uploadGLMesh(bool skinned);
     // ------------------------------------------------------------------------
+    Material* getSTKMaterial() const                 { return m_stk_material; }
+    // ------------------------------------------------------------------------
     void addInstanceData(const SPInstancedData& id)
     {
         if (m_uploaded)

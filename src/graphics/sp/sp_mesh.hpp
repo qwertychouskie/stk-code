@@ -33,7 +33,7 @@ class SPMeshLoader;
 namespace SP
 {
 class SPMeshBuffer;
-class Armature;
+struct Armature;
 
 class SPMesh : public ISkinnedMesh
 {
@@ -116,22 +116,25 @@ public:
     // ------------------------------------------------------------------------
     virtual bool setHardwareSkinning(bool on) { return true; }
     // ------------------------------------------------------------------------
-    virtual core::array<SSkinMeshBuffer*> &getMeshBuffers()
+    virtual core::array<SSkinMeshBuffer*>& getMeshBuffers()
     {
         assert(false);
-        return *(core::array<SSkinMeshBuffer*>*)NULL;
+        static auto unused = core::array<SSkinMeshBuffer*>();
+        return unused;
     }
     // ------------------------------------------------------------------------
-    virtual core::array<SJoint*> &getAllJoints()
+    virtual core::array<SJoint*>& getAllJoints()
     {
         assert(false);
-        return *(core::array<SJoint*>*)NULL;
+        static auto unused = core::array<SJoint*>();
+        return unused;
     }
     // ------------------------------------------------------------------------
-    virtual const core::array<SJoint*> &getAllJoints() const
+    virtual const core::array<SJoint*>& getAllJoints() const
     {
         assert(false);
-        return *(core::array<SJoint*>*)NULL;
+        static auto unused = core::array<SJoint*>();
+        return unused;
     }
     // ------------------------------------------------------------------------
     virtual void finalize();
@@ -156,6 +159,7 @@ public:
     // ------------------------------------------------------------------------
     s32 getJointIDWithArm(const c8* name, unsigned* arm_id) const;
     // ------------------------------------------------------------------------
+    SPMeshBuffer* getSPMeshBuffer(u32 nr) const;
 
 };
 

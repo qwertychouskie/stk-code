@@ -29,6 +29,7 @@
 #include "tracks/track.hpp"
 #include "tracks/track_object.hpp"
 #include "utils/constants.hpp"
+#include "utils/mini_glm.hpp"
 #include "utils/string_utils.hpp"
 
 #include <ISceneManager.h>
@@ -387,7 +388,8 @@ void PhysicalObject::init(const PhysicalObject::Settings& settings)
             // FIXME: take translation/rotation into account
             if (mb->getVertexType() != video::EVT_STANDARD &&
                 mb->getVertexType() != video::EVT_2TCOORDS &&
-                mb->getVertexType() != video::EVT_TANGENTS)
+                mb->getVertexType() != video::EVT_TANGENTS &&
+                mb->getVertexType() != video::EVT_SKINNED_MESH)
             {
                 Log::warn("PhysicalObject",
                           "createPhysicsBody: Ignoring type '%d'!",
@@ -480,7 +482,26 @@ void PhysicalObject::init(const PhysicalObject::Settings& settings)
                                                material                 );
                 }   // for j
             }
-
+            else if (mb->getVertexType() == video::EVT_SKINNED_MESH)
+            {
+                irr::video::S3DVertexSkinnedMesh* mbVertices =
+                    (video::S3DVertexSkinnedMesh*)mb->getVertices();
+                for(unsigned int j=0; j<mb->getIndexCount(); j+=3)
+                {
+                    for(unsigned int k=0; k<3; k++)
+                    {
+                        int indx=mbIndices[j+k];
+                        core::vector3df v = mbVertices[indx].m_position;
+                        //mat.transformVect(v);
+                        vertices[k]=v;
+                        normals[k]=MiniGLM::decompressVector3(mbVertices[indx].m_normal);
+                    }   // for k
+                    triangle_mesh->addTriangle(vertices[0], vertices[1],
+                                               vertices[2], normals[0],
+                                               normals[1],  normals[2],
+                                               material                 );
+                }   // for j
+            }
         }   // for i<getMeshBufferCount
         triangle_mesh->createCollisionShape();
         m_shape = &triangle_mesh->getCollisionShape();

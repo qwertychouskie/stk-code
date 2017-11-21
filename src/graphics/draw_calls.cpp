@@ -31,6 +31,7 @@
 #include "graphics/stk_animated_mesh.hpp"
 #include "graphics/stk_mesh.hpp"
 #include "graphics/stk_particle.hpp"
+#include "graphics/sp/sp_base.hpp"
 #include "graphics/sp/sp_mesh_node.hpp"
 #include "tracks/track.hpp"
 #include "utils/profiler.hpp"
@@ -188,6 +189,11 @@ void DrawCalls::handleSTKCommon(scene::ISceneNode *Node,
     }
     else
     {
+        SP::SPMeshNode* node = dynamic_cast<SP::SPMeshNode*>(Node);
+        if (node)
+        {
+            SP::addObject(node);
+        }
     }
     
 
@@ -647,6 +653,7 @@ void DrawCalls::prepareDrawCalls( ShadowMatrices& shadow_matrices,
     m_deferred_update.clear();
 
     PROFILER_PUSH_CPU_MARKER("- culling", 0xFF, 0xFF, 0x0);
+    SP::prepareDrawCalls();
     parseSceneManager(
         irr_driver->getSceneManager()->getRootSceneNode()->getChildren(),
         &m_immediate_draw_list, camnode, shadow_matrices);

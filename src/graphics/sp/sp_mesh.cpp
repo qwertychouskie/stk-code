@@ -58,6 +58,16 @@ IMeshBuffer* SPMesh::getMeshBuffer(u32 nr) const
 }   // getMeshBuffer
 
 // ----------------------------------------------------------------------------
+SPMeshBuffer* SPMesh::getSPMeshBuffer(u32 nr) const
+{
+    if (nr < m_buffer.size())
+    {
+        return m_buffer[nr];
+    }
+    return NULL;
+}   // getMeshBuffer
+
+// ----------------------------------------------------------------------------
 IMeshBuffer* SPMesh::getMeshBuffer(const video::SMaterial &material) const
 {
     for (unsigned i = 0; i < m_buffer.size(); i++)
