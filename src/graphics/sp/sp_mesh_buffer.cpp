@@ -58,6 +58,8 @@ void SPMeshBuffer::initDrawMaterial()
         // install
         m_stk_material->getTexture();
     }
+    m_tex_cmp = m_material.getTexture(0)->getName().getPtr();
+    m_tex_cmp += m_material.getTexture(1)->getName().getPtr();
 
     // Default all transparent first
     for (unsigned i = 2; i < video::MATERIAL_MAX_TEXTURES; i++)

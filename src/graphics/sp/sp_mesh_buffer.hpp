@@ -25,6 +25,7 @@
 #include <IMeshBuffer.h>
 #include <S3DVertex.h>
 
+#include <string>
 #include <vector>
 
 using namespace irr;
@@ -53,6 +54,8 @@ private:
     unsigned m_gl_instance_size;
 
     GLuint m_vao, m_ibo, m_vbo, m_ins_array;
+
+    std::string m_tex_cmp;
 
     bool m_uploaded;
 
@@ -91,6 +94,8 @@ public:
     // ------------------------------------------------------------------------
     Material* getSTKMaterial() const                 { return m_stk_material; }
     // ------------------------------------------------------------------------
+    const std::string& getTextureCompare() const          { return m_tex_cmp; }
+    // ------------------------------------------------------------------------
     void addInstanceData(const SPInstancedData& id)
     {
         if (m_uploaded)
@@ -120,6 +125,8 @@ public:
 #endif
         m_uploaded = true;
     }
+    // ------------------------------------------------------------------------
+    
     // ------------------------------------------------------------------------
     video::S3DVertexSkinnedMesh* getSPMVertex()
     {

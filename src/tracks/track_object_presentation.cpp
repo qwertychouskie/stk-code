@@ -30,8 +30,8 @@
 #include "graphics/mesh_tools.hpp"
 #include "graphics/particle_emitter.hpp"
 #include "graphics/particle_kind_manager.hpp"
-#include "graphics/stk_mesh_scene_node.hpp"
 #include "graphics/stk_particle.hpp"
+#include "graphics/sp/sp_mesh_node.hpp"
 #include "graphics/render_info.hpp"
 #include "io/file_manager.hpp"
 #include "io/xml_node.hpp"
@@ -599,9 +599,9 @@ void TrackObjectPresentationMesh::init(const XMLNode* xml_node,
         m_node = irr_driver->addMesh(m_mesh, m_model_file, parent, m_render_info);
 
 #ifndef SERVER_ONLY
-        STKMeshSceneNode* stkmesh = dynamic_cast<STKMeshSceneNode*>(m_node);
-        if (displacing && stkmesh != NULL)
-            stkmesh->setIsDisplacement(displacing);
+        SP::SPMeshNode* spmn = dynamic_cast<SP::SPMeshNode*>(m_node);
+        if (displacing && spmn != NULL)
+            spmn->setShaderOverride("displace");
 #endif
 
         Track *track = Track::getCurrentTrack();
