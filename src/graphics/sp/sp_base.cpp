@@ -54,6 +54,10 @@ ShadowMatrices* g_stk_sm = NULL;
 // ----------------------------------------------------------------------------
 bool sp_culling = true;
 // ----------------------------------------------------------------------------
+bool g_handle_shadow = false;
+// ----------------------------------------------------------------------------
+bool g_handle_rsm = false;
+// ----------------------------------------------------------------------------
 bool g_destroying_sectors = false;
 
 // ----------------------------------------------------------------------------
@@ -496,8 +500,13 @@ void prepareDrawCalls()
     g_skinning_offset = 0;
 #ifndef SERVER_ONLY
     mathPlaneFrustumf(g_frustums[0], irr_driver->getProjViewMatrix());
-    if (Track::getCurrentTrack() && Track::getCurrentTrack()->hasShadows() &&
-        CVS->isDefferedEnabled() && CVS->isShadowEnabled())
+    g_handle_shadow = Track::getCurrentTrack() &&
+        Track::getCurrentTrack()->hasShadows() && CVS->isDefferedEnabled() &&
+        CVS->isShadowEnabled();
+    g_handle_rsm = CVS->isGlobalIlluminationEnabled() &&
+        !g_stk_sm->isRSMMapAvail();
+
+    if (g_handle_shadow)
     {
         mathPlaneFrustumf(g_frustums[1], g_stk_sm->getSunOrthoMatrices()[0]);
         mathPlaneFrustumf(g_frustums[2], g_stk_sm->getSunOrthoMatrices()[1]);
@@ -531,8 +540,52 @@ void addObject(SPMeshNode* node)
     {
         return;
     }
-    sp_solid_poly_count = sp_shadow_poly_count = sp_draw_call_count = 0;
-    g_skinning_offset = 0;
+    if (node->getSPM() == NULL)
+    {
+        return;
+    }
+
+    const core::matrix4& model_matrix = node->getAbsoluteTransformation();
+    for (unsigned m = 0; m < node->getSPM()->getMeshBufferCount(); m++)
+    {
+        SPMeshBuffer* mb = node->getSPM()->getSPMeshBuffer(m);
+        core::aabbox3df bb = mb->getBoundingBox();
+        model_matrix.transformBoxEx(bb);
+        std::vector<bool> discard;
+        discard.resize((g_handle_shadow ? 6 : 1), false);
+        discard[5] = !g_handle_rsm;
+        for (int dc_type = 0; dc_type < (g_handle_shadow ? 5 : 1); dc_type++)
+        {
+            for (int i = 0; i < 24; i += 4)
+            {
+                bool outside = true;
+                for (int j = 0; j < 8; j++)
+                {
+                    const float dist =
+                        getCorner(bb, j).X * g_frustums[dc_type][i] +
+                        getCorner(bb, j).Y * g_frustums[dc_type][i + 1] +
+                        getCorner(bb, j).Z * g_frustums[dc_type][i + 2] +
+                        g_frustums[dc_type][i + 3];
+                    outside = outside && dist < 0.0f;
+                    if (!outside)
+                    {
+                        break;
+                    }
+                }
+                if (outside)
+                {
+                    discard[dc_type] = true;
+                    break;
+                }
+            }
+        }
+        if (g_handle_shadow ?
+            (discard[0] && discard[1] && discard[2] && discard[3] &&
+            discard[4] && discard[5]) : discard[0])
+        {
+            continue;
+        }
+    }
 
 }
 

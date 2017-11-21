@@ -1,6 +1,6 @@
-uniform sampler2D layer_one_tex;
-uniform sampler2D gloss_map;
-uniform sampler2D colorization_mask;
+uniform sampler2D tex_layer_0;
+uniform sampler2D tex_layer_2;
+uniform sampler2D tex_layer_4;
 
 flat in vec4 color_data;
 
