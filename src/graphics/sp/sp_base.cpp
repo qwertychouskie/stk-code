@@ -70,7 +70,7 @@ std::unordered_map<SPMeshBuffer*, std::vector<SPMeshNode*> > g_instances;
 // ----------------------------------------------------------------------------
 // std::string is layer_1 and layer_2 texture name combined
 typedef std::unordered_map<SPShader*, std::unordered_map<std::string,
-    std::vector<SPMeshBuffer*> > > DrawCall;
+    std::unordered_set<SPMeshBuffer*> > > DrawCall;
 
 DrawCall g_draw_calls[DCT_COUNT];
 // ----------------------------------------------------------------------------
@@ -671,7 +671,7 @@ void addObject(SPMeshNode* node)
                 if (dc_type == 0)
                 {
                     auto& ret = g_draw_calls[DCT_TRANSPARENT][shader];
-                    ret[mb->getTextureCompare()].push_back(mb);
+                    ret[mb->getTextureCompare()].insert(mb);
                 }
                 else
                 {
@@ -682,7 +682,7 @@ void addObject(SPMeshNode* node)
             {
                 auto& ret = g_draw_calls[(DrawCallType)
                     (dc_type == 0 ? dc_type : dc_type + 1)][shader];
-                ret[mb->getTextureCompare()].push_back(mb);
+                ret[mb->getTextureCompare()].insert(mb);
             }
         }
     }
@@ -789,14 +789,14 @@ void draw(RenderPass rp, DrawCallType dct)
             {
                 continue;
             }
-            p.first->bindTextures(q.second[0]->getMaterial(), rp);
-            for (auto& draw_call : q.second)
+            p.first->bindTextures((*q.second.begin())->getMaterial(), rp);
+            for (SPMeshBuffer* spmb : q.second)
             {
                 /*std::vector<SPUniformAssigner*> draw_call_uniforms;
                 p.first->setUniformsPerObject(static_cast<SPPerObjectUniform*>
                     (draw_call), &draw_call_uniforms, rp);
                 sp_draw_call_count++;*/
-                draw_call->draw();
+                spmb->draw();
                 /*for (SPUniformAssigner* ua : draw_call_uniforms)
                 {
                     ua->reset();

@@ -20,10 +20,8 @@
 
 #include "utils/mini_glm.hpp"
 #include "utils/vec3.hpp"
-
-#include <matrix4.h>
-
 #include <cassert>
+#include <matrix4.h>
 
 using namespace irr;
 
@@ -43,35 +41,53 @@ public:
     {
         static_assert(sizeof(SPInstancedData) == 32, "Size is not 32");
         float position[3] = { model_mat[12], model_mat[13], model_mat[14] };
-        btQuaternion rotation(0.0f, 0.0f, 0.0f, 1.0f);
-        Vec3 scale(1.0f, 1.0f, 1.0f);
-        Vec3 new_scale = model_mat.getScale();
-        if (new_scale.x() != 0.0f && new_scale.y() != 0.0f &&
-            new_scale.z() != 0.0f)
+        core::quaternion rotation(0.0f, 0.0f, 0.0f, 1.0f);
+        core::vector3df scale = model_mat.getScale();
+        if (scale.X != 0.0f && scale.Y != 0.0f && scale.Z != 0.0f)
         {
-            scale = new_scale;
-            Vec3 v1 = Vec3(model_mat[0], model_mat[1], model_mat[2]) / scale;
-            Vec3 v2 = Vec3(model_mat[4], model_mat[5], model_mat[6]) / scale;
-            Vec3 v3 = Vec3(model_mat[8], model_mat[9], model_mat[10]) / scale;
-            btMatrix3x3 m(v1.x(), v1.y(), v1.z(), v2.x(), v2.y(), v2.z(),
-                 v3.x(), v3.y(), v3.z());
-            m.getRotation(rotation);
-            rotation = rotation.normalize();
-            if (rotation.w() < 0.0f)
-            {
-                rotation.setX(-rotation.x());
-                rotation.setY(-rotation.y());
-                rotation.setZ(-rotation.z());
-                rotation.setW(-rotation.w());
-            }
+            core::matrix4 local_mat = model_mat;
+            local_mat[0] = local_mat[0] / scale.X;
+            local_mat[1] = local_mat[1] / scale.X;
+            local_mat[2] = local_mat[2] / scale.X;
+            local_mat[4] = local_mat[4] / scale.Y;
+            local_mat[5] = local_mat[5] / scale.Y;
+            local_mat[6] = local_mat[6] / scale.Y;
+            local_mat[8] = local_mat[8] / scale.Z;
+            local_mat[9] = local_mat[9] / scale.Z;
+            local_mat[10] = local_mat[10] / scale.Z;
+            rotation = core::quaternion(local_mat);
+            // Conjugated quaternion in glsl
+            rotation.X = -rotation.X;
+            rotation.Y = -rotation.Y;
+            rotation.Z = -rotation.Z;
         }
         using namespace MiniGLM;
+        /* testsuite
+        core::matrix4 lm, sm, rm;
+        lm.setTranslation(core::vector3df(position[0], position[1],
+            position[2]));
+        sm.setScale(scale);
+        rotation.getMatrix(rm);
+        core::matrix4 new_mat = lm * rm * sm;
+        core::vector3df test(4.0f, 4.0f, 4.0f);
+        core::vector3df test1(4.0f, 4.0f, 4.0f);
+        new_mat.transformVect(test);
+        model_mat.transformVect(test1);
+        core::vector3df ret = test - test1;
+        ret.X = fabsf(ret.X);
+        ret.Y = fabsf(ret.Y);
+        ret.Z = fabsf(ret.Z);
+        if (ret.getLengthSQ() > 0.001f)
+        {
+            printf("%f %f %f <<< new", test.X, test.Y, test.Z);
+            printf("%f %f %f\n", test1.X, test1.Y, test1.Z);
+        }*/
         memcpy(m_data, position, 12);
-        uint32_t q = compressbtQuaternion(rotation);
+        uint32_t q = compressQuaternion(rotation);
         memcpy(m_data + 12, &q, 4);
-        short s[4] = { toFloat16(scale.x()), toFloat16(scale.y()),
-            toFloat16(scale.z()), 0};
-        memcpy(m_data + 16, &s, 8);
+        short s[4] = { toFloat16(scale.X), toFloat16(scale.Y),
+            toFloat16(scale.Z), toFloat16(rotation.W)};
+        memcpy(m_data + 16, s, 8);
         m_data[24] = core::clamp((char)(texture_trans.X *
             (texture_trans.X >= 0.0f ? 127.0f : 128.0f)), (char)-128,
             (char)127);

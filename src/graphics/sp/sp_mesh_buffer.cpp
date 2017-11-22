@@ -146,6 +146,22 @@ void SPMeshBuffer::initDrawMaterial()
 
 #endif
 }   // initDrawMaterial
+
+// ----------------------------------------------------------------------------
+inline int srgbToLinear(float color_srgb)
+{
+    int ret;
+    if (color_srgb <= 0.04045f)
+    {
+        ret = 255 * (color_srgb / 12.92f);
+    }
+    else
+    {
+        ret = 255 * (powf((color_srgb + 0.055f) / 1.055f, 2.4f));
+    }
+    return core::clamp(ret, 0, 255);
+}
+
 // ----------------------------------------------------------------------------
 void SPMeshBuffer::uploadGLMesh(bool skinned)
 {
@@ -170,16 +186,15 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
             CVS->isARBSRGBFramebufferUsable())
         {
             video::SColorf tmp(vc);
-            tmp.r = powf(tmp.r, 2.2f);
-            tmp.g = powf(tmp.g, 2.2f);
-            tmp.b = powf(tmp.b, 2.2f);
-            tmp.a = powf(tmp.a, 2.2f);
-            vc = tmp.toSColor();
+            vc.setRed(srgbToLinear(tmp.r));
+            vc.setGreen(srgbToLinear(tmp.g));
+            vc.setBlue(srgbToLinear(tmp.b));
         }
         glBufferSubData(GL_ARRAY_BUFFER, v_size + offset, 4, &vc);
+        offset += 4;
         glBufferSubData(GL_ARRAY_BUFFER, v_size + offset, 4,
             &m_vertices[i].m_all_uvs[0]);
-        offset += 8;
+        offset += 4;
         if (use_2_uv)
         {
             glBufferSubData(GL_ARRAY_BUFFER, v_size + offset, 4,
