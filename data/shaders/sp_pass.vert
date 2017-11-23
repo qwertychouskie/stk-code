@@ -22,6 +22,7 @@ flat out vec2 color_change;
 
 void main(void)
 {
+    //vec4 quat_rot = normalize(vec4(i_rotation.xyz, sqrt(1.0 - (i_rotation.x * i_rotation.x + i_rotation.y * i_rotation.y + i_rotation.z * i_rotation.z))));
     vec4 quat_rot = normalize(vec4(i_rotation.xyz, i_scale.w));
     vec4 world_position = getWorldPosition(i_origin, quat_rot, i_scale.xyz,
         i_position);

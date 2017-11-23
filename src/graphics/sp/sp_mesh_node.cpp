@@ -126,6 +126,12 @@ IMesh* SPMeshNode::getMeshForCurrentFrame(SkinningCallback sc, int offset)
 }   // getMeshForCurrentFrame
 
 // ----------------------------------------------------------------------------
+int SPMeshNode::getTotalJoints() const
+{
+    return m_mesh ? m_mesh->getJointCount() : 0;
+}   // getTotalJoints
+
+// ----------------------------------------------------------------------------
 SPShader* SPMeshNode::getShader(unsigned mesh_buffer_id) const
 {
     if (!m_mesh || mesh_buffer_id < m_mesh->getMeshBufferCount())

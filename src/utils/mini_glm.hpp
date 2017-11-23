@@ -411,6 +411,47 @@ namespace MiniGLM
         return ret.normalize();
     }   // decompressbtQuaternion
     // ------------------------------------------------------------------------
+    inline core::quaternion getQuaternion(const core::matrix4& m)
+    {
+        core::quaternion q;
+        float trace = m[0] + m[5] + m[10];
+        if (trace > 0.0f)
+        {
+            float s = 0.5f / sqrtf(trace + 1.0f);
+            q.W = 0.25f / s;
+            q.X = (m[6] - m[9]) * s;
+            q.Y = (m[8] - m[2]) * s;
+            q.Z = (m[1] - m[4]) * s;
+        }
+        else if (m[0] > m[5] && m[0] > m[10])
+        { 
+            // S = 4 * qx 
+            float s = sqrtf(1.0f + m[0] - m[5] - m[10]) * 2.0f;
+            q.X = 0.25f * s;
+            q.Y = (m[4] + m[1]) / s; 
+            q.Z = (m[8] + m[2]) / s; 
+            q.W = (m[6] - m[9]) / s;
+        }
+        else if (m[5] > m[10])
+        {
+            // S = 4 * qy
+            float s = sqrtf(1.0f + m[5] - m[0] - m[10]) * 2.0f;
+            q.X = (m[4] + m[1]) / s; 
+            q.Y = 0.25f * s;
+            q.Z = (m[9] + m[6]) / s; 
+            q.W = (m[8] - m[2]) / s;
+        }
+        else
+        {
+            // S = 4 * qz
+            float s = sqrtf(1.0f + m[10] - m[0] - m[5]) * 2.0f;
+            q.X = (m[8] + m[2]) / s;
+            q.Y = (m[6] + m[6]) / s; 
+            q.Z = 0.25f * s;
+            q.W = (m[1] - m[4]) / s;
+        }
+        return q.normalize();
+    }
     void unitTesting();
 }
 

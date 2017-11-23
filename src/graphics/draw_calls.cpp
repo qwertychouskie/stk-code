@@ -717,12 +717,10 @@ void DrawCalls::prepareDrawCalls( ShadowMatrices& shadow_matrices,
     PROFILER_POP_CPU_MARKER();
 
 
-#if !defined(USE_GLES2)
     PROFILER_PUSH_CPU_MARKER("- Draw Command upload", 0xFF, 0x0, 0xFF);
     SP::uploadAll();
     PROFILER_POP_CPU_MARKER();
 
-#endif // !defined(USE_GLES2)
 }
 
 // ----------------------------------------------------------------------------

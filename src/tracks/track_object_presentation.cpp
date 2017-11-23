@@ -31,7 +31,6 @@
 #include "graphics/particle_emitter.hpp"
 #include "graphics/particle_kind_manager.hpp"
 #include "graphics/stk_particle.hpp"
-#include "graphics/sp/sp_mesh_node.hpp"
 #include "graphics/render_info.hpp"
 #include "io/file_manager.hpp"
 #include "io/xml_node.hpp"
@@ -597,13 +596,6 @@ void TrackObjectPresentationMesh::init(const XMLNode* xml_node,
             xml_node->get("displacing", &displacing);
 
         m_node = irr_driver->addMesh(m_mesh, m_model_file, parent, m_render_info);
-
-#ifndef SERVER_ONLY
-        SP::SPMeshNode* spmn = dynamic_cast<SP::SPMeshNode*>(m_node);
-        if (displacing && spmn != NULL)
-            spmn->setShaderOverride("displace");
-#endif
-
         Track *track = Track::getCurrentTrack();
         if (track && xml_node)
             track->handleAnimatedTextures(m_node, *xml_node);

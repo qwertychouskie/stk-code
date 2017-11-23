@@ -103,9 +103,11 @@ public:
     // ------------------------------------------------------------------------
     int getTotalJoints() const;
     // ------------------------------------------------------------------------
-    void setSkinningOffset(int offset)  { m_skinning_offset = offset; }
+    void setSkinningOffset(int offset)          { m_skinning_offset = offset; }
     // ------------------------------------------------------------------------
     void setAnimationState(bool val);
+    // ------------------------------------------------------------------------
+    bool getAnimationState() const                       { return m_animated; }
     // ------------------------------------------------------------------------
     SPShader* getShader(unsigned mesh_buffer_id) const;
     // ------------------------------------------------------------------------
