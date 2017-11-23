@@ -308,7 +308,7 @@ void SPMeshLoader::decompressSPM(irr::io::IReadFile* spm,
                 // -0.0 in half float (16bit)
                 vertex.m_weight[0] == -32768)
             {
-                // For out skinned mesh shader
+                // For the skinned mesh shader
                 vertex.m_joint_idx[0] = -32767;
                 // 1.0 in half float (16bit)
                 vertex.m_weight[0] = 15360;

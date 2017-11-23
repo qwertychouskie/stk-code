@@ -91,6 +91,10 @@ public:
     void draw() const
     {
         bindVAO();
+        if (m_ins_dat.size() == 3)
+        {
+            printf("ff\n");
+        }
         glDrawElementsInstanced(GL_TRIANGLES, getIndexCount(),
             GL_UNSIGNED_SHORT, 0, m_ins_dat.size());
     }

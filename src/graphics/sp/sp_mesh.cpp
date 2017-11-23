@@ -121,10 +121,10 @@ s32 SPMesh::getJointIDWithArm(const c8* name, unsigned* arm_id) const
 // ----------------------------------------------------------------------------
 void SPMesh::getSkinningMatrices(f32 frame, std::array<float, 16>* dest)
 {
-    if (m_last_frame == frame)
-    {
-        return;
-    }
+    //if (m_last_frame == frame)
+    //{
+    //    return;
+    //}
 
     m_last_frame = frame;
     unsigned accumulated_joints = 0;
