@@ -160,6 +160,8 @@ public:
     s32 getJointIDWithArm(const c8* name, unsigned* arm_id) const;
     // ------------------------------------------------------------------------
     SPMeshBuffer* getSPMeshBuffer(u32 nr) const;
+    // ------------------------------------------------------------------------
+    void resetLastFrame()                             { m_last_frame = 0.0f; }
 
 };
 

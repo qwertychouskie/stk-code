@@ -22,8 +22,6 @@
 #include "utils/vec3.hpp"
 #include <cassert>
 #include <matrix4.h>
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/matrix_decompose.hpp>
 
 using namespace irr;
 
@@ -33,7 +31,7 @@ namespace SP
 class SPInstancedData
 {
 private:
-    char m_data[36];
+    char m_data[32];
 
 public:
     // ------------------------------------------------------------------------
@@ -42,15 +40,6 @@ public:
                     float min_sat, int skinning_offset)
     {
         using namespace MiniGLM;
-glm::mat4 transformation; // your transformation matrix.
-memcpy(&transformation[0][0], model_mat.pointer(), 64);
-glm::vec3 gscale;
-glm::quat grotation;
-glm::vec3 translation;
-glm::vec3 skew;
-glm::vec4 perspective;
-glm::decompose(transformation, gscale, grotation, translation, skew,perspective);
-
         float position[3] = { model_mat[12], model_mat[13], model_mat[14] };
         core::quaternion rotation(0.0f, 0.0f, 0.0f, 1.0f);
         core::vector3df scale = model_mat.getScale();
@@ -71,29 +60,20 @@ glm::decompose(transformation, gscale, grotation, translation, skew,perspective)
             rotation.W = -rotation.W;
         }
         memcpy(m_data, position, 12);
-        //short q[4] = { toFloat16(rotation.X), toFloat16(rotation.Y),
-        //    toFloat16(rotation.Z), toFloat16(rotation.W)};
-        //short q[4] = { toFloat16(grotation[0]), toFloat16(grotation[1]),
-        //    toFloat16(grotation[2]), toFloat16(-grotation[3])};
-        memcpy(&rotation, &grotation, 16);
-        rotation.W = -rotation.W;
         uint32_t q = compressQuaternion(rotation);
         memcpy(m_data + 12, &q, 4);
-        //memcpy(m_data + 12, q, 8);
-        //short s[4] = { toFloat16(scale.X), toFloat16(scale.Y),
-        //    toFloat16(scale.Z), toFloat16(rotation.W)};
         short s[4] = { toFloat16(scale.X), toFloat16(scale.Y),
-            toFloat16(scale.Z), toFloat16(-grotation[3])};
-        memcpy(m_data + 20, s, 8);
-        m_data[28] = core::clamp((char)(texture_trans.X *
+            toFloat16(scale.Z), toFloat16(rotation.W)};
+        memcpy(m_data + 16, s, 8);
+        m_data[24] = core::clamp((char)(texture_trans.X *
             (texture_trans.X >= 0.0f ? 127.0f : 128.0f)), (char)-128,
             (char)127);
-        m_data[29] = core::clamp((char)(texture_trans.Y *
+        m_data[25] = core::clamp((char)(texture_trans.Y *
             (texture_trans.Y >= 0.0f ? 127.0f : 128.0f)), (char)-128,
             (char)127);
-        m_data[30] = (char)(fminf(hue, 1.0f) * 127.0f);
-        m_data[31] = (char)(fminf(min_sat, 1.0f) * 127.0f);
-        memcpy(m_data + 32, &skinning_offset, 4);
+        m_data[26] = (char)(fminf(hue, 1.0f) * 127.0f);
+        m_data[27] = (char)(fminf(min_sat, 1.0f) * 127.0f);
+        memcpy(m_data + 28, &skinning_offset, 4);
     }
     // ------------------------------------------------------------------------
     const void* getData() const { return m_data; }

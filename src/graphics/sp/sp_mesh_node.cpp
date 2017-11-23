@@ -41,7 +41,7 @@ SPMeshNode::SPMeshNode(IAnimatedMesh* mesh, ISceneNode* parent,
     m_mesh = NULL;
     m_mesh_render_info = render_info;
     m_animated = !static_cast<SPMesh*>(mesh)->isStatic();
-    m_skinning_offset = -1;
+    m_skinning_offset = -32768;
 }   // SPMeshNode
 
 // ----------------------------------------------------------------------------
@@ -63,6 +63,7 @@ void SPMeshNode::setAnimationState(bool val)
 // ----------------------------------------------------------------------------
 void SPMeshNode::setMesh(irr::scene::IAnimatedMesh* mesh)
 {
+    m_skinning_offset = -32768;
     m_mesh = static_cast<SPMesh*>(mesh);
     CAnimatedMeshSceneNode::setMesh(mesh);
     cleanJoints();
@@ -77,6 +78,7 @@ void SPMeshNode::setMesh(irr::scene::IAnimatedMesh* mesh)
                 m_joint_nodes[bone_name] = new CBoneSceneNode(this,
                     irr_driver->getSceneManager(), 0, bone_idx++,
                     bone_name.c_str());
+                m_joint_nodes.at(bone_name)->setSkinningSpace(EBSS_GLOBAL);
             }
         }
     }
@@ -96,6 +98,7 @@ IBoneSceneNode* SPMeshNode::getJointNode(const c8* joint_name)
 // ----------------------------------------------------------------------------
 void SPMeshNode::OnAnimate(u32 time_ms)
 {
+    m_skinning_offset = -32768;
     if (m_mesh->isStatic() || !m_animated)
     {
         IAnimatedMeshSceneNode::OnAnimate(time_ms);
@@ -138,8 +141,8 @@ SPShader* SPMeshNode::getShader(unsigned mesh_buffer_id) const
     {
         const std::string sn = (m_shader_override.empty() ?
             m_mesh->getSPMeshBuffer(mesh_buffer_id)->getSTKMaterial()
-            ->getShaderName() : m_shader_override);// +
-            //(m_animated ? "_skinned" : "");
+            ->getShaderName() : m_shader_override) +
+            (m_animated ? "_skinned" : "");
         return SP::getSPShader(sn);
     }
     return NULL;

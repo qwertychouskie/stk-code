@@ -17,6 +17,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "graphics/sp/sp_base.hpp"
+#include "config/stk_config.hpp"
 #include "config/user_config.hpp"
 #include "graphics/central_settings.hpp"
 #include "graphics/shader_based_renderer.hpp"
@@ -100,7 +101,7 @@ unsigned sp_draw_call_count = 0;
 // ----------------------------------------------------------------------------
 unsigned g_skinning_offset = 0;
 // ----------------------------------------------------------------------------
-//std::vector<SPMeshNode*> g_skinning_mesh;
+std::vector<SPMeshNode*> g_skinning_mesh;
 // ----------------------------------------------------------------------------
 bool sp_vc_srgb_cor = true;
 // ----------------------------------------------------------------------------
@@ -187,6 +188,7 @@ void addShader(SPShader* shader)
 // ----------------------------------------------------------------------------
 void loadShaders()
 {
+    // ========================================================================
     SPShader* shader = new SPShader("solid");
 
     shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
@@ -205,6 +207,25 @@ void loadShaders()
 
     addShader(shader);
 
+    shader = new SPShader("solid_skinned");
+
+    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_object_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addAllTextures(RP_1ST);
+
+    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_2ND);
+    shader->addShaderFile("sp_object_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
+    shader->linkShaderFiles(RP_2ND);
+    shader->use(RP_2ND);
+    shader->addBasicUniforms(RP_2ND);
+    shader->addAllTextures(RP_2ND); 
+
+    addShader(shader);
+
+    // ========================================================================
     shader = new SPShader("alphatest");
 
     shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
@@ -223,6 +244,25 @@ void loadShaders()
 
     addShader(shader);
 
+    shader = new SPShader("alphatest_skinned");
+
+    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_alpha_test_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addAllTextures(RP_1ST);
+
+    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_2ND);
+    shader->addShaderFile("sp_alpha_test_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
+    shader->linkShaderFiles(RP_2ND);
+    shader->use(RP_2ND);
+    shader->addBasicUniforms(RP_2ND);
+    shader->addAllTextures(RP_2ND); 
+
+    addShader(shader);
+
+    // ========================================================================
     shader = new SPShader("unlit");
 
     shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
@@ -241,6 +281,25 @@ void loadShaders()
 
     addShader(shader);
 
+    shader = new SPShader("unlit_skinned");
+
+    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_alpha_test_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addAllTextures(RP_1ST);
+
+    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_2ND);
+    shader->addShaderFile("sp_unlit.frag", GL_FRAGMENT_SHADER, RP_2ND);
+    shader->linkShaderFiles(RP_2ND);
+    shader->use(RP_2ND);
+    shader->addBasicUniforms(RP_2ND);
+    shader->addAllTextures(RP_2ND); 
+
+    addShader(shader);
+
+    // ========================================================================
     shader = new SPShader("normalmap");
 
     shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
@@ -258,6 +317,25 @@ void loadShaders()
     shader->addAllTextures(RP_2ND); 
 
     addShader(shader);
+
+    shader = new SPShader("normalmap_skinned");
+
+    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_normal_map.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addAllTextures(RP_1ST);
+
+    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_2ND);
+    shader->addShaderFile("sp_object_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
+    shader->linkShaderFiles(RP_2ND);
+    shader->use(RP_2ND);
+    shader->addBasicUniforms(RP_2ND);
+    shader->addAllTextures(RP_2ND); 
+
+    addShader(shader);
+
 }   // loadShaders
 
 // ----------------------------------------------------------------------------
@@ -567,7 +645,9 @@ void prepareDrawCalls()
         return;
     }
     sp_solid_poly_count = sp_shadow_poly_count = sp_draw_call_count = 0;
-    g_skinning_offset = 0;
+    // 1st one is identity
+    g_skinning_offset = 1;
+    g_skinning_mesh.clear();
 #ifndef SERVER_ONLY
     mathPlaneFrustumf(g_frustums[0], irr_driver->getProjViewMatrix());
     g_handle_shadow = Track::getCurrentTrack() &&
@@ -605,6 +685,7 @@ void addObject(SPMeshNode* node)
     }
 
     const core::matrix4& model_matrix = node->getAbsoluteTransformation();
+    bool added_for_skinning = false;
     for (unsigned m = 0; m < node->getSPM()->getMeshBufferCount(); m++)
     {
         SPMeshBuffer* mb = node->getSPM()->getSPMeshBuffer(m);
@@ -649,7 +730,21 @@ void addObject(SPMeshNode* node)
         {
             continue;
         }
-
+        if (!added_for_skinning && node->getAnimationState())
+        {
+            added_for_skinning = true;
+            int skinning_offset = g_skinning_offset + node->getTotalJoints();
+            if (skinning_offset > int(stk_config->m_max_skinning_bones))
+            {
+                Log::error("SPBase", "No enough space to render skinned"
+                    " mesh %s! Max joints can hold: %d",
+                    node->getName(), stk_config->m_max_skinning_bones);
+                return;
+            }
+            node->setSkinningOffset(g_skinning_offset);
+            g_skinning_mesh.push_back(node);
+            g_skinning_offset = skinning_offset;
+        }
         g_instances[mb].push_back(node);
         for (int dc_type = 0; dc_type < (g_handle_shadow ? 6 : 1); dc_type++)
         {
@@ -692,13 +787,14 @@ void addObject(SPMeshNode* node)
 // ----------------------------------------------------------------------------
 void updateModelMatrix()
 {
+    irr_driver->setSkinningJoint(g_skinning_offset - 1);
     for (auto& p : g_instances)
     {
         for (auto& q : p.second)
         {
             p.first->addInstanceData(SPInstancedData
                 (q->getAbsoluteTransformation(),
-                core::vector2df(0,0), 0, 0, 0));
+                core::vector2df(0,0), 0, 0, q->getSkinningOffset()));
         }
     }
 }
@@ -707,6 +803,43 @@ void updateModelMatrix()
 void uploadAll()
 {
 #ifndef SERVER_ONLY
+
+#ifdef USE_GLES2
+    glBindTexture(GL_TEXTURE_2D, SharedGPUObjects::getSkinningTexture());
+    unsigned buffer_offset = 1;
+#else
+    unsigned buffer_offset = 64;
+    glBindBuffer(GL_TEXTURE_BUFFER, SharedGPUObjects::getSkinningBuffer());
+#endif
+
+    for (unsigned i = 0; i < g_skinning_mesh.size(); i++)
+    {
+#ifdef USE_GLES2
+        //glTexSubImage2D(GL_TEXTURE_2D, 0, 0, buffer_offset, 16,
+        //    g_skinning_mesh[i]->getTotalJoints() * 16, GL_RGBA,
+        //    GL_FLOAT, g_skinning_mesh[i]->getSkinningMatrices());
+        //buffer_offset += g_skinning_mesh[i]->getTotalJoints();
+        for (int j = 0; j < g_skinning_mesh[i]->getTotalJoints(); j++)
+        {
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, buffer_offset + j, 16,
+                1, GL_RGBA,
+                GL_FLOAT, g_skinning_mesh[i]->getSkinningMatrices() + j);
+        }
+        buffer_offset += g_skinning_mesh[i]->getTotalJoints();
+#else
+        glBufferSubData(GL_TEXTURE_BUFFER, buffer_offset,
+            g_skinning_mesh[i]->getTotalJoints() << 6,
+            g_skinning_mesh[i]->getSkinningMatrices());
+        buffer_offset += g_skinning_mesh[i]->getTotalJoints() << 6;
+#endif
+    }
+
+#ifdef USE_GLES2
+    glBindTexture(GL_TEXTURE_2D, 0);
+#else
+    glBindBuffer(GL_TEXTURE_BUFFER, 0);
+#endif
+
     for (auto& p : g_instances)
     {
         p.first->uploadInstanceData();
@@ -1370,269 +1503,7 @@ void d()
     g_shaders.push_back(g_glow_shader);*/
 }
 
-/*// ----------------------------------------------------------------------------
-std::shared_ptr<SPMaterial> addSPMaterial(const std::shared_ptr<SPMaterial>& m)
-{
-    g_materials.push_back(m);
-    return m;
-}   // addSPMaterial
-
-// ----------------------------------------------------------------------------
-std::shared_ptr<SPMaterial> getSPMaterial(video::ITexture* l1,
-                                          video::ITexture* l2)
-{
-    if (l1 == NULL)
-    {
-        return g_null_material;
-    }
-    auto it = std::find_if(g_materials.begin(), g_materials.end(),
-        [&l1, &l2](const std::shared_ptr<SPMaterial>& m)
-        {
-            return m->getMeshTexture(0) == l1 &&
-                m->getMeshTexture(1) == l2;
-        });
-    if (it == g_materials.end())
-    {
-        return nullptr;
-    }
-    return *it;
-}   // getSPMaterial
-
-// ----------------------------------------------------------------------------
-std::shared_ptr<SPMaterial> getSPNullMaterial()
-{
-    return g_null_material;
-}   // getSPNullMaterial
-
-// ----------------------------------------------------------------------------
-SPMaterial* getSPMaterial(const std::string& name)
-{
-    auto it = std::find_if(g_materials.begin(), g_materials.end(),
-        [&name](const std::shared_ptr<SPMaterial>& m)->bool
-        {
-            std::string lc = StringUtils::toLowerCase(StringUtils::getBasename
-                (m->getMeshTexture(0)->getName().getPtr()));
-            return name == lc;
-        });
-    if (it == g_materials.end())
-        return NULL;
-    return it->get();
-}   // getSPMaterial
-
-// ----------------------------------------------------------------------------
-void destroySPMaterials()
-{
-    g_materials.erase(std::remove_if(g_materials.begin(), g_materials.end(),
-        [](const std::shared_ptr<SPMaterial>& m)->bool
-        {
-            return m.use_count() == 1;
-        }),
-        g_materials.end());
-}   // destroySPMaterials
-
-// ----------------------------------------------------------------------------
-void addObject(SPMeshNode* node, bool to_global_sector)
-{
-    if (node->getSPMesh() == NULL)
-    {
-        Log::error("SP", "No SPMesh inside SPMeshNode.");
-        return;
-    }
-    auto found = g_all_nodes.find(node);
-    if (found != g_all_nodes.end() && node->getSector() != NULL)
-    {
-        Log::warn("SP", "Node is already added.");
-        return;
-    }
-    g_all_nodes.insert(node);
-    node->getSPMesh()->generateVertexBuffer();
-    if (!to_global_sector)
-    {
-        if (node->getSPMesh()->isSpacePartitioned())
-        {
-            assert(g_sectors.empty());
-            node->getSPMesh()->generateSectors(&g_sectors, node);
-            return;
-        }
-        for (unsigned i = 1; i < g_sectors.size(); i++)
-        {
-            if (g_sectors[i]->addNode(node))
-            {
-                return;
-            }
-        }
-    }
-    // Global sector
-    g_sectors[0]->addNode(node);
-}   // addObject
-
-// ----------------------------------------------------------------------------
-void removeObject(SPMeshNode* node)
-{
-    for (auto it = g_all_nodes.begin(); it != g_all_nodes.end(); it++)
-    {
-        if (*it == node)
-        {
-            g_all_nodes.erase(it);
-            return;
-        }
-    }
-}   // removeObject
-
-// ----------------------------------------------------------------------------
-void removeAllObjects()
-{
-    for (SPMeshNode* node : g_all_nodes)
-    {
-        if (node->getReferenceCount() != 1)
-        {
-            Log::warn("SP", "%s has more than 1 reference count.", node
-                ->getNodeName().c_str());
-        }
-        node->drop();
-    }
-    g_all_nodes.clear();
-}   // removeAllObjects
-
-// ----------------------------------------------------------------------------
-void cleanAllMeshBuffer()
-{
-    for (SPMeshNode* node : g_all_nodes)
-    {
-        SPMesh* spm = node->getSPMesh();
-        if (spm)
-        {
-            spm->cleanBuffer();
-        }
-    }
-}   // cleanAllMeshBuffer
-
-// ----------------------------------------------------------------------------
-void addGlobalSector()
-{
-    assert(g_sectors.empty());
-    g_sectors.push_back(new SPSector());
-}   // addGlobalSector
-
-// ----------------------------------------------------------------------------
-void destroySectors()
-{
-    for (SPSector* sector : g_sectors)
-    {
-        delete sector;
-    }
-    g_sectors.clear();
-    for (SPMeshNode* node : g_all_nodes)
-    {
-        node->setSector(NULL);
-    }
-}   // destroySectors
-
-// ----------------------------------------------------------------------------
-void addEdgeForViz(const core::vector3df& p0, const core::vector3df& p1)
-{
-    g_bounding_boxes.push_back(p0.X);
-    g_bounding_boxes.push_back(p0.Y);
-    g_bounding_boxes.push_back(p0.Z);
-    g_bounding_boxes.push_back(p1.X);
-    g_bounding_boxes.push_back(p1.Y);
-    g_bounding_boxes.push_back(p1.Z);
-}   // addEdgeForViz
-
-// ----------------------------------------------------------------------------
-inline void mathPlaneNormf(float *p)
-{
-    float f = 1.0f / sqrtf(p[0] * p[0] + p[1] * p[1] + p[2] * p[2]);
-    p[0] *= f;
-    p[1] *= f;
-    p[2] *= f;
-    p[3] *= f;
-}   // mathPlaneNormf
-
-// ----------------------------------------------------------------------------
-inline void mathPlaneFrustumf(float* out, const core::matrix4& pvm)
-{
-    // return 6 planes, 24 floats
-    const float* m = pvm.pointer();
-
-    // near
-    out[0] = m[3] + m[2];
-    out[1] = m[7] + m[6];
-    out[2] = m[11] + m[10];
-    out[3] = m[15] + m[14];
-    mathPlaneNormf(&out[0]);
-
-    // right
-    out[4] = m[3] - m[0];
-    out[4 + 1] = m[7] - m[4];
-    out[4 + 2] = m[11] - m[8];
-    out[4 + 3] = m[15] - m[12];
-    mathPlaneNormf(&out[4]);
-
-    // left
-    out[2 * 4] = m[3] + m[0];
-    out[2 * 4 + 1] = m[7] + m[4];
-    out[2 * 4 + 2] = m[11] + m[8];
-    out[2 * 4 + 3] = m[15] + m[12];
-    mathPlaneNormf(&out[2 * 4]);
-
-    // bottom
-    out[3 * 4] = m[3] + m[1];
-    out[3 * 4 + 1] = m[7] + m[5];
-    out[3 * 4 + 2] = m[11] + m[9];
-    out[3 * 4 + 3] = m[15] + m[13];
-    mathPlaneNormf(&out[3 * 4]);
-
-    // top
-    out[4 * 4] = m[3] - m[1];
-    out[4 * 4 + 1] = m[7] - m[5];
-    out[4 * 4 + 2] = m[11] - m[9];
-    out[4 * 4 + 3] = m[15] - m[13];
-    mathPlaneNormf(&out[4 * 4]);
-
-    // far
-    out[5 * 4] = m[3] - m[2];
-    out[5 * 4 + 1] = m[7] - m[6];
-    out[5 * 4 + 2] = m[11] - m[10];
-    out[5 * 4 + 3] = m[15] - m[14];
-    mathPlaneNormf(&out[5 * 4]);
-}   // mathPlaneFrustumf
-
-// ----------------------------------------------------------------------------
-inline core::vector3df getCorner(const core::aabbox3df& bbox, unsigned n)
-{
-    switch (n)
-    {
-    case 0:
-        return irr::core::vector3df(bbox.MinEdge.X, bbox.MinEdge.Y,
-        bbox.MinEdge.Z);
-    case 1:
-        return irr::core::vector3df(bbox.MaxEdge.X, bbox.MinEdge.Y,
-        bbox.MinEdge.Z);
-    case 2:
-        return irr::core::vector3df(bbox.MinEdge.X, bbox.MaxEdge.Y,
-        bbox.MinEdge.Z);
-    case 3:
-        return irr::core::vector3df(bbox.MaxEdge.X, bbox.MaxEdge.Y,
-        bbox.MinEdge.Z);
-    case 4:
-        return irr::core::vector3df(bbox.MinEdge.X, bbox.MinEdge.Y,
-        bbox.MaxEdge.Z);
-    case 5:
-        return irr::core::vector3df(bbox.MaxEdge.X, bbox.MinEdge.Y,
-        bbox.MaxEdge.Z);
-    case 6:
-        return irr::core::vector3df(bbox.MinEdge.X, bbox.MaxEdge.Y,
-        bbox.MaxEdge.Z);
-    case 7:
-        return irr::core::vector3df(bbox.MaxEdge.X, bbox.MaxEdge.Y,
-        bbox.MaxEdge.Z);
-    default:
-        assert(false);
-        return irr::core::vector3df(0);
-    }
-}   // getCorner
-
+/*
 // ----------------------------------------------------------------------------
 void prepareDrawCalls(const scene::ICameraSceneNode* cam, bool shadow)
 {

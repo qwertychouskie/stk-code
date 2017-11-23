@@ -22,12 +22,11 @@ flat out vec2 color_change;
 
 void main(void)
 {
-    //vec4 quat_rot = normalize(vec4(i_rotation.xyz, sqrt(1.0 - (i_rotation.x * i_rotation.x + i_rotation.y * i_rotation.y + i_rotation.z * i_rotation.z))));
-    vec4 quat_rot = normalize(vec4(i_rotation.xyz, i_scale.w));
-    vec4 world_position = getWorldPosition(i_origin, quat_rot, i_scale.xyz,
-        i_position);
-    vec3 world_normal = rotateVector(quat_rot, i_normal.xyz);
-    vec3 world_tangent = rotateVector(quat_rot, i_tangent.xyz);
+    vec4 model_rotation = normalize(vec4(i_rotation.xyz, i_scale.w));
+    vec4 world_position = getWorldPosition(i_origin, model_rotation,
+        i_scale.xyz, i_position);
+    vec3 world_normal = rotateVector(model_rotation, i_normal.xyz);
+    vec3 world_tangent = rotateVector(model_rotation, i_tangent.xyz);
 
     tangent = (u_view_matrix * vec4(world_tangent, 0.0)).xyz;
     bitangent = (u_view_matrix *

@@ -120,13 +120,13 @@ public:
         if (m_ins_dat.size() > m_gl_instance_size)
         {
             m_gl_instance_size = m_ins_dat.size() * 2;
-            glBufferData(GL_ARRAY_BUFFER, m_gl_instance_size * 36, NULL,
+            glBufferData(GL_ARRAY_BUFFER, m_gl_instance_size * 32, NULL,
                 GL_DYNAMIC_DRAW);
         }
         void* ptr = glMapBufferRange(GL_ARRAY_BUFFER, 0,
-            m_ins_dat.size() * 36, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT |
+            m_ins_dat.size() * 32, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT |
             GL_MAP_INVALIDATE_BUFFER_BIT);
-        memcpy(ptr, m_ins_dat.data(), m_ins_dat.size() * 36);
+        memcpy(ptr, m_ins_dat.data(), m_ins_dat.size() * 32);
         glUnmapBuffer(GL_ARRAY_BUFFER);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 #endif

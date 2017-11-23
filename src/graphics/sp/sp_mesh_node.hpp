@@ -105,6 +105,8 @@ public:
     // ------------------------------------------------------------------------
     void setSkinningOffset(int offset)          { m_skinning_offset = offset; }
     // ------------------------------------------------------------------------
+    int getSkinningOffset() const                 { return m_skinning_offset; }
+    // ------------------------------------------------------------------------
     void setAnimationState(bool val);
     // ------------------------------------------------------------------------
     bool getAnimationState() const                       { return m_animated; }
@@ -112,6 +114,9 @@ public:
     SPShader* getShader(unsigned mesh_buffer_id) const;
     // ------------------------------------------------------------------------
     void setShaderOverride(const std::string& so)   { m_shader_override = so; }
+    // ------------------------------------------------------------------------
+    const std::array<float, 16>* getSkinningMatrices() const 
+                                         { return m_skinning_matrices.data(); }
 };
 
 }

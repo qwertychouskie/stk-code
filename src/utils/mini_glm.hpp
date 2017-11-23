@@ -19,6 +19,7 @@
 #define HEADER_MINI_GLM_HPP
 
 #include "LinearMath/btQuaternion.h"
+#include "utils/vec3.hpp"
 
 #include <array>
 #include <cassert>
@@ -413,44 +414,47 @@ namespace MiniGLM
     // ------------------------------------------------------------------------
     inline core::quaternion getQuaternion(const core::matrix4& m)
     {
-        core::quaternion q;
-        float trace = m[0] + m[5] + m[10];
+        Vec3 row[3];
+        memcpy(&row[0][0], &m[0], 12);
+        memcpy(&row[1][0], &m[4], 12);
+        memcpy(&row[2][0], &m[8], 12);
+        Vec3 q;
+        float root = row[0].x() + row[1].y() + row[2].z();
+        const float trace = root;
         if (trace > 0.0f)
         {
-            float s = 0.5f / sqrtf(trace + 1.0f);
-            q.W = 0.25f / s;
-            q.X = (m[6] - m[9]) * s;
-            q.Y = (m[8] - m[2]) * s;
-            q.Z = (m[1] - m[4]) * s;
-        }
-        else if (m[0] > m[5] && m[0] > m[10])
-        { 
-            // S = 4 * qx 
-            float s = sqrtf(1.0f + m[0] - m[5] - m[10]) * 2.0f;
-            q.X = 0.25f * s;
-            q.Y = (m[4] + m[1]) / s; 
-            q.Z = (m[8] + m[2]) / s; 
-            q.W = (m[6] - m[9]) / s;
-        }
-        else if (m[5] > m[10])
-        {
-            // S = 4 * qy
-            float s = sqrtf(1.0f + m[5] - m[0] - m[10]) * 2.0f;
-            q.X = (m[4] + m[1]) / s; 
-            q.Y = 0.25f * s;
-            q.Z = (m[9] + m[6]) / s; 
-            q.W = (m[8] - m[2]) / s;
+            root = sqrtf(trace + 1.0f);
+            q[3] = 0.5f * root;
+            root = 0.5f / root;
+            q[0] = root * (row[1].z() - row[2].y());
+            q[1] = root * (row[2].x() - row[0].z());
+            q[2] = root * (row[0].y() - row[1].x());
         }
         else
         {
-            // S = 4 * qz
-            float s = sqrtf(1.0f + m[10] - m[0] - m[5]) * 2.0f;
-            q.X = (m[8] + m[2]) / s;
-            q.Y = (m[6] + m[6]) / s; 
-            q.Z = 0.25f * s;
-            q.W = (m[1] - m[4]) / s;
+            static int next[3] = {1, 2, 0};
+            int i = 0;
+            int j = 0;
+            int k = 0;
+            if (row[1].y() > row[0].x())
+            {
+                i = 1;
+            }
+            if (row[2].z() > row[i][i])
+            {
+                i = 2;
+            }
+            j = next[i];
+            k = next[j];
+
+            root = sqrtf(row[i][i] - row[j][j] - row[k][k] + 1.0f);
+            q[i] = 0.5f * root;
+            root = 0.5f / root;
+            q[j] = root * (row[i][j] + row[j][i]);
+            q[k] = root * (row[i][k] + row[k][i]);
+            q[3] = root * (row[j][k] - row[k][j]);
         }
-        return q.normalize();
+        return core::quaternion(q[0], q[1], q[2], q[3]).normalize();
     }
     void unitTesting();
 }

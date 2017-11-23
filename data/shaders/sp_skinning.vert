@@ -10,7 +10,7 @@ layout(location = 2) in vec4 i_color;
 layout(location = 3) in vec2 i_uv;
 layout(location = 4) in vec2 i_uv_two;
 layout(location = 5) in vec4 i_tangent;
-layout(location = 6) in vec4 i_joint;
+layout(location = 6) in ivec4 i_joint;
 layout(location = 7) in vec4 i_weight;
 layout(location = 8) in vec3 i_origin;
 layout(location = 9) in vec4 i_rotation;
@@ -31,11 +31,46 @@ flat out vec2 color_change;
 
 void main(void)
 {
-    vec4 quat_rot = normalize(i_rotation);
-    vec4 world_position = getWorldPosition(i_origin, quat_rot, i_scale.xyz,
-        i_position);
-    vec3 world_normal = rotateVector(quat_rot, i_normal.xyz);
-    vec3 world_tangent = rotateVector(quat_rot, i_tangent.xyz);
+    vec4 model_rotation = normalize(vec4(i_rotation.xyz, i_scale.w));
+    vec4 idle_position = vec4(i_position, 1.0);
+    vec4 idle_normal = i_normal;
+    vec4 idle_tangent = vec4(i_tangent.xyz, 0.0);
+    vec4 skinned_position = vec4(0.0);
+    vec4 skinned_normal = vec4(0.0);
+    vec4 skinned_tangent = vec4(0.0);
+
+    for (int i = 0; i < 4; i++)
+    {
+#ifdef GL_ES
+        mat4 joint_matrix = mat4(
+            texelFetch(skinning_tex, ivec2
+                (0, clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES)), 0),
+            texelFetch(skinning_tex, ivec2
+                (1, clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES)), 0),
+            texelFetch(skinning_tex, ivec2
+                (2, clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES)), 0),
+            texelFetch(skinning_tex, ivec2
+                (3, clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES)), 0));
+#else
+        mat4 joint_matrix = mat4(
+            texelFetch(skinning_tex,
+                clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES) * 4),
+            texelFetch(skinning_tex,
+                clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES) * 4 + 1),
+            texelFetch(skinning_tex,
+                clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES) * 4 + 2),
+            texelFetch(skinning_tex,
+                clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES) * 4 + 3));
+#endif
+        skinned_position += i_weight[i] * joint_matrix * idle_position;
+        skinned_normal += i_weight[i] * joint_matrix * idle_normal;
+        skinned_tangent += i_weight[i] * joint_matrix * idle_tangent;
+    }
+
+    vec4 world_position = getWorldPosition(i_origin, model_rotation, i_scale.xyz,
+        skinned_position.xyz);
+    vec3 world_normal = rotateVector(model_rotation, skinned_normal.xyz);
+    vec3 world_tangent = rotateVector(model_rotation, skinned_tangent.xyz);
 
     tangent = (u_view_matrix * vec4(world_tangent, 0.0)).xyz;
     bitangent = (u_view_matrix *
