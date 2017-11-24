@@ -54,5 +54,5 @@ void main(void)
     vec4 world_position = getWorldPosition(i_origin, model_rotation, i_scale.xyz,
         skinned_position.xyz);
     uv = i_uv;
-    gl_Position = ShadowViewProjMatrixes[layer] * world_position;
+    gl_Position = u_shadow_projection_view_matrices[layer] * world_position;
 }

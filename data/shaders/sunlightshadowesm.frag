@@ -24,7 +24,7 @@ out vec4 Spec;
 
 float getShadowFactor(vec3 pos, int index)
 {
-    vec4 shadowcoord = (ShadowViewProjMatrixes[index] * InverseViewMatrix * vec4(pos, 1.0));
+    vec4 shadowcoord = (u_shadow_projection_view_matrices[index] * InverseViewMatrix * vec4(pos, 1.0));
     shadowcoord.xy /= shadowcoord.w;
     vec2 shadowtexcoord = shadowcoord.xy * 0.5 + 0.5;
 
