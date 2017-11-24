@@ -25,7 +25,6 @@
 #include "graphics/glwrap.hpp"
 #include "graphics/irr_driver.hpp"
 #include "graphics/shadow_matrices.hpp"
-#include "graphics/sp/sp_base.hpp"
 #include "utils/profiler.hpp"
 #include <ITexture.h>
 
@@ -142,17 +141,6 @@ public:
                        const PostProcessing* post_processing) const
     {
         prepareShadowRendering(shadow_framebuffer);
-
-        for (unsigned cascade = 0; cascade < 4; cascade++)
-        {
-            shadow_framebuffer.bindLayer(cascade);
-            SP::sp_cur_shadow_cascade = cascade;
-            ScopedGPUTimer Timer(irr_driver->getGPUTimer(Q_SHADOWS_CASCADE0 + cascade));
-            SP::draw((SP::RenderPass)2, (SP::DrawCallType)(SP::DCT_SHADOW1 + cascade));
-        }
-
-        glDisable(GL_POLYGON_OFFSET_FILL);
-
         if (CVS->isESMEnabled())
             shadowPostProcessing(shadow_matrices, shadow_framebuffer,
                                  scalar_framebuffer, post_processing);

@@ -28,6 +28,7 @@
 #include "utils/vec3.hpp"
 
 #include <irrlicht.h>
+#include <array>
 #include <vector>
 
 namespace HardwareStats
@@ -63,7 +64,8 @@ public:
 class FrameBuffer : public NoCopy
 {
 private:
-    GLuint fbo, fbolayer;
+    GLuint fbo;
+    std::array<GLuint, 4> fbolayer;
     std::vector<GLuint> RenderTargets;
     GLuint DepthTexture;
     unsigned int width, height;
@@ -74,6 +76,7 @@ public:
     ~FrameBuffer();
     void bind() const;
     void bindLayer(unsigned) const;
+    void bindLayerDepthOnly(unsigned) const;
     const std::vector<GLuint> &getRTT() const { return RenderTargets; }
     GLuint getDepthTexture() const { assert(DepthTexture); return DepthTexture; }
     unsigned int getWidth() const { return width; }

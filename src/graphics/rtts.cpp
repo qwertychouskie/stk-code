@@ -268,7 +268,7 @@ RTT::RTT(unsigned int width, unsigned int height, float rtt_scale)
     if (CVS->isGlobalIlluminationEnabled())
     {
         //Todo : use "normal" shadowtex
-        RSM_Color = generateRTT(shadowsize0, GL_RGB8, GL_RGB, GL_UNSIGNED_BYTE);
+/*        RSM_Color = generateRTT(shadowsize0, GL_RGB8, GL_RGB, GL_UNSIGNED_BYTE);
         RSM_Normal = generateRTT(shadowsize0, GL_RGB16F, GL_RGB, GL_FLOAT);
         RSM_Depth = generateRTT(shadowsize0, GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8);
 
@@ -285,7 +285,7 @@ RTT::RTT(unsigned int width, unsigned int height, float rtt_scale)
         somevector.push_back(RH_Red);
         somevector.push_back(RH_Green);
         somevector.push_back(RH_Blue);
-        m_RH_FBO = new FrameBuffer(somevector, 32, 16, true);
+        m_RH_FBO = new FrameBuffer(somevector, 32, 16, true);*/
     }
 
     // Clear this FBO to 1s so that if no SSAO is computed we can still use it.

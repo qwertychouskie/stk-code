@@ -231,6 +231,36 @@ void ShaderBasedRenderer::renderSSAO() const
 }   // renderSSAO
 
 // ----------------------------------------------------------------------------
+void ShaderBasedRenderer::renderShadows()
+{
+    PROFILER_PUSH_CPU_MARKER("- Shadow", 0x30, 0x6F, 0x90);
+    glDepthFunc(GL_LEQUAL);
+    glDepthMask(GL_TRUE);
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    glCullFace(GL_BACK);
+    glEnable(GL_CULL_FACE);
+
+    if (!CVS->isESMEnabled())
+    {
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(1.5, 50.);
+    }
+    for (unsigned cascade = 0; cascade < 4; cascade++)
+    {
+        m_rtts->getShadowFrameBuffer().bindLayerDepthOnly(cascade);
+        glClearColor(1., 1., 1., 1.);
+        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+        glClearColor(0., 0., 0., 0.);
+        SP::sp_cur_shadow_cascade = cascade;
+        ScopedGPUTimer Timer(irr_driver->getGPUTimer(Q_SHADOWS_CASCADE0 + cascade));
+        SP::draw(SP::RP_SHADOW, (SP::DrawCallType)(SP::DCT_SHADOW1 + cascade));
+    }
+    glDisable(GL_POLYGON_OFFSET_FILL);
+    PROFILER_POP_CPU_MARKER();
+}
+
+// ----------------------------------------------------------------------------
 void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
                                       float dt,
                                       bool hasShadow,
@@ -262,13 +292,7 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
         if (CVS->isDefferedEnabled() &&
             CVS->isShadowEnabled() && hasShadow)
         {
-            PROFILER_PUSH_CPU_MARKER("- Shadow", 0x30, 0x6F, 0x90);
-            m_geometry_passes->renderShadows(m_draw_calls,
-                                             m_shadow_matrices,
-                                             m_rtts->getShadowFrameBuffer(),
-                                             m_rtts->getFBO(FBO_SCALAR_1024),
-                                             m_post_processing);
-            PROFILER_POP_CPU_MARKER();
+            renderShadows();
             if (CVS->isGlobalIlluminationEnabled())
             {
                 if (!m_shadow_matrices.isRSMMapAvail())

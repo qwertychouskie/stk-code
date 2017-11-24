@@ -226,61 +226,76 @@ unsigned GPUTimer::elapsedTimeus()
 
 FrameBuffer::FrameBuffer() {}
 
+// Current only 4 layers
 FrameBuffer::FrameBuffer(const std::vector<GLuint> &RTTs, unsigned int w, 
                          unsigned int h, bool layered)
-           : fbolayer(0), RenderTargets(RTTs), DepthTexture(0), 
+           : fbo(0), fbolayer({{0, 0, 0, 0}}), RenderTargets(RTTs), DepthTexture(0), 
              width(w), height(h)
 {
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     if (layered)
     {
-        //for (unsigned i = 0; i < RTTs.size(); i++)
-        //    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, RTTs[i], 0);
+        glGenFramebuffers(4, fbolayer.data());
+        for (int layer = 0; layer < 4; layer++)
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, fbolayer[layer]);
+            for (unsigned i = 0; i < RTTs.size(); i++)
+                glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, RTTs[i], 0, layer);
+            assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE_EXT);
+        }
     }
     else
     {
+        glGenFramebuffers(1, &fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         for (unsigned i = 0; i < RTTs.size(); i++)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, RTTs[i], 0);
+        assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE_EXT);
     }
-    //assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE_EXT);
 }
 
 FrameBuffer::FrameBuffer(const std::vector<GLuint> &RTTs, GLuint DS, unsigned int w,
                          unsigned int h, bool layered) 
-           : fbolayer(0), RenderTargets(RTTs), DepthTexture(DS), width(w), 
+           : fbo(0), fbolayer({{0, 0, 0, 0}}), RenderTargets(RTTs), DepthTexture(DS), width(w), 
              height(h)
 {
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
     if (layered)
     {
-        //for (unsigned i = 0; i < RTTs.size(); i++)
-        //    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, RTTs[i], 0);
-        //glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, DS, 0);
+        glGenFramebuffers(4, fbolayer.data());
+        for (int layer = 0; layer < 4; layer++)
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, fbolayer[layer]);
+            for (unsigned i = 0; i < RTTs.size(); i++)
+                glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, RTTs[i], 0, layer);
+            glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, DS, 0, layer);
+            assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE_EXT);
+        }
     }
     else
-
     {
+        glGenFramebuffers(1, &fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         for (unsigned i = 0; i < RTTs.size(); i++)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, RTTs[i], 0);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, DS, 0);
+        assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE_EXT);
     }
-    //assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE_EXT);
-    if (layered)
-        glGenFramebuffers(1, &fbolayer);
 }
 
 FrameBuffer::~FrameBuffer()
 {
-    glDeleteFramebuffers(1, &fbo);
-    if (fbolayer)
-        glDeleteFramebuffers(1, &fbolayer);
+    if (fbo != 0)
+    {
+        glDeleteFramebuffers(1, &fbo);
+    }
+    else
+    {
+        glDeleteFramebuffers(4, fbolayer.data());
+    }
 }
 
 void FrameBuffer::bind() const
 {
+    assert(fbo != 0);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
     glViewport(0, 0, (int)width, (int)height);
     GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
@@ -289,12 +304,19 @@ void FrameBuffer::bind() const
 
 void FrameBuffer::bindLayer(unsigned i) const
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, fbolayer);
-    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, RenderTargets[0], 0, i);
-    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, DepthTexture, 0, i);
-    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE_EXT);
+    assert(fbolayer[i] != 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbolayer[i]);
     glViewport(0, 0, (int)width, (int)height);
     GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+    glDrawBuffers((int)RenderTargets.size(), bufs);
+}
+
+void FrameBuffer::bindLayerDepthOnly(unsigned i) const
+{
+    assert(fbolayer[i] != 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbolayer[i]);
+    glViewport(0, 0, (int)width, (int)height);
+    GLenum bufs[] = { GL_NONE, GL_NONE, GL_NONE };
     glDrawBuffers((int)RenderTargets.size(), bufs);
 }
 

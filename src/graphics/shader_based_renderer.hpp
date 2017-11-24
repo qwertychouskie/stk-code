@@ -83,6 +83,7 @@ private:
     void debugPhysics();
     void renderPostProcessing(Camera * const camera);
     void preloadShaderFiles();
+    void renderShadows();
 
 public:
     ShaderBasedRenderer();
