@@ -126,7 +126,6 @@ namespace RenderGeometry
 
 using namespace RenderGeometry;
 
-#if !defined(USE_GLES2)
 // ----------------------------------------------------------------------------
 void AbstractGeometryPasses::prepareShadowRendering(const FrameBuffer& shadow_framebuffer) const
 {
@@ -138,7 +137,7 @@ void AbstractGeometryPasses::prepareShadowRendering(const FrameBuffer& shadow_fr
     shadow_framebuffer.bind();
     if (!CVS->isESMEnabled())
     {
-        glDrawBuffer(GL_NONE);
+        //glDrawBuffer(GL_NONE);
         glEnable(GL_POLYGON_OFFSET_FILL);
         glPolygonOffset(1.5, 50.);
     }
@@ -174,7 +173,6 @@ void AbstractGeometryPasses::shadowPostProcessing(const ShadowMatrices& shadow_m
     glBindTexture(GL_TEXTURE_2D_ARRAY, shadow_framebuffer.getRTT()[0]);
     glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
 }
-#endif // !defined(USE_GLES2)
 
 AbstractGeometryPasses::AbstractGeometryPasses()
 {

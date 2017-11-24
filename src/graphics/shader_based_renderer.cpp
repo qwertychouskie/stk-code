@@ -255,7 +255,6 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
     m_lighting_passes.updateLightsInfo(camnode, dt);
     PROFILER_POP_CPU_MARKER();
 
-#if !defined(USE_GLES2)    
     // Shadows
     {
         // To avoid wrong culling, use the largest view possible
@@ -285,8 +284,6 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
         }
         irr_driver->getSceneManager()->setActiveCamera(camnode);
     }
-#endif // !defined(USE_GLES2)
-
 
     glDepthMask(GL_TRUE);
     glDepthFunc(GL_LEQUAL);

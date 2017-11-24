@@ -45,8 +45,6 @@ private:
 
     float m_fps;
 
-    float m_last_frame;
-
     unsigned m_bind_frame, m_total_joints, m_joint_using, m_frame_count;
 
     std::vector<SP::Armature> m_all_armatures;
@@ -160,8 +158,6 @@ public:
     s32 getJointIDWithArm(const c8* name, unsigned* arm_id) const;
     // ------------------------------------------------------------------------
     SPMeshBuffer* getSPMeshBuffer(u32 nr) const;
-    // ------------------------------------------------------------------------
-    void resetLastFrame()                             { m_last_frame = 0.0f; }
 
 };
 

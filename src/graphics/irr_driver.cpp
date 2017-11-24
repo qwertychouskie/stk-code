@@ -1188,7 +1188,8 @@ scene::ISceneNode *IrrDriver::addMesh(scene::IMesh *mesh,
       parent = m_scene_manager->getRootSceneNode();
 
     scene::ISceneNode* node = NULL;
-    if (SP::SPMesh* spm = dynamic_cast<SP::SPMesh*>(mesh))
+    SP::SPMesh* spm = dynamic_cast<SP::SPMesh*>(mesh);
+    if (spm || mesh == NULL)
     {
         SP::SPMeshNode* spmn = new SP::SPMeshNode(spm, parent, m_scene_manager,
             -1, debug_name, core::vector3df(0, 0, 0), core::vector3df(0, 0, 0),
@@ -1403,7 +1404,7 @@ scene::IAnimatedMeshSceneNode *IrrDriver::addAnimatedMesh(scene::IAnimatedMesh *
     scene::IAnimatedMeshSceneNode* node;
 #ifndef SERVER_ONLY
     SP::SPMesh* spm = dynamic_cast<SP::SPMesh*>(mesh);
-    if (CVS->isGLSL() && spm)
+    if (CVS->isGLSL() && (spm || mesh == NULL))
     {
         if (!parent)
         {

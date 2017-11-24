@@ -134,9 +134,9 @@ RTT::RTT(unsigned int width, unsigned int height, float rtt_scale)
     RenderTargetTextures[RTT_HALF2_R] = generateRTT(half, red_internal_format, red_format, type);
 
     RenderTargetTextures[RTT_BLOOM_1024] = generateRTT(shadowsize0, rgba_internal_format, rgb_format, type);
-#if !defined(USE_GLES2)
+
     RenderTargetTextures[RTT_SCALAR_1024] = generateRTT(shadowsize0, red32_internal_format, red_format, type);
-#endif
+
     RenderTargetTextures[RTT_BLOOM_512] = generateRTT(shadowsize1, rgba_internal_format, rgb_format, type);
     RenderTargetTextures[RTT_TMP_512] = generateRTT(shadowsize1, rgba_internal_format, rgb_format, type);
     RenderTargetTextures[RTT_LENS_512] = generateRTT(shadowsize1, rgba_internal_format, rgb_format, type);
@@ -222,12 +222,10 @@ RTT::RTT(unsigned int width, unsigned int height, float rtt_scale)
     somevector.push_back(RenderTargetTextures[RTT_BLOOM_1024]);
     FrameBuffers.push_back(new FrameBuffer(somevector, shadowsize0.Width, shadowsize0.Height));
     somevector.clear();
-#if !defined(USE_GLES2)
     somevector.push_back(RenderTargetTextures[RTT_SCALAR_1024]);
     FrameBuffers.push_back(new FrameBuffer(somevector, shadowsize0.Width, shadowsize0.Height));
     somevector.clear();
-#endif
-    
+
     somevector.push_back(RenderTargetTextures[RTT_BLOOM_512]);
     FrameBuffers.push_back(new FrameBuffer(somevector, shadowsize1.Width, shadowsize1.Height));
     somevector.clear();

@@ -459,7 +459,7 @@ bool CentralVideoSettings::isEXTColorBufferFloatUsable() const
 
 bool CentralVideoSettings::supportsShadows() const
 {
-    return isARBGeometryShadersUsable() && isARBUniformBufferObjectUsable() && isARBExplicitAttribLocationUsable();
+    return isARBExplicitAttribLocationUsable();
 }
 
 bool CentralVideoSettings::supportsGlobalIllumination() const

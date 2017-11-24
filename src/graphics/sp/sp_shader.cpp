@@ -36,7 +36,7 @@ std::unordered_map<std::string, std::pair<unsigned, SamplerType> >
         { "SSAO", { 2, ST_BILINEAR } },
         { "prefilled_dtex", { 3, ST_NEAREST } }
 #ifdef USE_GLES2
-        ,{ "skinning_tex", { 4, ST_NEAREST } }
+        ,{ "skinning_tex", { 4, ST_NEAREST_CLAMPED } }
 #else
         ,{ "skinning_tex", { 4, ST_TEXTURE_BUFFER } }
 #endif

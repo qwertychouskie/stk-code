@@ -178,13 +178,9 @@ void SharedGPUObjects::initSkinning()
         stk_config->m_max_skinning_bones);
 
     glBindTexture(GL_TEXTURE_2D, m_skinning_tex);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 16,
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 4,
         stk_config->m_max_skinning_bones, 0, GL_RGBA, GL_FLOAT, NULL);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 16, 1, GL_RGBA, GL_FLOAT,
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 1, GL_RGBA, GL_FLOAT,
         m.pointer());
     glBindTexture(GL_TEXTURE_2D, 0);
 #else

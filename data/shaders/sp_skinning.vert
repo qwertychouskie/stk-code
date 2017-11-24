@@ -44,7 +44,7 @@ void main(void)
 #ifdef GL_ES
         mat4 joint_matrix = mat4(
             texelFetch(skinning_tex, ivec2
-                (0, clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES)), 0),
+                (0 , clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES)), 0),
             texelFetch(skinning_tex, ivec2
                 (1, clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES)), 0),
             texelFetch(skinning_tex, ivec2

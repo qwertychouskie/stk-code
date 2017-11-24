@@ -28,7 +28,6 @@ namespace SP
 SPMesh::SPMesh()
 {
     m_fps = 0.025f;
-    m_last_frame = 0.0f;
     m_bind_frame = 0;
     m_total_joints = 0;
     m_joint_using = 0;
@@ -121,12 +120,6 @@ s32 SPMesh::getJointIDWithArm(const c8* name, unsigned* arm_id) const
 // ----------------------------------------------------------------------------
 void SPMesh::getSkinningMatrices(f32 frame, std::array<float, 16>* dest)
 {
-    //if (m_last_frame == frame)
-    //{
-    //    return;
-    //}
-
-    m_last_frame = frame;
     unsigned accumulated_joints = 0;
     for (unsigned i = 0; i < m_all_armatures.size(); i++)
     {

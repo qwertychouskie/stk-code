@@ -402,61 +402,15 @@ scene::ISceneNode* KartModel::attachModel(bool animated_models, bool human_playe
 
     if (animated_models)
     {
-        LODNode* lod_node = new LODNode("kart",
-                                        irr_driver->getSceneManager()->getRootSceneNode(),
-                                        irr_driver->getSceneManager()                    );
-
-#ifndef SERVER_ONLY
-
-        node = irr_driver->addAnimatedMesh(m_mesh, "kartmesh",
+        m_animated_node = irr_driver->addAnimatedMesh(m_mesh, "kartmesh",
                NULL/*parent*/, getRenderInfo());
-        node->setAutomaticCulling(scene::EAC_FRUSTUM_BOX);
-#endif
-        if (human_player)
-        {
-            // give a huge LOD distance for the player's kart. the reason is that it should
-            // use its animations for the shadow pass too, where the camera can be quite far
-            lod_node->add(10000, node, true);
-            scene::ISceneNode* static_model = attachModel(false, false);
-            lod_node->add(10001, static_model, true);
-            m_animated_node = static_cast<scene::IAnimatedMeshSceneNode*>(node);
-        }
-        else
-        {
-            lod_node->add(20, node, true);
-            scene::ISceneNode* static_model = attachModel(false, false);
-            lod_node->add(100, static_model, true);
-            m_animated_node = static_cast<scene::IAnimatedMeshSceneNode*>(node);
-        }
-
+        node = m_animated_node;
 #ifdef DEBUG
         std::string debug_name = m_model_filename+" (animated-kart-model)";
         node->setName(debug_name.c_str());
-#if SKELETON_DEBUG
-        irr_driver->addDebugMesh(m_animated_node);
-#endif
 #endif
         m_animated_node->setLoopMode(false);
         m_animated_node->grab();
-        node = lod_node;
-
-        // Become the owner of the wheels
-        for(unsigned int i=0; i<4; i++)
-        {
-            if (!m_wheel_model[i] || !m_wheel_node[i]) continue;
-            m_wheel_node[i]->setParent(lod_node);
-        }
-
-#ifndef SERVER_ONLY
-        // Enable rim lighting for the kart
-        irr_driver->applyObjectPassShader(lod_node, true);
-        std::vector<scene::ISceneNode*> &lodnodes = lod_node->getAllNodes();
-        const u32 max = (u32)lodnodes.size();
-        for (u32 i = 0; i < max; i++)
-        {
-            irr_driver->applyObjectPassShader(lodnodes[i], true);
-        }
-#endif
     }
     else
     {
@@ -482,26 +436,25 @@ scene::ISceneNode* KartModel::attachModel(bool animated_models, bool human_playe
         node->setName(debug_name.c_str());
 #endif
 
+    }
 
-        // Attach the wheels
-        for(unsigned int i=0; i<4; i++)
-        {
-            if(!m_wheel_model[i]) continue;
-            m_wheel_node[i] = irr_driver->addMesh(m_wheel_model[i], "wheel",
-                              node, getRenderInfo());
-            Vec3 wheel_min, wheel_max;
-            MeshTools::minMax3D(m_wheel_model[i], &wheel_min, &wheel_max);
-            m_wheel_graphics_radius[i] = 0.5f*(wheel_max.getY() - wheel_min.getY());
+    // Attach the wheels
+    for (unsigned int i = 0; i < 4; i++)
+    {
+        if(!m_wheel_model[i]) continue;
+        m_wheel_node[i] = irr_driver->addMesh(m_wheel_model[i], "wheel",
+                          node, getRenderInfo());
+        Vec3 wheel_min, wheel_max;
+        MeshTools::minMax3D(m_wheel_model[i], &wheel_min, &wheel_max);
+        m_wheel_graphics_radius[i] = 0.5f*(wheel_max.getY() - wheel_min.getY());
 
-            m_wheel_node[i]->grab();
-            ((scene::IMeshSceneNode *) m_wheel_node[i])->setReadOnlyMaterials(true);
+        m_wheel_node[i]->grab();
+        ((scene::IMeshSceneNode *) m_wheel_node[i])->setReadOnlyMaterials(true);
 #ifdef DEBUG
-            std::string debug_name = m_wheel_filename[i]+" (wheel)";
-            m_wheel_node[i]->setName(debug_name.c_str());
+        std::string debug_name = m_wheel_filename[i]+" (wheel)";
+        m_wheel_node[i]->setName(debug_name.c_str());
 #endif
-            m_wheel_node[i]->setPosition(m_wheel_graphics_position[i].toIrrVector());
-        }
-
+        m_wheel_node[i]->setPosition(m_wheel_graphics_position[i].toIrrVector());
     }
 
     // Attach the speed weighted objects + set the animation state
@@ -576,6 +529,15 @@ scene::ISceneNode* KartModel::attachModel(bool animated_models, bool human_playe
             getRenderInfo());
         configNode(node, *m_hat_location, bone_attachment ?
                 getInverseBoneMatrix(m_hat_bone) : core::matrix4());
+    }
+
+    if (animated_models)
+    {
+        LODNode* lod_node = new LODNode("kart",
+            irr_driver->getSceneManager()->getRootSceneNode(),
+            irr_driver->getSceneManager());
+        lod_node->add(human_player ? 10000: 100, node, true);
+        return lod_node;
     }
 
     return node;

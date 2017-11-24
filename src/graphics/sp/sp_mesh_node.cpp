@@ -40,7 +40,7 @@ SPMeshNode::SPMeshNode(IAnimatedMesh* mesh, ISceneNode* parent,
 {
     m_mesh = NULL;
     m_mesh_render_info = render_info;
-    m_animated = !static_cast<SPMesh*>(mesh)->isStatic();
+    m_animated = false;
     m_skinning_offset = -32768;
 }   // SPMeshNode
 
@@ -64,11 +64,13 @@ void SPMeshNode::setAnimationState(bool val)
 void SPMeshNode::setMesh(irr::scene::IAnimatedMesh* mesh)
 {
     m_skinning_offset = -32768;
+    m_animated = false;
     m_mesh = static_cast<SPMesh*>(mesh);
     CAnimatedMeshSceneNode::setMesh(mesh);
     cleanJoints();
-    if (!m_mesh->isStatic())
+    if (m_mesh && !m_mesh->isStatic())
     {
+        m_animated = !m_mesh->isStatic();
         unsigned bone_idx = 0;
         m_skinning_matrices.resize(m_mesh->getJointCount());
         for (Armature& arm : m_mesh->getArmatures())

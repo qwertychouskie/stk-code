@@ -205,6 +205,16 @@ void loadShaders()
     shader->addBasicUniforms(RP_2ND);
     shader->addAllTextures(RP_2ND); 
 
+    shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
+    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->linkShaderFiles(RP_SHADOW);
+    shader->use(RP_SHADOW);
+    shader->addBasicUniforms(RP_SHADOW);
+    shader->addUniform("layer", typeid(int), RP_SHADOW);
+    shader->addAllTextures(RP_SHADOW);
+    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
+        shadowCascadeUniformAssigner);
+
     addShader(shader);
 
     shader = new SPShader("solid_skinned");
@@ -222,6 +232,16 @@ void loadShaders()
     shader->use(RP_2ND);
     shader->addBasicUniforms(RP_2ND);
     shader->addAllTextures(RP_2ND); 
+
+    shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
+    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->linkShaderFiles(RP_SHADOW);
+    shader->use(RP_SHADOW);
+    shader->addBasicUniforms(RP_SHADOW);
+    shader->addUniform("layer", typeid(int), RP_SHADOW);
+    shader->addAllTextures(RP_SHADOW);
+    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
+        shadowCascadeUniformAssigner);
 
     addShader(shader);
 
@@ -242,6 +262,16 @@ void loadShaders()
     shader->addBasicUniforms(RP_2ND);
     shader->addAllTextures(RP_2ND); 
 
+    shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
+    shader->addShaderFile("sp_shadow_alpha_test.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->linkShaderFiles(RP_SHADOW);
+    shader->use(RP_SHADOW);
+    shader->addBasicUniforms(RP_SHADOW);
+    shader->addUniform("layer", typeid(int), RP_SHADOW);
+    shader->addAllTextures(RP_SHADOW);
+    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
+        shadowCascadeUniformAssigner);
+
     addShader(shader);
 
     shader = new SPShader("alphatest_skinned");
@@ -259,6 +289,16 @@ void loadShaders()
     shader->use(RP_2ND);
     shader->addBasicUniforms(RP_2ND);
     shader->addAllTextures(RP_2ND); 
+
+    shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
+    shader->addShaderFile("sp_shadow_alpha_test.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->linkShaderFiles(RP_SHADOW);
+    shader->use(RP_SHADOW);
+    shader->addBasicUniforms(RP_SHADOW);
+    shader->addUniform("layer", typeid(int), RP_SHADOW);
+    shader->addAllTextures(RP_SHADOW);
+    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
+        shadowCascadeUniformAssigner);
 
     addShader(shader);
 
@@ -297,6 +337,16 @@ void loadShaders()
     shader->addBasicUniforms(RP_2ND);
     shader->addAllTextures(RP_2ND); 
 
+    shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
+    shader->addShaderFile("sp_shadow_alpha_test.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->linkShaderFiles(RP_SHADOW);
+    shader->use(RP_SHADOW);
+    shader->addBasicUniforms(RP_SHADOW);
+    shader->addUniform("layer", typeid(int), RP_SHADOW);
+    shader->addAllTextures(RP_SHADOW);
+    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
+        shadowCascadeUniformAssigner);
+
     addShader(shader);
 
     // ========================================================================
@@ -316,6 +366,16 @@ void loadShaders()
     shader->addBasicUniforms(RP_2ND);
     shader->addAllTextures(RP_2ND); 
 
+    shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
+    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->linkShaderFiles(RP_SHADOW);
+    shader->use(RP_SHADOW);
+    shader->addBasicUniforms(RP_SHADOW);
+    shader->addUniform("layer", typeid(int), RP_SHADOW);
+    shader->addAllTextures(RP_SHADOW);
+    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
+        shadowCascadeUniformAssigner);
+
     addShader(shader);
 
     shader = new SPShader("normalmap_skinned");
@@ -333,6 +393,17 @@ void loadShaders()
     shader->use(RP_2ND);
     shader->addBasicUniforms(RP_2ND);
     shader->addAllTextures(RP_2ND); 
+
+    shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
+    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->linkShaderFiles(RP_SHADOW);
+    shader->use(RP_SHADOW);
+    shader->addBasicUniforms(RP_SHADOW);
+    shader->addUniform("layer", typeid(int), RP_SHADOW);
+    shader->addAllTextures(RP_SHADOW);
+    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
+        shadowCascadeUniformAssigner);
+
 
     addShader(shader);
 
@@ -806,26 +877,33 @@ void uploadAll()
 
 #ifdef USE_GLES2
     glBindTexture(GL_TEXTURE_2D, SharedGPUObjects::getSkinningTexture());
-    unsigned buffer_offset = 1;
+    unsigned buffer_offset = 0;
+    std::vector<std::array<float, 16> > tmp_buf(stk_config->m_max_skinning_bones);
+        //const irr::core::matrix4 m;
+        //memcpy(&tmp_buf[0], m.pointer(), 64);
 #else
     unsigned buffer_offset = 64;
     glBindBuffer(GL_TEXTURE_BUFFER, SharedGPUObjects::getSkinningBuffer());
 #endif
 
+
     for (unsigned i = 0; i < g_skinning_mesh.size(); i++)
     {
 #ifdef USE_GLES2
-        //glTexSubImage2D(GL_TEXTURE_2D, 0, 0, buffer_offset, 16,
-        //    g_skinning_mesh[i]->getTotalJoints() * 16, GL_RGBA,
+//glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+//glPixelStorei(GL_PACK_ALIGNMENT, 1);
+        memcpy(&tmp_buf[buffer_offset], g_skinning_mesh[i]->getSkinningMatrices(),
+            g_skinning_mesh[i]->getTotalJoints() << 6);
+        //glTexSubImage2D(GL_TEXTURE_2D, 0, 0, buffer_offset, 4,
+        //    g_skinning_mesh[i]->getTotalJoints(), GL_RGBA,
         //    GL_FLOAT, g_skinning_mesh[i]->getSkinningMatrices());
-        //buffer_offset += g_skinning_mesh[i]->getTotalJoints();
-        for (int j = 0; j < g_skinning_mesh[i]->getTotalJoints(); j++)
+        buffer_offset += g_skinning_mesh[i]->getTotalJoints();
+        /*for (int j = 0; j < g_skinning_mesh[i]->getTotalJoints(); j++)
         {
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, buffer_offset + j, 16,
                 1, GL_RGBA,
                 GL_FLOAT, g_skinning_mesh[i]->getSkinningMatrices() + j);
-        }
-        buffer_offset += g_skinning_mesh[i]->getTotalJoints();
+        }*/
 #else
         glBufferSubData(GL_TEXTURE_BUFFER, buffer_offset,
             g_skinning_mesh[i]->getTotalJoints() << 6,
@@ -835,6 +913,11 @@ void uploadAll()
     }
 
 #ifdef USE_GLES2
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 1, 4,
+            1023, GL_RGBA,
+            GL_FLOAT, tmp_buf.data());
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 4,
+    //    stk_config->m_max_skinning_bones, 0, GL_RGBA, GL_FLOAT, tmp_buf.data());
     glBindTexture(GL_TEXTURE_2D, 0);
 #else
     glBindBuffer(GL_TEXTURE_BUFFER, 0);

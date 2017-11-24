@@ -1,111 +1,58 @@
 uniform int layer;
-uniform int skinning_offset;
-uniform int joint_count;
-#ifndef GL_ES
-uniform samplerBuffer skinning_tbo;
-#endif
 
-layout(location = 0) in vec3 Position;
-layout(location = 3) in vec4 Texcoord;
-layout(location = 6) in ivec4 Joint;
-layout(location = 7) in vec4 Weight;
-layout(location = 8) in vec4 matrix_1;
-layout(location = 9) in vec4 matrix_2;
-layout(location = 10) in vec4 matrix_3;
-
-#ifdef VSLayer
-out vec2 uv;
+#ifdef GL_ES
+uniform sampler2D skinning_tex;
 #else
-out vec2 tc;
-out int layer_id;
+uniform samplerBuffer skinning_tex;
 #endif
 
-#stk_include "utils/getworldmatrix.vert"
+layout(location = 0) in vec3 i_position;
+layout(location = 3) in vec2 i_uv;
+layout(location = 6) in ivec4 i_joint;
+layout(location = 7) in vec4 i_weight;
+layout(location = 8) in vec3 i_origin;
+layout(location = 9) in vec4 i_rotation;
+layout(location = 10) in vec4 i_scale;
+layout(location = 12) in int i_skinning_offset;
+
+#stk_include "utils/get_world_location.vert"
+
+out vec2 uv;
 
 void main(void)
 {
+    vec4 model_rotation = normalize(vec4(i_rotation.xyz, i_scale.w));
+    vec4 idle_position = vec4(i_position, 1.0);
+    vec4 skinned_position = vec4(0.0);
 
-#ifdef VSLayer
-    gl_Layer = layer;
-    uv = Texcoord.xy;
-#else
-    layer_id = layer;
-    tc = Texcoord.xy;
-#endif
-
-    mat4 model_matrix = getModelMatrix(matrix_1, matrix_2, matrix_3);
-    vec4 skinned_position = vec4(0.);
-    if (Weight[0] < 0.01)
+    for (int i = 0; i < 4; i++)
     {
-        skinned_position = vec4(Position, 1.);
-    }
-    else
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            if (Weight[i] < 0.01)
-            {
-                break;
-            }
 #ifdef GL_ES
-        mat4 skin_matrix =
-            Weight[0] * mat4(
-                joint_matrices[Joint[0] * 4 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)],
-                joint_matrices[Joint[0] * 4 + 1 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)],
-                joint_matrices[Joint[0] * 4 + 2 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)],
-                joint_matrices[Joint[0] * 4 + 3 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)]) +
-            Weight[1] * mat4(
-                joint_matrices[Joint[1] * 4 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)],
-                joint_matrices[Joint[1] * 4 + 1 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)],
-                joint_matrices[Joint[1] * 4 + 2 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)],
-                joint_matrices[Joint[1] * 4 + 3 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)]) +
-            Weight[2] * mat4(
-                joint_matrices[Joint[2] * 4 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)],
-                joint_matrices[Joint[2] * 4 + 1 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)],
-                joint_matrices[Joint[2] * 4 + 2 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)],
-                joint_matrices[Joint[2] * 4 + 3 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)]) +
-            Weight[3] * mat4(
-                joint_matrices[Joint[3] * 4 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)],
-                joint_matrices[Joint[3] * 4 + 1 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)],
-                joint_matrices[Joint[3] * 4 + 2 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)],
-                joint_matrices[Joint[3] * 4 + 3 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)]);
-        skinned_position = skin_matrix * vec4(Position, 1.);
+        mat4 joint_matrix = mat4(
+            texelFetch(skinning_tex, ivec2
+                (0, clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES)), 0),
+            texelFetch(skinning_tex, ivec2
+                (1, clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES)), 0),
+            texelFetch(skinning_tex, ivec2
+                (2, clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES)), 0),
+            texelFetch(skinning_tex, ivec2
+                (3, clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES)), 0));
 #else
-        for (int i = 0; i < 4; i++)
-        {
-            if (Weight[i] < 0.01)
-            {
-                break;
-            }
-            mat4 joint_matrix = mat4(
-                texelFetch(skinning_tbo, Joint[i] * 4 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)),
-                texelFetch(skinning_tbo, Joint[i] * 4 + 1 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)),
-                texelFetch(skinning_tbo, Joint[i] * 4 + 2 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)),
-                texelFetch(skinning_tbo, Joint[i] * 4 + 3 +
-                (skinning_offset + joint_count * gl_InstanceID * 4)));
-            skinned_position += Weight[i] * joint_matrix * vec4(Position, 1.);
-        }
+        mat4 joint_matrix = mat4(
+            texelFetch(skinning_tex,
+                clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES) * 4),
+            texelFetch(skinning_tex,
+                clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES) * 4 + 1),
+            texelFetch(skinning_tex,
+                clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES) * 4 + 2),
+            texelFetch(skinning_tex,
+                clamp(i_joint[i] + i_skinning_offset, 0, MAX_BONES) * 4 + 3));
 #endif
-        }
+        skinned_position += i_weight[i] * joint_matrix * idle_position;
     }
-    gl_Position = ShadowViewProjMatrixes[layer] * model_matrix * skinned_position;
+
+    vec4 world_position = getWorldPosition(i_origin, model_rotation, i_scale.xyz,
+        skinned_position.xyz);
+    uv = i_uv;
+    gl_Position = ShadowViewProjMatrixes[layer] * world_position;
 }

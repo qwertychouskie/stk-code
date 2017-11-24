@@ -25,6 +25,7 @@
 #include "graphics/glwrap.hpp"
 #include "graphics/irr_driver.hpp"
 #include "graphics/shadow_matrices.hpp"
+#include "graphics/sp/sp_base.hpp"
 #include "utils/profiler.hpp"
 #include <ITexture.h>
 
@@ -37,13 +38,11 @@ protected:
     std::vector<GLuint>   m_prefilled_textures;    
     std::vector<uint64_t> m_textures_handles;
     
-#if !defined(USE_GLES2)
     void prepareShadowRendering(const FrameBuffer& shadow_framebuffer) const;
     void shadowPostProcessing(const ShadowMatrices& shadow_matrices,
                               const FrameBuffer& shadow_framebuffer,
                               const FrameBuffer& scalar_framebuffer,
                               const PostProcessing* post_processing) const;
-#endif // !defined(USE_GLES2)
    
 public:
     AbstractGeometryPasses();
@@ -68,7 +67,6 @@ public:
                            const FrameBuffer& colors_framebuffer,
                            const PostProcessing* post_processing);
 
-#if !defined(USE_GLES2)                           
     virtual void renderShadows (const DrawCalls& draw_calls,
                                 const ShadowMatrices& shadow_matrices,
                                 const FrameBuffer& shadow_framebuffer,
@@ -79,7 +77,6 @@ public:
     virtual void renderReflectiveShadowMap(const DrawCalls& draw_calls,
                                            const ShadowMatrices& shadow_matrices,
                                            const FrameBuffer& reflective_shadow_map_framebuffer) const = 0 ;
-#endif // !defined(USE_GLES2)
 };
 
 template<typename DrawPolicy>
@@ -138,7 +135,6 @@ public:
         glDisable(GL_STENCIL_TEST);
     }
 
-#if !defined(USE_GLES2)
     void renderShadows(const DrawCalls& draw_calls,
                        const ShadowMatrices& shadow_matrices,
                        const FrameBuffer& shadow_framebuffer,
@@ -149,8 +145,10 @@ public:
 
         for (unsigned cascade = 0; cascade < 4; cascade++)
         {
+            shadow_framebuffer.bindLayer(cascade);
+            SP::sp_cur_shadow_cascade = cascade;
             ScopedGPUTimer Timer(irr_driver->getGPUTimer(Q_SHADOWS_CASCADE0 + cascade));
-            DrawPolicy::drawShadows(draw_calls, cascade);
+            SP::draw((SP::RenderPass)2, (SP::DrawCallType)(SP::DCT_SHADOW1 + cascade));
         }
 
         glDisable(GL_POLYGON_OFFSET_FILL);
@@ -170,7 +168,6 @@ public:
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         DrawPolicy::drawReflectiveShadowMap(draw_calls, shadow_matrices.getRSMMatrix());
     }
-#endif // !defined(USE_GLES2)
 
 };
 
