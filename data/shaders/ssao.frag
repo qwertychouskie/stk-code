@@ -17,8 +17,8 @@ const float invSamples = 0.0625; // 1. / SAMPLES
 vec3 getXcYcZc(int x, int y, float zC)
 {
     // We use perspective symetric projection matrix hence P(0,2) = P(1, 2) = 0
-    float xC= (2. * (float(x)) / u_screen.x - 1.) * zC / ProjectionMatrix[0][0];
-    float yC= (2. * (float(y)) / u_screen.y - 1.) * zC / ProjectionMatrix[1][1];
+    float xC= (2. * (float(x)) / u_screen.x - 1.) * zC / u_projection_matrix[0][0];
+    float yC= (2. * (float(y)) / u_screen.y - 1.) * zC / u_projection_matrix[1][1];
     return vec3(xC, yC, zC);
 }
 

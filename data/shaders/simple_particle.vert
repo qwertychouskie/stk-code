@@ -66,5 +66,5 @@ void main(void)
         viewpos = ViewMatrix * vec4(Position, 1.0);
         viewpos += vec4(size * quadcorner, 0.0, 0.0);
     }
-    gl_Position = ProjectionMatrix * viewpos;
+    gl_Position = u_projection_matrix * viewpos;
 }

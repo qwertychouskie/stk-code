@@ -12,9 +12,9 @@ void main()
         EmitVertex();
 
         vec3 normal = normalize(nor[i]);
-        pos = inverse(ProjectionMatrix) * pos;
+        pos = inverse(u_projection_matrix) * pos;
         pos /= pos.w;
-        gl_Position = ProjectionMatrix * (pos + .2 * vec4(normal, 0.));
+        gl_Position = u_projection_matrix * (pos + .2 * vec4(normal, 0.));
         EmitVertex();
 
         EndPrimitive();
