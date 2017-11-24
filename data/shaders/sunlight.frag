@@ -1,6 +1,9 @@
 uniform sampler2D ntex;
 uniform sampler2D dtex;
 
+uniform vec3 sundirection;
+uniform vec3 sun_color;
+
 #ifdef GL_ES
 layout (location = 0) out vec4 Diff;
 layout (location = 1) out vec4 Spec;
@@ -30,8 +33,8 @@ void main() {
     vec3 Specular = SpecularBRDF(norm, eyedir, Lightdir, vec3(1.), roughness);
     vec3 Diffuse = DiffuseBRDF(norm, eyedir, Lightdir, vec3(1.), roughness);
 
-    Diff = vec4(NdotL * Diffuse * sun_col, 1.);
-    Spec = vec4(NdotL * Specular * sun_col, 1.);
+    Diff = vec4(NdotL * Diffuse * sun_color, 1.);
+    Spec = vec4(NdotL * Specular * sun_color, 1.);
 
 /*	if (hasclouds == 1)
 	{

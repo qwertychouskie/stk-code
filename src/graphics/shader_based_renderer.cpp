@@ -725,6 +725,10 @@ void ShaderBasedRenderer::addSkyBox(const std::vector<video::ITexture*> &texture
     {
         m_spherical_harmonics->setTextures(spherical_harmonics_textures);
     }
+    if (CVS->isARBUniformBufferObjectUsable())
+    {
+        uploadLightingData();
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -835,8 +839,6 @@ void ShaderBasedRenderer::render(float dt)
         
         PROFILER_PUSH_CPU_MARKER("UBO upload", 0x0, 0xFF, 0x0);
         computeMatrixesAndCameras(camnode, m_rtts->getWidth(), m_rtts->getHeight());
-        if(CVS->isARBUniformBufferObjectUsable())
-            uploadLightingData();
         PROFILER_POP_CPU_MARKER();
         renderScene(camnode, dt, track->hasShadows(), false); 
         
@@ -858,19 +860,6 @@ void ShaderBasedRenderer::render(float dt)
         PROFILER_POP_CPU_MARKER();
         
     }  // for i<world->getNumKarts()
-    
-    if(CVS->isARBUniformBufferObjectUsable())
-    {
-        // Use full screen size
-        float tmp[2];
-        tmp[0] = float(irr_driver->getActualScreenSize().Width);
-        tmp[1] = float(irr_driver->getActualScreenSize().Height);
-        glBindBuffer(GL_UNIFORM_BUFFER,
-                     SharedGPUObjects::getViewProjectionMatricesUBO());
-        glBufferSubData(GL_UNIFORM_BUFFER, (16 * 9) * sizeof(float),
-                        2 * sizeof(float), tmp);
-    }
-
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -880,7 +869,7 @@ void ShaderBasedRenderer::render(float dt)
     irr_driver->getVideoDriver()->setViewPort(core::recti(0, 0,
         irr_driver->getActualScreenSize().Width,
         irr_driver->getActualScreenSize().Height));
-        
+
     m_current_screen_size = core::vector2df(
                                     (float)irr_driver->getActualScreenSize().Width, 
                                     (float)irr_driver->getActualScreenSize().Height);

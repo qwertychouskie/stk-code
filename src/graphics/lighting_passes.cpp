@@ -296,7 +296,8 @@ public:
 // ============================================================================
 class ShadowedSunLightShaderPCF : public TextureShader<ShadowedSunLightShaderPCF,
                                                        3,  float, float, float,
-                                                       float, float>
+                                                       float, float,
+                                                       core::vector3df, video::SColorf>
 {
 public:
     ShadowedSunLightShaderPCF()
@@ -308,12 +309,15 @@ public:
         assignSamplerNames(0, "ntex", ST_NEAREST_FILTERED,
                            1, "dtex", ST_NEAREST_FILTERED,
                            8, "shadowtex", ST_SHADOW_SAMPLER);
-        assignUniforms("split0", "split1", "split2", "splitmax", "shadow_res");
+        assignUniforms("split0", "split1", "split2", "splitmax", "shadow_res",
+            "sundirection", "sun_color");
     }   // ShadowedSunLightShaderPCF
     // ------------------------------------------------------------------------
     void render(GLuint normal_depth_texture,
                 GLuint depth_stencil_texture,
-                const FrameBuffer& shadow_framebuffer)
+                const FrameBuffer& shadow_framebuffer,
+                const core::vector3df &direction,
+                const video::SColorf &col)
     {
         setTextureUnits(normal_depth_texture,
                         depth_stencil_texture,
@@ -322,7 +326,8 @@ public:
                             ShadowMatrices::m_shadow_split[2],
                             ShadowMatrices::m_shadow_split[3],
                             ShadowMatrices::m_shadow_split[4],
-                            float(UserConfigParams::m_shadows_resolution)   );
+                            float(UserConfigParams::m_shadows_resolution),
+                            direction, col);
 
     }    // render
 };   // ShadowedSunLightShaderPCF
@@ -373,7 +378,7 @@ public:
 
         assignSamplerNames(0, "ntex", ST_NEAREST_FILTERED,
                            1, "dtex", ST_NEAREST_FILTERED);
-        assignUniforms("direction", "col");
+        assignUniforms("sundirection", "sun_color");
     }   // SunLightShader
     // ------------------------------------------------------------------------
     void render(const core::vector3df &direction, const video::SColorf &col,
@@ -643,7 +648,9 @@ void LightingPasses::renderLights(  bool has_shadow,
             {
                 ShadowedSunLightShaderPCF::getInstance()->render(normal_depth_texture,
                                                                  depth_stencil_texture,
-                                                                 shadow_framebuffer);
+                                                                 shadow_framebuffer,
+                                                                 irr_driver->getSunDirection(),
+                                                                 irr_driver->getSunColor());
             }
         }
         else
