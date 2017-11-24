@@ -146,8 +146,9 @@ private:
     /** End of recursive implementation of assignUniforms. */
     void assignUniformsImpl()
     {
-        bindPoint("MatrixesData", 0);
+        bindPoint("Matrices", 0);
         bindPoint("LightingData", 1);
+        bindPoint("SPFogData", 2);
     }   // assignUniformsImpl
 
     // ------------------------------------------------------------------------

@@ -519,12 +519,11 @@ void init()
     glBindBuffer(GL_UNIFORM_BUFFER, sp_mat_ubo);
     glBufferData(GL_UNIFORM_BUFFER, (16 * 9 + 2) * sizeof(float), NULL,
         GL_STREAM_DRAW);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 2, sp_mat_ubo);
 
     glGenBuffers(1, &sp_fog_ubo);
     glBindBuffer(GL_UNIFORM_BUFFER, sp_fog_ubo);
     glBufferData(GL_UNIFORM_BUFFER, 8 * sizeof(float), NULL, GL_STREAM_DRAW);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 3, sp_fog_ubo);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 2, sp_fog_ubo);
 
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 

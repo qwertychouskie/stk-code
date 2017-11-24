@@ -268,7 +268,7 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
 {
     if (CVS->isARBUniformBufferObjectUsable())
     {
-        glBindBufferBase(GL_UNIFORM_BUFFER, 0, SharedGPUObjects::getViewProjectionMatricesUBO());
+        glBindBufferBase(GL_UNIFORM_BUFFER, 0, SP::sp_mat_ubo);
         glBindBufferBase(GL_UNIFORM_BUFFER, 1, SharedGPUObjects::getLightingDataUBO());
     }
     irr_driver->getSceneManager()->setActiveCamera(camnode);

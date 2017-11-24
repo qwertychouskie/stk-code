@@ -153,12 +153,12 @@ public:
     {
 #ifndef SERVER_ONLY
         GLuint block_index = glGetUniformBlockIndex(m_program[rp],
-            "SPMatrices");
+            "Matrices");
         if (block_index != GL_INVALID_INDEX)
-            glUniformBlockBinding(m_program[rp], block_index, 2);
+            glUniformBlockBinding(m_program[rp], block_index, 0);
         block_index = glGetUniformBlockIndex(m_program[rp], "SPFogData");
         if (block_index != GL_INVALID_INDEX)
-            glUniformBlockBinding(m_program[rp], block_index, 3);
+            glUniformBlockBinding(m_program[rp], block_index, 2);
 #endif
     }
     // ------------------------------------------------------------------------

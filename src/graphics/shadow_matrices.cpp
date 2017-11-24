@@ -476,21 +476,6 @@ void ShadowMatrices::computeMatrixesAndCameras(scene::ICameraSceneNode *const ca
 
     m_mat_ubo[144] = float(width);
     m_mat_ubo[145] = float(height);
-
-    if(!CVS->isARBUniformBufferObjectUsable())
-        return;
-
-    glBindBuffer(GL_UNIFORM_BUFFER,
-                 SharedGPUObjects::getViewProjectionMatricesUBO());
-    if (CVS->isSDSMEnabled())
-    {
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, (16 * 5) * sizeof(float), m_mat_ubo);
-        glBufferSubData(GL_UNIFORM_BUFFER, (16 * 9) * sizeof(float),
-                        2 * sizeof(float), &m_mat_ubo[144]);
-    }
-    else
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, (16 * 9 + 2) * sizeof(float),
-                        m_mat_ubo);
 }   // computeMatrixesAndCameras
 
 // ----------------------------------------------------------------------------
