@@ -242,7 +242,7 @@ void TrackObject::init(const XMLNode &xml_node, scene::ISceneNode* parent,
         // If at least one material is colorizable, add RenderInfo for it
         if (colorizable)
         {
-            m_render_info = new RenderInfo();
+            m_render_info = std::make_shared<RenderInfo>();
             if (use_dynamic_hue)
                 m_render_info->setDynamicHue(mesh);
             else
@@ -427,7 +427,6 @@ TrackObject::~TrackObject()
     delete m_presentation;
     delete m_animator;
     delete m_physical_object;
-    delete m_render_info;
 }   // ~TrackObject
 
 // ----------------------------------------------------------------------------

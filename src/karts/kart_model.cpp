@@ -103,7 +103,6 @@ KartModel::KartModel(bool is_master)
     m_kart       = NULL;
     m_mesh       = NULL;
     m_hat_location = NULL;
-    m_render_info = NULL;
 
     for(unsigned int i=0; i<4; i++)
     {
@@ -301,7 +300,6 @@ KartModel::~KartModel()
     }
 
     delete m_hat_location;
-    delete m_render_info;
 #ifdef DEBUG
 #if SKELETON_DEBUG
     irr_driver->clearDebugMeshes();
@@ -322,7 +320,7 @@ KartModel* KartModel::makeCopy(KartRenderType krt)
     // that there is indeed no animated node defined here ...
     // just in case.
     assert(m_is_master);
-    assert(m_render_info == NULL);
+    assert(!m_render_info);
     assert(!m_animated_node);
     KartModel *km               = new KartModel(/*is master*/ false);
     km->m_kart_width            = m_kart_width;
@@ -339,7 +337,7 @@ KartModel* KartModel::makeCopy(KartRenderType krt)
     km->m_hat_bone              = m_hat_bone;
     km->m_krt                   = krt;
     km->m_support_colorization  = m_support_colorization;
-    km->m_render_info           = new RenderInfo();
+    km->m_render_info           = std::make_shared<RenderInfo>();
     km->m_inverse_bone_matrices = m_inverse_bone_matrices;
     km->m_version               = m_version;
     km->m_exhaust_xml           = m_exhaust_xml;
@@ -1154,7 +1152,7 @@ void KartModel::resetVisualWheelPosition()
 }   // resetVisualSuspension
 
 //-----------------------------------------------------------------------------
-RenderInfo* KartModel::getRenderInfo()
+std::shared_ptr<RenderInfo> KartModel::getRenderInfo()
 {
     return m_support_colorization || m_krt == KRT_TRANSPARENT ?
         m_render_info : NULL;

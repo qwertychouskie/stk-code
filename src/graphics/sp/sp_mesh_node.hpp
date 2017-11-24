@@ -22,6 +22,7 @@
 #include <array>
 #include <cassert>
 #include <string>
+#include <memory>
 #include <vector>
 #include <unordered_map>
 
@@ -37,11 +38,11 @@ class SPShader;
 class SPMeshNode : public irr::scene::CAnimatedMeshSceneNode
 {
 private:
-    std::vector<RenderInfo*> m_static_render_info;
+    std::vector<std::shared_ptr<RenderInfo> > m_static_render_info;
 
     std::unordered_map<std::string, IBoneSceneNode*> m_joint_nodes;
 
-    RenderInfo* m_mesh_render_info;
+    std::shared_ptr<RenderInfo> m_mesh_render_info;
 
     SPMesh* m_mesh;
 
@@ -73,7 +74,7 @@ public:
                const core::vector3df& position = core::vector3df(),
                const core::vector3df& rotation = core::vector3df(),
                const core::vector3df& scale = core::vector3df(1, 1, 1),
-               RenderInfo* render_info = NULL);
+               std::shared_ptr<RenderInfo> render_info = nullptr);
     // ------------------------------------------------------------------------
     ~SPMeshNode();
     // ------------------------------------------------------------------------
@@ -124,7 +125,7 @@ public:
     {
         if (m_static_render_info.size() > mb_id)
         {
-            return m_static_render_info[mb_id];
+            return m_static_render_info[mb_id].get();
         }
         return NULL;
     }

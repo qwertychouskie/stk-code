@@ -35,7 +35,8 @@ SPMeshNode::SPMeshNode(IAnimatedMesh* mesh, ISceneNode* parent,
                        const std::string& debug_name,
                        const core::vector3df& position,
                        const core::vector3df& rotation,
-                       const core::vector3df& scale, RenderInfo* render_info)
+                       const core::vector3df& scale,
+                       std::shared_ptr<RenderInfo> render_info)
           : CAnimatedMeshSceneNode(mesh, parent, mgr, id, position, rotation,
                                    scale)
 {
@@ -55,13 +56,6 @@ SPMeshNode::~SPMeshNode()
 // ----------------------------------------------------------------------------
 void SPMeshNode::cleanRenderInfo()
 {
-    for (RenderInfo* ri : m_static_render_info)
-    {
-        if (!ri->isStatic())
-        {
-            delete ri;
-        }
-    }
     m_static_render_info.clear();
 }   // cleanRenderInfo
 
@@ -83,29 +77,51 @@ void SPMeshNode::setMesh(irr::scene::IAnimatedMesh* mesh)
     m_mesh = static_cast<SPMesh*>(mesh);
     CAnimatedMeshSceneNode::setMesh(mesh);
     cleanJoints();
-    if (m_mesh && !m_mesh->isStatic())
+    cleanRenderInfo();
+    if (m_mesh)
     {
-        m_animated = !m_mesh->isStatic();
-        unsigned bone_idx = 0;
-        m_skinning_matrices.resize(m_mesh->getJointCount());
-        for (Armature& arm : m_mesh->getArmatures())
+        if (!m_mesh->isStatic())
         {
-            for (const std::string& bone_name : arm.m_joint_names)
+            m_animated = !m_mesh->isStatic();
+            unsigned bone_idx = 0;
+            m_skinning_matrices.resize(m_mesh->getJointCount());
+            for (Armature& arm : m_mesh->getArmatures())
             {
-                m_joint_nodes[bone_name] = new CBoneSceneNode(this,
-                    irr_driver->getSceneManager(), 0, bone_idx++,
-                    bone_name.c_str());
-                m_joint_nodes.at(bone_name)->setSkinningSpace(EBSS_GLOBAL);
+                for (const std::string& bone_name : arm.m_joint_names)
+                {
+                    m_joint_nodes[bone_name] = new CBoneSceneNode(this,
+                        irr_driver->getSceneManager(), 0, bone_idx++,
+                        bone_name.c_str());
+                    m_joint_nodes.at(bone_name)->setSkinningSpace(EBSS_GLOBAL);
+                }
             }
         }
-    }
-    cleanRenderInfo();
-    if (m_mesh_render_info)
-    {
-        if (m_mesh_render_info->isStatic())
+        if (m_mesh_render_info)
         {
-            m_static_render_info.resize(m_mesh->getMeshBufferCount(),
-                m_mesh_render_info);
+            if (m_mesh_render_info->isStatic())
+            {
+                m_static_render_info.resize(m_mesh->getMeshBufferCount(),
+                    m_mesh_render_info);
+            }
+            else
+            {
+                // Create dynamic hue for each mesh buffer in the mesh
+                const unsigned mb_count = m_mesh->getMeshBufferCount();
+                assert(m_mesh_render_info->getNumberOfHue() == mb_count);
+                for (unsigned i = 0; i < mb_count; i++)
+                {
+                    const float hue = m_mesh_render_info->getDynamicHue(i);
+                    if (hue > 0.0f)
+                    {
+                        m_static_render_info.push_back
+                            (std::make_shared<RenderInfo>(hue));
+                    }
+                    else
+                    {
+                        m_static_render_info.push_back(NULL);
+                    }
+                }
+            }
         }
     }
 }   // setMesh

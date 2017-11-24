@@ -19,7 +19,6 @@
 #ifndef HEADER_RENDER_INFO_HPP
 #define HEADER_RENDER_INFO_HPP
 
-#include "utils/leak_check.hpp"
 #include "utils/no_copy.hpp"
 
 #include <assert.h>
@@ -51,7 +50,6 @@ private:
     std::vector<float> m_dynamic_hue;
 
 public:
-    LEAK_CHECK();
     // ------------------------------------------------------------------------
     RenderInfo(float hue = 0.0f, bool transparent = false);
     // ------------------------------------------------------------------------

@@ -1175,7 +1175,7 @@ scene::IParticleSystemSceneNode *IrrDriver::addParticleNode(bool default_emitter
 scene::ISceneNode *IrrDriver::addMesh(scene::IMesh *mesh,
                                       const std::string& debug_name,
                                       scene::ISceneNode *parent,
-                                      RenderInfo* render_info,
+                                      std::shared_ptr<RenderInfo> render_info,
                                       bool all_parts_colorized)
 {
 #ifdef SERVER_ONLY
@@ -1202,8 +1202,7 @@ scene::ISceneNode *IrrDriver::addMesh(scene::IMesh *mesh,
     {
         node = new STKMeshSceneNode(mesh, parent, m_scene_manager, -1,
             debug_name, core::vector3df(0, 0, 0), core::vector3df(0, 0, 0),
-            core::vector3df(1.0f, 1.0f, 1.0f), true, render_info,
-            all_parts_colorized);
+            core::vector3df(1.0f, 1.0f, 1.0f), true);
     }
     node->drop();
 
@@ -1399,7 +1398,7 @@ void IrrDriver::removeTexture(video::ITexture *t)
  */
 scene::IAnimatedMeshSceneNode *IrrDriver::addAnimatedMesh(scene::IAnimatedMesh *mesh,
     const std::string& debug_name, scene::ISceneNode* parent,
-    RenderInfo* render_info, bool all_parts_colorized)
+    std::shared_ptr<RenderInfo> render_info, bool all_parts_colorized)
 {
     scene::IAnimatedMeshSceneNode* node;
 #ifndef SERVER_ONLY

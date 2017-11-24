@@ -22,6 +22,7 @@
 #include "config/user_config.hpp"
 #include "graphics/camera.hpp"
 #include "graphics/irr_driver.hpp"
+#include "graphics/render_info.hpp"
 #include "io/file_manager.hpp"
 #include "karts/kart.hpp"
 #include "karts/controller/spare_tire_ai.hpp"

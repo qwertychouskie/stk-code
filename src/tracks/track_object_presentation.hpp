@@ -30,6 +30,7 @@
 #include <vector3d.h>
 #include <IAnimatedMeshSceneNode.h>
 
+#include <memory>
 #include <string>
 
 class SFXBase;
@@ -209,7 +210,7 @@ public:
     TrackObjectPresentationLOD(const XMLNode& xml_node,
                                scene::ISceneNode* parent,
                                ModelDefinitionLoader& model_def_loader,
-                               RenderInfo* ri);
+                               std::shared_ptr<RenderInfo> ri);
     virtual ~TrackObjectPresentationLOD();
     virtual void reset() OVERRIDE;
 };
@@ -233,14 +234,14 @@ private:
 
     std::string             m_model_file;
 
-    RenderInfo* m_render_info;
+    std::shared_ptr<RenderInfo> m_render_info;
 
     void init(const XMLNode* xml_node, scene::ISceneNode* parent, bool enabled);
 
 public:
     TrackObjectPresentationMesh(const XMLNode& xml_node, bool enabled,
                                 scene::ISceneNode* parent,
-                                RenderInfo* render_info);
+                                std::shared_ptr<RenderInfo> render_info);
 
     TrackObjectPresentationMesh(const std::string& model_file,
                                 const core::vector3df& xyz,
