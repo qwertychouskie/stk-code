@@ -21,7 +21,7 @@ void main()
     // Compute pixel position
     vec2 texc = 2. * gl_FragCoord.xy / u_screen;
     float z = texture(dtex, texc).x;
-    vec4 pixelpos = getPosFromUVDepth(vec3(texc, z), InverseProjectionMatrix);
+    vec4 pixelpos = getPosFromUVDepth(vec3(texc, z), u_inverse_projection_matrix);
     vec3 eyedir = -normalize(pixelpos.xyz);
 
     vec3 farthestpoint = - eyedir * (min(dot(-eyedir, light_pos) + radius, length(pixelpos.xyz)));

@@ -69,7 +69,7 @@ layout (std140) uniform SPMatrices
     mat4 u_view_matrix;
     mat4 u_projection_matrix;
     mat4 u_inverse_view_matrix;
-    mat4 u_inverse_projection_view_matrix;
+    mat4 u_inverse_projection_matrix;
     mat4 u_projection_view_matrix;
     mat4 u_shadow_projection_view_matrices[4];
     vec2 u_screen;

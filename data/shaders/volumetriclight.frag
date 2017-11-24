@@ -31,7 +31,7 @@ void main()
     tmp = 2. * tmp - 1.;
 
     vec4 xpos = vec4(tmp, 1.0);
-    xpos = InverseProjectionMatrix * xpos;
+    xpos = u_inverse_projection_matrix * xpos;
     xpos.xyz /= xpos.w;
 
     float dist = length(xpos.xyz);

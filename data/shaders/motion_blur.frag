@@ -52,7 +52,7 @@ void main()
     vec3 color = texture(color_buffer, texcoords).rgb;
 
     float z = texture(dtex, texcoords).x;
-    vec4 ViewPos = getPosFromUVDepth(vec3(texcoords, z), InverseProjectionMatrix);
+    vec4 ViewPos = getPosFromUVDepth(vec3(texcoords, z), u_inverse_projection_matrix);
     vec4 OldScreenPos = previous_viewproj * InverseViewMatrix * ViewPos;
     OldScreenPos /= OldScreenPos.w;
     OldScreenPos = .5 * OldScreenPos + .5;

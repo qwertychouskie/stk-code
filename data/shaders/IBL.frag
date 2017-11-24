@@ -23,7 +23,7 @@ void main(void)
 
     float z = texture(dtex, uv).x;
 
-    vec4 xpos = getPosFromUVDepth(vec3(uv, z), InverseProjectionMatrix);
+    vec4 xpos = getPosFromUVDepth(vec3(uv, z), u_inverse_projection_matrix);
     vec3 eyedir = -normalize(xpos.xyz);
     float specval = texture(ntex, uv).z;
 

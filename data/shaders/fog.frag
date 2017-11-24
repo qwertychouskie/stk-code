@@ -12,7 +12,7 @@ void main()
 {
     vec2 uv = gl_FragCoord.xy / u_screen;
     float z = texture(tex, uv).x;
-    vec4 xpos = getPosFromUVDepth(vec3(uv, z), InverseProjectionMatrix);
+    vec4 xpos = getPosFromUVDepth(vec3(uv, z), u_inverse_projection_matrix);
 
     float dist = length(xpos.xyz);
     float factor = (1. - exp(- density * dist));
