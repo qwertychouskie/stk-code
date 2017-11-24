@@ -36,7 +36,7 @@ private:
 public:
     // ------------------------------------------------------------------------
     SPInstancedData(const core::matrix4& model_mat,
-                    const core::vector2df& texture_trans, float hue,
+                    float texture_trans_x, float texture_trans_y, float hue,
                     float min_sat, int skinning_offset)
     {
         using namespace MiniGLM;
@@ -65,11 +65,11 @@ public:
         short s[4] = { toFloat16(scale.X), toFloat16(scale.Y),
             toFloat16(scale.Z), toFloat16(rotation.W)};
         memcpy(m_data + 16, s, 8);
-        m_data[24] = core::clamp((char)(texture_trans.X *
-            (texture_trans.X >= 0.0f ? 127.0f : 128.0f)), (char)-128,
+        m_data[24] = core::clamp((char)(texture_trans_x *
+            (texture_trans_x >= 0.0f ? 127.0f : 128.0f)), (char)-128,
             (char)127);
-        m_data[25] = core::clamp((char)(texture_trans.Y *
-            (texture_trans.Y >= 0.0f ? 127.0f : 128.0f)), (char)-128,
+        m_data[25] = core::clamp((char)(texture_trans_y *
+            (texture_trans_y >= 0.0f ? 127.0f : 128.0f)), (char)-128,
             (char)127);
         m_data[26] = (char)(fminf(hue, 1.0f) * 127.0f);
         m_data[27] = (char)(fminf(min_sat, 1.0f) * 127.0f);

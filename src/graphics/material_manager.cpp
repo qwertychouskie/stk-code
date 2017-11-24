@@ -97,14 +97,18 @@ Material* MaterialManager::getMaterialFor(video::ITexture* t,
         {
             if (m_materials[i]->getTexFullPath() == img_path.c_str())
             {
-                if (!lay_two_tex_lc.empty())
+                const std::string& mat_lay_two = m_materials[i]->getLayerTwoTexture();
+                if (mat_lay_two.empty() && lay_two_tex_lc.empty())
                 {
-                    if (m_materials[i]->getLayerTwoTexture() != lay_two_tex_lc)
+                    return m_materials[i];
+                }
+                else if (!mat_lay_two.empty() && !lay_two_tex_lc.empty())
+                {
+                    if (mat_lay_two == lay_two_tex_lc)
                     {
-                        continue;
+                        return m_materials[i];
                     }
                 }
-                return m_materials[i];
             }
         }
     }
@@ -117,14 +121,18 @@ Material* MaterialManager::getMaterialFor(video::ITexture* t,
         {
             if (m_materials[i]->getTexFname() == image.c_str())
             {
-                if (!lay_two_tex_lc.empty())
+                const std::string& mat_lay_two = m_materials[i]->getLayerTwoTexture();
+                if (mat_lay_two.empty() && lay_two_tex_lc.empty())
                 {
-                    if (m_materials[i]->getLayerTwoTexture() != lay_two_tex_lc)
+                    return m_materials[i];
+                }
+                else if (!mat_lay_two.empty() && !lay_two_tex_lc.empty())
+                {
+                    if (mat_lay_two == lay_two_tex_lc)
                     {
-                        continue;
+                        return m_materials[i];
                     }
                 }
-                return m_materials[i];
             }
         }   // for i
     }

@@ -967,9 +967,11 @@ void updateModelMatrix()
                 q->getRenderInfo(p.second.second)->getHue() : 0.0f : 0.0f;
             float min_sat = p.first->getSTKMaterial()->isColorizable() ?
                 p.first->getSTKMaterial()->getColorizationFactor() : 0.0f;
+            const core::matrix4& texture_matrix =
+                q->getMaterial(p.second.second).getTextureMatrix(0);
             p.first->addInstanceData(SPInstancedData
-                (q->getAbsoluteTransformation(),
-                core::vector2df(0,0), hue, min_sat, q->getSkinningOffset()));
+                (q->getAbsoluteTransformation(), texture_matrix[8],
+                texture_matrix[9], hue, min_sat, q->getSkinningOffset()));
         }
     }
 }
