@@ -875,51 +875,25 @@ void uploadAll()
 {
 #ifndef SERVER_ONLY
 
-#ifdef USE_GLES2
-    glBindTexture(GL_TEXTURE_2D, SharedGPUObjects::getSkinningTexture());
     unsigned buffer_offset = 0;
-    std::vector<std::array<float, 16> > tmp_buf(stk_config->m_max_skinning_bones);
-        //const irr::core::matrix4 m;
-        //memcpy(&tmp_buf[0], m.pointer(), 64);
-#else
-    unsigned buffer_offset = 64;
-    glBindBuffer(GL_TEXTURE_BUFFER, SharedGPUObjects::getSkinningBuffer());
-#endif
-
-
+    static std::vector<std::array<float, 16> >
+        tmp_buf(stk_config->m_max_skinning_bones);
     for (unsigned i = 0; i < g_skinning_mesh.size(); i++)
     {
-#ifdef USE_GLES2
-//glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-//glPixelStorei(GL_PACK_ALIGNMENT, 1);
-        memcpy(&tmp_buf[buffer_offset], g_skinning_mesh[i]->getSkinningMatrices(),
+        memcpy(tmp_buf.data() + buffer_offset,
+            g_skinning_mesh[i]->getSkinningMatrices(),
             g_skinning_mesh[i]->getTotalJoints() << 6);
-        //glTexSubImage2D(GL_TEXTURE_2D, 0, 0, buffer_offset, 4,
-        //    g_skinning_mesh[i]->getTotalJoints(), GL_RGBA,
-        //    GL_FLOAT, g_skinning_mesh[i]->getSkinningMatrices());
         buffer_offset += g_skinning_mesh[i]->getTotalJoints();
-        /*for (int j = 0; j < g_skinning_mesh[i]->getTotalJoints(); j++)
-        {
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, buffer_offset + j, 16,
-                1, GL_RGBA,
-                GL_FLOAT, g_skinning_mesh[i]->getSkinningMatrices() + j);
-        }*/
-#else
-        glBufferSubData(GL_TEXTURE_BUFFER, buffer_offset,
-            g_skinning_mesh[i]->getTotalJoints() << 6,
-            g_skinning_mesh[i]->getSkinningMatrices());
-        buffer_offset += g_skinning_mesh[i]->getTotalJoints() << 6;
-#endif
     }
 
 #ifdef USE_GLES2
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 1, 4,
-            1023, GL_RGBA,
-            GL_FLOAT, tmp_buf.data());
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 4,
-    //    stk_config->m_max_skinning_bones, 0, GL_RGBA, GL_FLOAT, tmp_buf.data());
+    glBindTexture(GL_TEXTURE_2D, SharedGPUObjects::getSkinningTexture());
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 1, 4, buffer_offset, GL_RGBA,
+        GL_FLOAT, tmp_buf.data());
     glBindTexture(GL_TEXTURE_2D, 0);
 #else
+    glBindBuffer(GL_TEXTURE_BUFFER, SharedGPUObjects::getSkinningBuffer());
+    glBufferSubData(GL_TEXTURE_BUFFER, 64, buffer_offset << 6, tmp_buf.data());
     glBindBuffer(GL_TEXTURE_BUFFER, 0);
 #endif
 

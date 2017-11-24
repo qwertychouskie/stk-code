@@ -350,7 +350,6 @@ bool handleContextMenuAction(s32 cmd_id)
     case DEBUG_GRAPHICS_TOGGLE_CULLING:
         SP::sp_culling = !SP::sp_culling;
         break;
-
     case DEBUG_PROFILER:
         profiler.toggleStatus();
         break;
