@@ -19,7 +19,7 @@ void main()
     vec3 light_col = col.xyz;
 
     // Compute pixel position
-    vec2 texc = 2. * gl_FragCoord.xy / screen;
+    vec2 texc = 2. * gl_FragCoord.xy / u_screen;
     float z = texture(dtex, texc).x;
     vec4 pixelpos = getPosFromUVDepth(vec3(texc, z), InverseProjectionMatrix);
     vec3 eyedir = -normalize(pixelpos.xyz);

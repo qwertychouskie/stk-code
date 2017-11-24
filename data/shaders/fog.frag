@@ -10,7 +10,7 @@ out vec4 FragColor;
 
 void main()
 {
-    vec2 uv = gl_FragCoord.xy / screen;
+    vec2 uv = gl_FragCoord.xy / u_screen;
     float z = texture(tex, uv).x;
     vec4 xpos = getPosFromUVDepth(vec3(uv, z), InverseProjectionMatrix);
 

@@ -37,7 +37,7 @@ vec3 resolution = vec3(32, 16, 32);
 
 void main()
 {
-    vec2 uv = gl_FragCoord.xy / screen;
+    vec2 uv = gl_FragCoord.xy / u_screen;
     vec3 GI = vec3(0.);
 
     float depth = texture2D(dtex, uv).x;

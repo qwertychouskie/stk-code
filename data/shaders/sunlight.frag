@@ -19,7 +19,7 @@ out vec4 Spec;
 #stk_include "utils/SunMRP.frag"
 
 void main() {
-    vec2 uv = gl_FragCoord.xy / screen;
+    vec2 uv = gl_FragCoord.xy / u_screen;
     float z = texture(dtex, uv).x;
     vec4 xpos = getPosFromUVDepth(vec3(uv, z), InverseProjectionMatrix);
 

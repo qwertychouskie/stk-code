@@ -46,7 +46,7 @@ out vec4 FragColor;
 
 void main()
 {
-    vec2 texcoords = gl_FragCoord.xy / screen;
+    vec2 texcoords = gl_FragCoord.xy / u_screen;
 
     // Sample the color buffer
     vec3 color = texture(color_buffer, texcoords).rgb;

@@ -21,7 +21,7 @@ out vec4 Spec;
 
 void main()
 {
-    vec2 texc = gl_FragCoord.xy / screen;
+    vec2 texc = gl_FragCoord.xy / u_screen;
     float z = texture(dtex, texc).x;
     vec3 norm = normalize(DecodeNormal(2. * texture(ntex, texc).xy - 1.));
     float roughness = texture(ntex, texc).z;

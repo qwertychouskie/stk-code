@@ -34,7 +34,7 @@ float getShadowFactor(vec3 pos, int index)
 }
 
 void main() {
-    vec2 uv = gl_FragCoord.xy / screen;
+    vec2 uv = gl_FragCoord.xy / u_screen;
     float z = texture(dtex, uv).x;
     vec4 xpos = getPosFromUVDepth(vec3(uv, z), InverseProjectionMatrix);
 

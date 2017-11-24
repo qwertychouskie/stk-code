@@ -14,7 +14,7 @@ out vec4 FragColor;
 #stk_include "utils/getLightFactor.frag"
 
 void main() {
-    vec3 texc = gl_FragCoord.xyz / vec3(screen, 1.);
+    vec3 texc = gl_FragCoord.xyz / vec3(u_screen, 1.);
     vec3 u = getPosFromUVDepth(texc, InverseProjectionMatrix).xyz;
     vec3 r = reflect(u, nor);
 

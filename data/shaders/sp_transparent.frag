@@ -20,7 +20,7 @@ void main()
     {
         diffusecolor.xyz *= color.xyz;
         diffusecolor.a *= color.a;
-        vec3 tmp = vec3(gl_FragCoord.xy / screen, gl_FragCoord.z);
+        vec3 tmp = vec3(gl_FragCoord.xy / u_screen, gl_FragCoord.z);
         tmp = 2. * tmp - 1.;
         vec4 xpos = vec4(tmp, 1.0);
         xpos = InverseProjectionMatrix * xpos;

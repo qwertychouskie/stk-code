@@ -9,7 +9,7 @@ float range = 100.;
 
 void main()
 {
-    vec2 uv = gl_FragCoord.xy / screen;
+    vec2 uv = gl_FragCoord.xy / u_screen;
     float curdepth = texture(dtex, uv).x;
     vec4 FragPos = InverseProjectionMatrix * (2.0 * vec4(uv, curdepth, 1.0) - 1.0);
     FragPos /= FragPos.w;
@@ -17,7 +17,7 @@ void main()
     float depth = FragPos.z;
     float blur = clamp(abs(depth - focalDepth) / range, -maxblur, maxblur);
 
-    vec2 offset = 10. / screen;
+    vec2 offset = 10. / u_screen;
 
     vec4 col = texture(tex, uv);
     vec4 colOriginal = col;
