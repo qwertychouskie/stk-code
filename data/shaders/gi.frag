@@ -45,7 +45,7 @@ void main()
     if (depth==1.0) discard;
 
     vec4 pos_screen_space = getPosFromUVDepth(vec3(uv, depth), u_inverse_projection_matrix);
-    vec4 tmp = (InvRHMatrix * InverseViewMatrix * pos_screen_space);
+    vec4 tmp = (InvRHMatrix * u_inverse_view_matrix * pos_screen_space);
     vec3 pos = tmp.xyz / tmp.w;
     vec3 normal_screen_space = normalize(DecodeNormal(2. * texture(ntex, uv).xy - 1.));
     vec3 normal = (transpose(ViewMatrix) * vec4(normal_screen_space, 0.)).xyz;

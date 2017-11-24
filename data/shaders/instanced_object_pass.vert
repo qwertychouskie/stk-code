@@ -54,7 +54,7 @@ flat out sampler2D fourthhandle;
 void main(void)
 {
     mat4 ModelMatrix = getWorldMatrix(Origin, Orientation, Scale);
-    mat4 TransposeInverseModelView = transpose(getInverseWorldMatrix(Origin, Orientation, Scale) * InverseViewMatrix);
+    mat4 TransposeInverseModelView = transpose(getInverseWorldMatrix(Origin, Orientation, Scale) * u_inverse_view_matrix);
     gl_Position = u_projection_view_matrix *  ModelMatrix * vec4(Position, 1.);
     // Keep orthogonality
     nor = (TransposeInverseModelView * vec4(Normal, 0.)).xyz;

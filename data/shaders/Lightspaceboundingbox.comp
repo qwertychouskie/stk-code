@@ -57,7 +57,7 @@ void main()
             vec2 uv = (start_xy + vec2(i, j) * gl_WorkGroupID.xy) / u_screen;
             float z = texture(depth, uv).x;
             vec4 xpos = getPosFromUVDepth(vec3(uv, z), u_inverse_projection_matrix);
-            vec4 lightcoord = InverseViewMatrix * xpos;
+            vec4 lightcoord = u_inverse_view_matrix * xpos;
             lightcoord /= lightcoord.w;
             lightcoord = SunCamMatrix * lightcoord;
             lightcoord /= lightcoord.w;

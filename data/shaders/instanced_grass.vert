@@ -44,7 +44,7 @@ void main()
     vec3 test = sin(windDir * (Position.y * 0.1)) * 1.;
     test += cos(windDir) * 0.7;
     mat4 ModelMatrix = getWorldMatrix(Origin + test * Color.r, Orientation, Scale);
-    mat4 TransposeInverseModelView = transpose(getInverseWorldMatrix(Origin + test * Color.r, Orientation, Scale) * InverseViewMatrix);
+    mat4 TransposeInverseModelView = transpose(getInverseWorldMatrix(Origin + test * Color.r, Orientation, Scale) * u_inverse_view_matrix);
     gl_Position = u_projection_view_matrix *  ModelMatrix * vec4(Position, 1.);
     nor = (TransposeInverseModelView * vec4(Normal, 0.)).xyz;
     uv = Texcoord;

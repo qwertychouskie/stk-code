@@ -51,7 +51,7 @@ out vec4 color;
 
 void main(void)
 {
-    mat4 TransposeInverseModelView =  transpose(InverseModelMatrix * InverseViewMatrix);
+    mat4 TransposeInverseModelView =  transpose(InverseModelMatrix * u_inverse_view_matrix);
     vec4 idle_position = vec4(Position, 1.);
     vec4 idle_normal = vec4(Normal, 0.);
     vec4 idle_tangent = vec4(Data1.z, Data1.w, Data2.x, 0.);
