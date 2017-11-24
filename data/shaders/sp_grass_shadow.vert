@@ -1,35 +1,26 @@
 uniform int layer;
-uniform vec3 windDir;
+uniform vec3 wind_direction;
 
-layout(location = 0) in vec3 Position;
-layout(location = 2) in vec4 Color;
-layout(location = 3) in vec4 Texcoord;
-layout(location = 8) in vec4 matrix_1;
-layout(location = 9) in vec4 matrix_2;
-layout(location = 10) in vec4 matrix_3;
+layout(location = 0) in vec3 i_position;
+layout(location = 2) in vec4 i_color;
+layout(location = 3) in vec2 i_uv;
+layout(location = 8) in vec3 i_origin;
+layout(location = 9) in vec4 i_rotation;
+layout(location = 10) in vec4 i_scale;
 
-#stk_include "utils/getworldmatrix.vert"
+#stk_include "utils/get_world_location.vert"
 
-#ifdef VSLayer
 out vec2 uv;
-#else
-out vec2 tc;
-out int layer_id;
-#endif
 
-void main(void)
+void main()
 {
+    vec3 test = sin(wind_direction * (i_position.y * 0.1));
+    test += cos(wind_direction) * 0.7;
 
-#ifdef VSLayer
-    gl_Layer = layer;
-    uv = Texcoord.xy;
-#else
-    layer_id = layer;
-    tc = Texcoord.xy;
-#endif
+    vec4 model_rotation = normalize(vec4(i_rotation.xyz, i_scale.w));
+    vec4 world_position = getWorldPosition(i_origin + test * i_color.r,
+        model_rotation, i_scale.xyz, i_position);
 
-    vec3 test = sin(windDir * (Position.y* 0.5)) * 0.5;
-    test += cos(windDir) * 0.7;
-    mat4 model_matrix = getModelMatrix(matrix_1, matrix_2, matrix_3);
-    gl_Position = ShadowViewProjMatrixes[layer] * model_matrix * vec4(Position + test * Color.r, 1.);
+    uv = i_uv;
+    gl_Position = u_shadow_projection_view_matrices[layer] * world_position;
 }

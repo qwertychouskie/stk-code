@@ -54,6 +54,8 @@ private:
     std::string m_shader_override;
 
     // ------------------------------------------------------------------------
+    void cleanRenderInfo();
+    // ------------------------------------------------------------------------
     void cleanJoints()
     {
         for (auto& p : m_joint_nodes)
@@ -117,6 +119,15 @@ public:
     // ------------------------------------------------------------------------
     const std::array<float, 16>* getSkinningMatrices() const 
                                          { return m_skinning_matrices.data(); }
+    // ------------------------------------------------------------------------
+    RenderInfo* getRenderInfo(unsigned mb_id) const
+    {
+        if (m_static_render_info.size() > mb_id)
+        {
+            return m_static_render_info[mb_id];
+        }
+        return NULL;
+    }
 };
 
 }

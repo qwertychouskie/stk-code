@@ -173,13 +173,15 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     unsigned v_size = m_vertices.size() * pitch;
     glBufferData(GL_ARRAY_BUFFER, v_size, NULL, GL_DYNAMIC_DRAW);
-    v_size = 0;
     size_t offset = 0;
+    char* ptr = (char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, v_size,
+        GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT |
+        GL_MAP_INVALIDATE_BUFFER_BIT);
+    v_size = 0;
     for (unsigned i = 0 ; i < m_vertices.size(); i++)
     {
         offset = 0;
-        glBufferSubData(GL_ARRAY_BUFFER, v_size, 16,
-            &m_vertices[i].m_position.X);
+        memcpy(ptr + v_size + offset, &m_vertices[i].m_position.X, 16);
         offset += 16;
         video::SColor vc = m_vertices[i].m_color;
         if (CVS->isDefferedEnabled() ||
@@ -190,30 +192,27 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
             vc.setGreen(srgbToLinear(tmp.g));
             vc.setBlue(srgbToLinear(tmp.b));
         }
-        glBufferSubData(GL_ARRAY_BUFFER, v_size + offset, 4, &vc);
+        memcpy(ptr + v_size + offset, &vc, 4);
         offset += 4;
-        glBufferSubData(GL_ARRAY_BUFFER, v_size + offset, 4,
-            &m_vertices[i].m_all_uvs[0]);
+        memcpy(ptr + v_size + offset, &m_vertices[i].m_all_uvs[0], 4);
         offset += 4;
         if (use_2_uv)
         {
-            glBufferSubData(GL_ARRAY_BUFFER, v_size + offset, 4,
-                &m_vertices[i].m_all_uvs[2]);
+            memcpy(ptr + v_size + offset, &m_vertices[i].m_all_uvs[2], 4);
             offset += 4;
         }
         if (use_tangents)
         {
-            glBufferSubData(GL_ARRAY_BUFFER, v_size + offset, 4,
-                &m_vertices[i].m_tangent);
+            memcpy(ptr + v_size + offset, &m_vertices[i].m_tangent, 4);
             offset += 4;
         }
         if (skinned)
         {
-            glBufferSubData(GL_ARRAY_BUFFER, v_size + offset, 16,
-                &m_vertices[i].m_joint_idx[0]);
+            memcpy(ptr + v_size + offset, &m_vertices[i].m_joint_idx[0], 16);
         }
         v_size += pitch;
     }
+    glUnmapBuffer(GL_ARRAY_BUFFER);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * 2,
         m_indices.data(), GL_STATIC_DRAW);

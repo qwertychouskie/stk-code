@@ -24,6 +24,7 @@
 #include "graphics/shared_gpu_objects.hpp"
 #include "graphics/shadow_matrices.hpp"
 #include "graphics/irr_driver.hpp"
+#include "graphics/render_info.hpp"
 #include "graphics/shaders.hpp"
 #include "graphics/stk_tex_manager.hpp"
 #include "graphics/sp/sp_instanced_data.hpp"
@@ -60,14 +61,12 @@ bool g_handle_shadow = false;
 // ----------------------------------------------------------------------------
 bool g_handle_rsm = false;
 // ----------------------------------------------------------------------------
-bool g_destroying_sectors = false;
-
-// ----------------------------------------------------------------------------
 std::unordered_map<std::string, SPShader*> g_shaders;
 // ----------------------------------------------------------------------------
 SPShader* g_glow_shader = NULL;
 // ----------------------------------------------------------------------------
-std::unordered_map<SPMeshBuffer*, std::vector<SPMeshNode*> > g_instances;
+std::unordered_map<SPMeshBuffer*, std::pair<std::vector<SPMeshNode*>,
+    unsigned/*mb_index*/> > g_instances;
 // ----------------------------------------------------------------------------
 // std::string is layer_1 and layer_2 texture name combined
 typedef std::unordered_map<SPShader*, std::unordered_map<std::string,
@@ -85,8 +84,6 @@ std::vector<float> g_bounding_boxes;
 // ----------------------------------------------------------------------------
 core::vector3df g_wind_dir;
 // ----------------------------------------------------------------------------
-//std::unordered_set<SPMeshNode*> g_all_nodes;
-// ----------------------------------------------------------------------------
 //std::unordered_set<SPDynamicDrawCall*> g_dy_dc;
 // ----------------------------------------------------------------------------
 float g_frustums[5][24] = { { } };
@@ -97,7 +94,6 @@ unsigned sp_shadow_poly_count = 0;
 // ----------------------------------------------------------------------------
 unsigned sp_draw_call_count = 0;
 // ----------------------------------------------------------------------------
-//std::function<void(SPMeshBuffer*)> sp_mb_upload_cb = NULL;
 // ----------------------------------------------------------------------------
 unsigned g_skinning_offset = 0;
 // ----------------------------------------------------------------------------
@@ -118,10 +114,6 @@ GLuint sp_mat_ubo = 0;
 // ----------------------------------------------------------------------------
 GLuint sp_fog_ubo = 0;
 // ----------------------------------------------------------------------------
-bool destroyingSectors()
-{
-    return g_destroying_sectors;
-}   // destroyingSectors
 
 #ifndef SERVER_ONLY
 // ----------------------------------------------------------------------------
@@ -246,6 +238,63 @@ void loadShaders()
     addShader(shader);
 
     // ========================================================================
+    shader = new SPShader("decal");
+
+    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_object_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addAllTextures(RP_1ST);
+
+    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
+    shader->addShaderFile("sp_decal.frag", GL_FRAGMENT_SHADER, RP_2ND);
+    shader->linkShaderFiles(RP_2ND);
+    shader->use(RP_2ND);
+    shader->addBasicUniforms(RP_2ND);
+    shader->addAllTextures(RP_2ND); 
+
+    shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
+    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->linkShaderFiles(RP_SHADOW);
+    shader->use(RP_SHADOW);
+    shader->addBasicUniforms(RP_SHADOW);
+    shader->addUniform("layer", typeid(int), RP_SHADOW);
+    shader->addAllTextures(RP_SHADOW);
+    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
+        shadowCascadeUniformAssigner);
+
+    addShader(shader);
+
+    shader = new SPShader("decal_skinned");
+
+    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_object_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addAllTextures(RP_1ST);
+
+    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_2ND);
+    shader->addShaderFile("sp_decal.frag", GL_FRAGMENT_SHADER, RP_2ND);
+    shader->linkShaderFiles(RP_2ND);
+    shader->use(RP_2ND);
+    shader->addBasicUniforms(RP_2ND);
+    shader->addAllTextures(RP_2ND); 
+
+    shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
+    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->linkShaderFiles(RP_SHADOW);
+    shader->use(RP_SHADOW);
+    shader->addBasicUniforms(RP_SHADOW);
+    shader->addUniform("layer", typeid(int), RP_SHADOW);
+    shader->addAllTextures(RP_SHADOW);
+    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
+        shadowCascadeUniformAssigner);
+
+    addShader(shader);
+
+    // ========================================================================
     shader = new SPShader("alphatest");
 
     shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
@@ -318,6 +367,16 @@ void loadShaders()
     shader->use(RP_2ND);
     shader->addBasicUniforms(RP_2ND);
     shader->addAllTextures(RP_2ND); 
+
+    shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
+    shader->addShaderFile("sp_shadow_alpha_test.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->linkShaderFiles(RP_SHADOW);
+    shader->use(RP_SHADOW);
+    shader->addBasicUniforms(RP_SHADOW);
+    shader->addUniform("layer", typeid(int), RP_SHADOW);
+    shader->addAllTextures(RP_SHADOW);
+    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
+        shadowCascadeUniformAssigner);
 
     addShader(shader);
 
@@ -404,6 +463,42 @@ void loadShaders()
     static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
         shadowCascadeUniformAssigner);
 
+    addShader(shader);
+
+    // ========================================================================
+    shader = new SPShader("grass");
+    shader->addShaderFile("sp_grass_pass.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_alpha_test_pass1.frag", GL_FRAGMENT_SHADER,
+        RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addUniform("wind_direction", typeid(core::vector3df), RP_1ST);
+    shader->addAllTextures(RP_1ST);
+
+    shader->addShaderFile("sp_grass_pass.vert", GL_VERTEX_SHADER, RP_2ND);
+    shader->addShaderFile("sp_grass.frag", GL_FRAGMENT_SHADER, RP_2ND);
+    shader->linkShaderFiles(RP_2ND);
+    shader->use(RP_2ND);
+    shader->addBasicUniforms(RP_2ND);
+    shader->addUniform("wind_direction", typeid(core::vector3df), RP_2ND);
+    shader->addAllTextures(RP_2ND);
+
+    shader->addShaderFile("sp_grass_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
+    shader->addShaderFile("sp_shadow_alpha_test.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->linkShaderFiles(RP_SHADOW);
+    shader->use(RP_SHADOW);
+    shader->addBasicUniforms(RP_SHADOW);
+    shader->addUniform("wind_direction", typeid(core::vector3df), RP_SHADOW);
+    shader->addUniform("layer", typeid(int), RP_SHADOW);
+    shader->addAllTextures(RP_SHADOW);
+    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
+        shadowCascadeUniformAssigner);
+    static_cast<SPPerObjectUniform*>(shader)
+        ->addAssignerFunction("wind_direction", [](SPUniformAssigner* ua)
+        {
+            ua->setValue(g_wind_dir);
+        });
 
     addShader(shader);
 
@@ -715,6 +810,8 @@ void prepareDrawCalls()
     {
         return;
     }
+    g_wind_dir = core::vector3df(1.0f, 0.0f, 0.0f) *
+        (irr_driver->getDevice()->getTimer()->getTime() / 1000.0f) * 1.5f;
     sp_solid_poly_count = sp_shadow_poly_count = sp_draw_call_count = 0;
     // 1st one is identity
     g_skinning_offset = 1;
@@ -816,7 +913,9 @@ void addObject(SPMeshNode* node)
             g_skinning_mesh.push_back(node);
             g_skinning_offset = skinning_offset;
         }
-        g_instances[mb].push_back(node);
+        auto& ret = g_instances[mb];
+        ret.first.push_back(node);
+        ret.second = m;
         for (int dc_type = 0; dc_type < (g_handle_shadow ? 6 : 1); dc_type++)
         {
             if (discard[dc_type])
@@ -861,11 +960,16 @@ void updateModelMatrix()
     irr_driver->setSkinningJoint(g_skinning_offset - 1);
     for (auto& p : g_instances)
     {
-        for (auto& q : p.second)
+        for (auto& q : p.second.first)
         {
+            float hue = p.first->getSTKMaterial()->isColorizable() ?
+                q->getRenderInfo(p.second.second) ?
+                q->getRenderInfo(p.second.second)->getHue() : 0.0f : 0.0f;
+            float min_sat = p.first->getSTKMaterial()->isColorizable() ?
+                p.first->getSTKMaterial()->getColorizationFactor() : 0.0f;
             p.first->addInstanceData(SPInstancedData
                 (q->getAbsoluteTransformation(),
-                core::vector2df(0,0), 0, 0, q->getSkinningOffset()));
+                core::vector2df(0,0), hue, min_sat, q->getSkinningOffset()));
         }
     }
 }

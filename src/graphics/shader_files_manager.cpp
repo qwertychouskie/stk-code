@@ -182,9 +182,15 @@ GLuint ShaderFilesManager::loadShader(const std::string &file, unsigned type)
         &precision);
 
     if (precision > 0)
+    {
         code << "precision highp float;\n";
+        code << "precision highp sampler2DArrayShadow;\n";
+    }
     else
+    {
         code << "precision mediump float;\n";
+        code << "precision mediump sampler2DArrayShadow;\n";
+    }
 #endif
     code << "#define MAX_BONES " << stk_config->m_max_skinning_bones << "\n";
 

@@ -22,6 +22,7 @@
 #include "graphics/sp/sp_mesh_buffer.hpp"
 #include "graphics/irr_driver.hpp"
 #include "graphics/material.hpp"
+#include "graphics/render_info.hpp"
 
 #include "../../lib/irrlicht/source/Irrlicht/CBoneSceneNode.h"
 #include <algorithm>
@@ -48,7 +49,21 @@ SPMeshNode::SPMeshNode(IAnimatedMesh* mesh, ISceneNode* parent,
 SPMeshNode::~SPMeshNode()
 {
     cleanJoints();
+    cleanRenderInfo();
 }   // ~SPMeshNode
+
+// ----------------------------------------------------------------------------
+void SPMeshNode::cleanRenderInfo()
+{
+    for (RenderInfo* ri : m_static_render_info)
+    {
+        if (!ri->isStatic())
+        {
+            delete ri;
+        }
+    }
+    m_static_render_info.clear();
+}   // cleanRenderInfo
 
 // ----------------------------------------------------------------------------
 void SPMeshNode::setAnimationState(bool val)
@@ -82,6 +97,15 @@ void SPMeshNode::setMesh(irr::scene::IAnimatedMesh* mesh)
                     bone_name.c_str());
                 m_joint_nodes.at(bone_name)->setSkinningSpace(EBSS_GLOBAL);
             }
+        }
+    }
+    cleanRenderInfo();
+    if (m_mesh_render_info)
+    {
+        if (m_mesh_render_info->isStatic())
+        {
+            m_static_render_info.resize(m_mesh->getMeshBufferCount(),
+                m_mesh_render_info);
         }
     }
 }   // setMesh
