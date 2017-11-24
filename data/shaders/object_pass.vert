@@ -46,7 +46,7 @@ out float camdist;
 void main(void)
 {
     color = Color.zyxw;
-    mat4 ModelViewProjectionMatrix = ProjectionViewMatrix * ModelMatrix;
+    mat4 ModelViewProjectionMatrix = u_projection_view_matrix * ModelMatrix;
     mat4 TransposeInverseModelView = transpose(InverseModelMatrix * InverseViewMatrix);
     gl_Position = ModelViewProjectionMatrix * vec4(Position, 1.);
     // Keep orthogonality

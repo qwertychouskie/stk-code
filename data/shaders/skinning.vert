@@ -82,7 +82,7 @@ void main(void)
         skinned_bitangent += Weight[i] * joint_matrix * idle_bitangent;
     }
 
-    gl_Position = ProjectionViewMatrix * ModelMatrix * skinned_position;
+    gl_Position = u_projection_view_matrix * ModelMatrix * skinned_position;
     // Keep orthogonality
     nor = (TransposeInverseModelView * skinned_normal).xyz;
     // Keep direction
