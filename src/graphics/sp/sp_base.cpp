@@ -866,7 +866,10 @@ void addObject(SPMeshNode* node)
         model_matrix.transformBoxEx(bb);
         std::vector<bool> discard;
         discard.resize((g_handle_shadow ? 6 : 1), false);
-        discard[5] = !g_handle_rsm;
+        if (g_handle_shadow)
+        {
+            discard[5] = !g_handle_rsm;
+        }
         for (int dc_type = 0; dc_type < (g_handle_shadow ? 5 : 1); dc_type++)
         {
             for (int i = 0; i < 24; i += 4)

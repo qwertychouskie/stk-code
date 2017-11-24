@@ -33,7 +33,11 @@ enum KartRenderType: unsigned int
 {
     KRT_DEFAULT,
     KRT_RED,
+    KRT_ORANGE,
+    KRT_YELLOW,
+    KRT_GREEN,
     KRT_BLUE,
+    KRT_PURPLE,
     KRT_TRANSPARENT,
 };
 
@@ -65,7 +69,12 @@ public:
     // ------------------------------------------------------------------------
     void setKartModelRenderInfo(KartRenderType krt)
     {
-        setHue(krt == KRT_BLUE ? 0.66f : krt == KRT_RED ? 1.0f : 0.0f);
+        setHue(krt == KRT_RED ? 1.0f :
+            krt == KRT_ORANGE ? 0.06f :
+            krt == KRT_YELLOW ? 0.17f :
+            krt == KRT_GREEN ? 0.35f :
+            krt == KRT_BLUE ? 0.66f :
+            krt == KRT_PURPLE ? 0.8f : 0.0f);
         setTransparent(krt == KRT_TRANSPARENT ? true : false);
     }
     // ------------------------------------------------------------------------
