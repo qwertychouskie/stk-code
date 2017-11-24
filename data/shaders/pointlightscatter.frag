@@ -13,7 +13,7 @@ out vec4 Fog;
 
 void main()
 {
-    vec4 pseudocenter = ViewMatrix * vec4(center.xyz, 1.0);
+    vec4 pseudocenter = u_view_matrix * vec4(center.xyz, 1.0);
     pseudocenter /= pseudocenter.w;
     vec3 light_pos = pseudocenter.xyz;
     vec3 light_col = col.xyz;

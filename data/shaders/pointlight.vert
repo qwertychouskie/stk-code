@@ -72,7 +72,7 @@ vec4 ComputeClipRegion(vec3 lightPosView, float lightRadius)
 
 void main(void)
 {
-    vec4 Center = ViewMatrix * vec4(Position, 1.);
+    vec4 Center = u_view_matrix * vec4(Position, 1.);
     Center /= Center.w;
 
     vec2 ProjectedCornerPosition;

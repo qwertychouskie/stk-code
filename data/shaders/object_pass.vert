@@ -52,9 +52,9 @@ void main(void)
     // Keep orthogonality
     nor = (TransposeInverseModelView * vec4(Normal, 0.)).xyz;
     // Keep direction
-    tangent = (ViewMatrix * ModelMatrix * vec4(Tangent, 0.)).xyz;
-    bitangent = (ViewMatrix * ModelMatrix * vec4(Bitangent, 0.)).xyz;
+    tangent = (u_view_matrix * ModelMatrix * vec4(Tangent, 0.)).xyz;
+    bitangent = (u_view_matrix * ModelMatrix * vec4(Bitangent, 0.)).xyz;
     uv = vec2(Texcoord.x + texture_trans.x, Texcoord.y + texture_trans.y);
     uv_bis = SecondTexcoord;
-    camdist = length(ViewMatrix * ModelMatrix * vec4(Position, 1.));
+    camdist = length(u_view_matrix * ModelMatrix * vec4(Position, 1.));
 }

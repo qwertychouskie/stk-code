@@ -86,8 +86,8 @@ void main(void)
     // Keep orthogonality
     nor = (TransposeInverseModelView * skinned_normal).xyz;
     // Keep direction
-    tangent = (ViewMatrix * ModelMatrix * skinned_tangent).xyz;
-    bitangent = (ViewMatrix * ModelMatrix * skinned_bitangent).xyz;
+    tangent = (u_view_matrix * ModelMatrix * skinned_tangent).xyz;
+    bitangent = (u_view_matrix * ModelMatrix * skinned_bitangent).xyz;
     uv = vec2(Data1.x + texture_trans.x, Data1.y + texture_trans.y);
     color = Color.zyxw;
 }
