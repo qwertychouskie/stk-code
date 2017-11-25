@@ -407,12 +407,13 @@ static void renderPointLights(unsigned count,
     glDepthMask(GL_FALSE);
 
     PointLightShader::getInstance()->use();
-    glBindVertexArray(PointLightShader::getInstance()->vao);
+
     glBindBuffer(GL_ARRAY_BUFFER, PointLightShader::getInstance()->vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0,
                      count * sizeof(LightBaseClass::PointLightInfo),
                      m_point_lights_info);
 
+    glBindVertexArray(PointLightShader::getInstance()->vao);
     PointLightShader::getInstance()->setTextureUnits(
         normal_depth_rander_target,
         depth_stencil_texture);

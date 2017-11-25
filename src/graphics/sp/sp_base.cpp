@@ -593,6 +593,85 @@ void loadShaders()
 
     addShader(shader);
 
+    // ========================================================================
+    // Transparent shader
+    // ========================================================================
+    shader = new SPShader("alphablend_skinned", 1, true);
+    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addUniform("fog_enabled", typeid(int), RP_1ST);
+    shader->addUniform("custom_alpha", typeid(float), RP_1ST);
+    shader->addAllTextures(RP_1ST);
+    shader->setUseFunction(alphaBlendUse);
+    static_cast<SPPerObjectUniform*>(shader)
+        ->addAssignerFunction("fog_enabled", fogUniformAssigner);
+    static_cast<SPPerObjectUniform*>(shader)
+        ->addAssignerFunction("custom_alpha", [](SPUniformAssigner* ua)
+        {
+            ua->setValue(0.0f);
+        });
+    addShader(shader);
+
+    shader = new SPShader("alphablend", 1, true);
+    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addUniform("fog_enabled", typeid(int), RP_1ST);
+    shader->addUniform("custom_alpha", typeid(float), RP_1ST);
+    shader->addAllTextures(RP_1ST);
+    shader->setUseFunction(alphaBlendUse);
+    static_cast<SPPerObjectUniform*>(shader)
+        ->addAssignerFunction("fog_enabled", fogUniformAssigner);
+    static_cast<SPPerObjectUniform*>(shader)
+        ->addAssignerFunction("custom_alpha", [](SPUniformAssigner* ua)
+        {
+            ua->setValue(0.0f);
+        });
+    addShader(shader);
+
+    shader = new SPShader("additive_skinned", 1, true);
+    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addUniform("fog_enabled", typeid(int), RP_1ST);
+    shader->addUniform("custom_alpha", typeid(float), RP_1ST);
+    shader->addAllTextures(RP_1ST);
+    shader->setUseFunction(additiveUse);
+    static_cast<SPPerObjectUniform*>(shader)
+        ->addAssignerFunction("fog_enabled", fogUniformAssigner);
+    static_cast<SPPerObjectUniform*>(shader)
+        ->addAssignerFunction("custom_alpha", [](SPUniformAssigner* ua)
+        {
+            ua->setValue(0.0f);
+        });
+    addShader(shader);
+
+    shader = new SPShader("additive", 1, true);
+    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addUniform("fog_enabled", typeid(int), RP_1ST);
+    shader->addUniform("custom_alpha", typeid(float), RP_1ST);
+    shader->addAllTextures(RP_1ST);
+    shader->setUseFunction(additiveUse);
+    static_cast<SPPerObjectUniform*>(shader)
+        ->addAssignerFunction("fog_enabled", fogUniformAssigner);
+    static_cast<SPPerObjectUniform*>(shader)
+        ->addAssignerFunction("custom_alpha", [](SPUniformAssigner* ua)
+        {
+            ua->setValue(0.0f);
+        });
+    addShader(shader);
+
 }   // loadShaders
 
 // ----------------------------------------------------------------------------
@@ -1213,6 +1292,10 @@ void draw(RenderPass rp, DrawCallType dct)
         (uint8_t)(float(rp + 1) / (float)RP_COUNT * 255.0f));
     for (auto& p : *dc)
     {
+        if (!p.first->hasShader(rp))
+        {
+            continue;
+        }
         p.first->use(rp);
         std::vector<SPUniformAssigner*> shader_uniforms;
         p.first->setUniformsPerObject(static_cast<SPPerObjectUniform*>
@@ -1265,524 +1348,7 @@ void draw(RenderPass rp, DrawCallType dct)
 // ----------------------------------------------------------------------------
 void d()
 {
-/*    SPShader* shader = new SPShader("solid_skinned");
-    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_object_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
-    shader->linkShaderFiles(RP_1ST);
-    shader->use(RP_1ST);
-    shader->addBasicUniforms(RP_1ST);
-    shader->addUniform("skinning_offset", typeid(int), RP_1ST);
-    shader->addUniform("joint_count", typeid(int), RP_1ST);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_1ST);
-    shader->addPrefilledTextures(RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_1ST);
-    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_object_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addUniform("skinning_offset", typeid(int), RP_2ND);
-    shader->addUniform("joint_count", typeid(int), RP_2ND);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_2ND);
-    shader->addPrefilledTextures(RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "colorization_mask", RP_2ND);
-#ifndef USE_GLES2
-    shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    if (!CVS->isAMDVertexShaderLayerUsable())
-    {
-        shader->addShaderFile("sp_shadow.geom", GL_GEOMETRY_SHADER, RP_SHADOW);
-    }
-    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
-    shader->linkShaderFiles(RP_SHADOW);
-    shader->use(RP_SHADOW);
-    shader->addBasicUniforms(RP_SHADOW);
-    shader->addUniform("skinning_offset", typeid(int), RP_SHADOW);
-    shader->addUniform("joint_count", typeid(int), RP_SHADOW);
-    shader->addUniform("layer", typeid(int), RP_SHADOW);
-    shader->addPrefilledTextures(RP_SHADOW);
-    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
-        shadowCascadeUniformAssigner);
-#endif
-    g_shaders.push_back(shader);
-
-    shader = new SPShader("alphatest_skinned");
-    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_alpha_test_pass1.frag",
-        GL_FRAGMENT_SHADER, RP_1ST);
-    shader->linkShaderFiles(RP_1ST);
-    shader->use(RP_1ST);
-    shader->addBasicUniforms(RP_1ST);
-    shader->addUniform("skinning_offset", typeid(int), RP_1ST);
-    shader->addUniform("joint_count", typeid(int), RP_1ST);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_1ST);
-    shader->addPrefilledTextures(RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_1ST);
-    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_alpha_test_pass2.frag", GL_FRAGMENT_SHADER,
-        RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addUniform("skinning_offset", typeid(int), RP_2ND);
-    shader->addUniform("joint_count", typeid(int), RP_2ND);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_2ND);
-    shader->addPrefilledTextures(RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "colorization_mask", RP_2ND);
-#ifndef USE_GLES2
-    shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    if (!CVS->isAMDVertexShaderLayerUsable())
-    {
-        shader->addShaderFile("sp_shadow.geom", GL_GEOMETRY_SHADER, RP_SHADOW);
-    }
-    shader->addShaderFile("sp_shadow_alpha_test.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
-    shader->linkShaderFiles(RP_SHADOW);
-    shader->use(RP_SHADOW);
-    shader->addBasicUniforms(RP_SHADOW);
-    shader->addUniform("skinning_offset", typeid(int), RP_SHADOW);
-    shader->addUniform("joint_count", typeid(int), RP_SHADOW);
-    shader->addUniform("layer", typeid(int), RP_SHADOW);
-    shader->addPrefilledTextures(RP_SHADOW);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_SHADOW);
-    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
-        shadowCascadeUniformAssigner);
-#endif
-    g_shaders.push_back(shader);
-
-    shader = new SPShader("normalmap_skinned");
-    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_normal_map.frag", GL_FRAGMENT_SHADER, RP_1ST);
-    shader->linkShaderFiles(RP_1ST);
-    shader->use(RP_1ST);
-    shader->addBasicUniforms(RP_1ST);
-    shader->addUniform("skinning_offset", typeid(int), RP_1ST);
-    shader->addUniform("joint_count", typeid(int), RP_1ST);
-    shader->addUniform("texture_trans", typeid(core::vector2df));
-    shader->addPrefilledTextures(RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "normal_map");
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map");
-    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_object_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addUniform("skinning_offset", typeid(int), RP_2ND);
-    shader->addUniform("joint_count", typeid(int), RP_2ND);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_2ND);
-    shader->addPrefilledTextures(RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "colorization_mask", RP_2ND);
-#ifndef USE_GLES2
-    shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    if (!CVS->isAMDVertexShaderLayerUsable())
-    {
-        shader->addShaderFile("sp_shadow.geom", GL_GEOMETRY_SHADER, RP_SHADOW);
-    }
-    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
-    shader->linkShaderFiles(RP_SHADOW);
-    shader->use(RP_SHADOW);
-    shader->addBasicUniforms(RP_SHADOW);
-    shader->addUniform("skinning_offset", typeid(int), RP_SHADOW);
-    shader->addUniform("joint_count", typeid(int), RP_SHADOW);
-    shader->addUniform("layer", typeid(int), RP_SHADOW);
-    shader->addPrefilledTextures(RP_SHADOW);
-    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
-        shadowCascadeUniformAssigner);
-#endif
-    g_shaders.push_back(shader);
-
-    shader = new SPShader("unlit_skinned");
-    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_alpha_test_pass1.frag", GL_FRAGMENT_SHADER,
-        RP_1ST);
-    shader->linkShaderFiles(RP_1ST);
-    shader->use(RP_1ST);
-    shader->addBasicUniforms(RP_1ST);
-    shader->addUniform("skinning_offset", typeid(int), RP_1ST);
-    shader->addUniform("joint_count", typeid(int), RP_1ST);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_1ST);
-    shader->addPrefilledTextures(RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_1ST);
-    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_unlit.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addUniform("skinning_offset", typeid(int), RP_2ND);
-    shader->addUniform("joint_count", typeid(int), RP_2ND);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_2ND);
-    shader->addPrefilledTextures(RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_2ND);
-#ifndef USE_GLES2
-    shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    if (!CVS->isAMDVertexShaderLayerUsable())
-    {
-        shader->addShaderFile("sp_shadow.geom", GL_GEOMETRY_SHADER, RP_SHADOW);
-    }
-    shader->addShaderFile("sp_shadow_alpha_test.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
-    shader->linkShaderFiles(RP_SHADOW);
-    shader->use(RP_SHADOW);
-    shader->addBasicUniforms(RP_SHADOW);
-    shader->addUniform("skinning_offset", typeid(int), RP_SHADOW);
-    shader->addUniform("joint_count", typeid(int), RP_SHADOW);
-    shader->addUniform("layer", typeid(int), RP_SHADOW);
-    shader->addPrefilledTextures(RP_SHADOW);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_SHADOW);
-    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
-        shadowCascadeUniformAssigner);
-#endif
-    g_shaders.push_back(shader);
-
-    shader = new SPShader("solid");
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_object_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
-    shader->linkShaderFiles(RP_1ST);
-    shader->use(RP_1ST);
-    shader->addBasicUniforms(RP_1ST);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_1ST);
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_object_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_2ND);
-    shader->addPrefilledTextures(RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "colorization_mask", RP_2ND);
-#ifndef USE_GLES2
-    shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    if (!CVS->isAMDVertexShaderLayerUsable())
-    {
-        shader->addShaderFile("sp_shadow.geom", GL_GEOMETRY_SHADER, RP_SHADOW);
-    }
-    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
-    shader->linkShaderFiles(RP_SHADOW);
-    shader->use(RP_SHADOW);
-    shader->addBasicUniforms(RP_SHADOW);
-    shader->addUniform("layer", typeid(int), RP_SHADOW);
-    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
-        shadowCascadeUniformAssigner);
-    shader->addShaderFile("sp_rsm.vert", GL_VERTEX_SHADER, RP_RSM);
-    shader->addShaderFile("sp_rsm.frag", GL_FRAGMENT_SHADER, RP_RSM);
-    shader->linkShaderFiles(RP_RSM);
-    shader->use(RP_RSM);
-    shader->addBasicUniforms(RP_RSM);
-    shader->addUniform("rsm_matrix", typeid(core::matrix4), RP_RSM);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_RSM);
-    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("rsm_matrix",
-        rsmUniformAssigner);
-#endif
-    g_shaders.push_back(shader);
-
-    shader = new SPShader("alphatest");
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_alpha_test_pass1.frag", GL_FRAGMENT_SHADER,
-        RP_1ST);
-    shader->linkShaderFiles(RP_1ST);
-    shader->use(RP_1ST);
-    shader->addBasicUniforms(RP_1ST);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_1ST);
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_alpha_test_pass2.frag", GL_FRAGMENT_SHADER,
-        RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_2ND);
-    shader->addPrefilledTextures(RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "colorization_mask", RP_2ND);
-#ifndef USE_GLES2
-    shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    if (!CVS->isAMDVertexShaderLayerUsable())
-    {
-        shader->addShaderFile("sp_shadow.geom", GL_GEOMETRY_SHADER, RP_SHADOW);
-    }
-    shader->addShaderFile("sp_shadow_alpha_test.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
-    shader->linkShaderFiles(RP_SHADOW);
-    shader->use(RP_SHADOW);
-    shader->addBasicUniforms(RP_SHADOW);
-    shader->addUniform("layer", typeid(int), RP_SHADOW);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_SHADOW);
-    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
-        shadowCascadeUniformAssigner);
-    shader->addShaderFile("sp_rsm.vert", GL_VERTEX_SHADER, RP_RSM);
-    shader->addShaderFile("sp_rsm.frag", GL_FRAGMENT_SHADER, RP_RSM);
-    shader->linkShaderFiles(RP_RSM);
-    shader->use(RP_RSM);
-    shader->addBasicUniforms(RP_RSM);
-    shader->addUniform("rsm_matrix", typeid(core::matrix4), RP_RSM);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_RSM);
-    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("rsm_matrix",
-        rsmUniformAssigner);
-#endif
-    g_shaders.push_back(shader);
-
-    shader = new SPShader("normalmap");
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_normal_map.frag", GL_FRAGMENT_SHADER, RP_1ST);
-    shader->linkShaderFiles(RP_1ST);
-    shader->use(RP_1ST);
-    shader->addBasicUniforms(RP_1ST);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "normal_map", RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_1ST);
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_object_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_2ND);
-    shader->addPrefilledTextures(RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "colorization_mask", RP_2ND);
-#ifndef USE_GLES2
-    shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    if (!CVS->isAMDVertexShaderLayerUsable())
-    {
-        shader->addShaderFile("sp_shadow.geom", GL_GEOMETRY_SHADER, RP_SHADOW);
-    }
-    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
-    shader->linkShaderFiles(RP_SHADOW);
-    shader->use(RP_SHADOW);
-    shader->addBasicUniforms(RP_SHADOW);
-    shader->addUniform("layer", typeid(int), RP_SHADOW);
-    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
-        shadowCascadeUniformAssigner);
-    shader->addShaderFile("sp_rsm.vert", GL_VERTEX_SHADER, RP_RSM);
-    shader->addShaderFile("sp_rsm.frag", GL_FRAGMENT_SHADER, RP_RSM);
-    shader->linkShaderFiles(RP_RSM);
-    shader->use(RP_RSM);
-    shader->addBasicUniforms(RP_RSM);
-    shader->addUniform("rsm_matrix", typeid(core::matrix4), RP_RSM);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_RSM);
-    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("rsm_matrix",
-        rsmUniformAssigner);
-#endif
-    g_shaders.push_back(shader);
-
-    shader = new SPShader("unlit");
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_alpha_test_pass1.frag", GL_FRAGMENT_SHADER,
-        RP_1ST);
-    shader->linkShaderFiles(RP_1ST);
-    shader->use(RP_1ST);
-    shader->addBasicUniforms(RP_1ST);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_1ST);
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_unlit.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_2ND);
-    shader->addPrefilledTextures(RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_2ND);
-#ifndef USE_GLES2
-    shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    if (!CVS->isAMDVertexShaderLayerUsable())
-    {
-        shader->addShaderFile("sp_shadow.geom", GL_GEOMETRY_SHADER, RP_SHADOW);
-    }
-    shader->addShaderFile("sp_shadow_alpha_test.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
-    shader->linkShaderFiles(RP_SHADOW);
-    shader->use(RP_SHADOW);
-    shader->addBasicUniforms(RP_SHADOW);
-    shader->addUniform("layer", typeid(int), RP_SHADOW);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_SHADOW);
-    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
-        shadowCascadeUniformAssigner);
-    shader->addShaderFile("sp_rsm.vert", GL_VERTEX_SHADER, RP_RSM);
-    shader->addShaderFile("sp_rsm.frag", GL_FRAGMENT_SHADER, RP_RSM);
-    shader->linkShaderFiles(RP_RSM);
-    shader->use(RP_RSM);
-    shader->addBasicUniforms(RP_RSM);
-    shader->addUniform("rsm_matrix", typeid(core::matrix4), RP_RSM);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_RSM);
-    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("rsm_matrix",
-        rsmUniformAssigner);
-#endif
-    g_shaders.push_back(shader);
-
-    shader = new SPShader("decal");
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_object_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
-    shader->linkShaderFiles(RP_1ST);
-    shader->use(RP_1ST);
-    shader->addBasicUniforms(RP_1ST);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_1ST);
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_decal.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_2ND);
-    shader->addPrefilledTextures(RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_two_tex", RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_2ND);
-#ifndef USE_GLES2
-    shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    if (!CVS->isAMDVertexShaderLayerUsable())
-    {
-        shader->addShaderFile("sp_shadow.geom", GL_GEOMETRY_SHADER, RP_SHADOW);
-    }
-    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
-    shader->linkShaderFiles(RP_SHADOW);
-    shader->use(RP_SHADOW);
-    shader->addBasicUniforms(RP_SHADOW);
-    shader->addUniform("layer", typeid(int), RP_SHADOW);
-    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
-        shadowCascadeUniformAssigner);
-    shader->addShaderFile("sp_rsm.vert", GL_VERTEX_SHADER, RP_RSM);
-    shader->addShaderFile("sp_rsm.frag", GL_FRAGMENT_SHADER, RP_RSM);
-    shader->linkShaderFiles(RP_RSM);
-    shader->use(RP_RSM);
-    shader->addBasicUniforms(RP_RSM);
-    shader->addUniform("rsm_matrix", typeid(core::matrix4), RP_RSM);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_RSM);
-    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("rsm_matrix",
-        rsmUniformAssigner);
-#endif
-    g_shaders.push_back(shader);
-
-    shader = new SPShader("grass");
-    shader->addShaderFile("sp_grass_pass.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_alpha_test_pass1.frag", GL_FRAGMENT_SHADER,
-        RP_1ST);
-    shader->linkShaderFiles(RP_1ST);
-    shader->use(RP_1ST);
-    shader->addBasicUniforms(RP_1ST);
-    shader->addUniform("windDir", typeid(core::vector3df), RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_1ST);
-    shader->addShaderFile("sp_grass_pass.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_grass.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addUniform("windDir", typeid(core::vector3df), RP_2ND);
-    shader->addPrefilledTextures(RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "gloss_map", RP_2ND);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "colorization_mask", RP_2ND);
-#ifndef USE_GLES2
-    shader->addShaderFile("sp_grass_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    if (!CVS->isAMDVertexShaderLayerUsable())
-    {
-        shader->addShaderFile("sp_shadow.geom", GL_GEOMETRY_SHADER, RP_SHADOW);
-    }
-    shader->addShaderFile("sp_shadow_alpha_test.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
-    shader->linkShaderFiles(RP_SHADOW);
-    shader->use(RP_SHADOW);
-    shader->addBasicUniforms(RP_SHADOW);
-    shader->addUniform("windDir", typeid(core::vector3df), RP_SHADOW);
-    shader->addUniform("layer", typeid(int), RP_SHADOW);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_SHADOW);
-    static_cast<SPPerObjectUniform*>(shader)->addAssignerFunction("layer",
-        shadowCascadeUniformAssigner);
-#endif
-    static_cast<SPPerObjectUniform*>(shader)
-        ->addAssignerFunction("windDir", [](SPUniformAssigner* ua)
-        {
-            ua->setValue(g_wind_dir);
-        });
-    g_shaders.push_back(shader);
-
-    shader = new SPShader("alphablend_skinned", 1, true);
-    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
-    shader->linkShaderFiles(RP_1ST);
-    shader->use(RP_1ST);
-    shader->addBasicUniforms(RP_1ST);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_1ST);
-    shader->addUniform("skinning_offset", typeid(int), RP_1ST);
-    shader->addUniform("joint_count", typeid(int), RP_1ST);
-    shader->addUniform("fog_enabled", typeid(int), RP_1ST);
-    shader->addUniform("custom_alpha", typeid(float), RP_1ST);
-    shader->addPrefilledTextures(RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_1ST);
-    shader->setUseFunction(alphaBlendUse);
-    static_cast<SPPerObjectUniform*>(shader)
-        ->addAssignerFunction("fog_enabled", fogUniformAssigner);
-    g_shaders.push_back(shader);
-
-    shader = new SPShader("alphablend", 1, true);
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
-    shader->linkShaderFiles(RP_1ST);
-    shader->use(RP_1ST);
-    shader->addBasicUniforms(RP_1ST);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_1ST);
-    shader->addUniform("fog_enabled", typeid(int), RP_1ST);
-    shader->addUniform("custom_alpha", typeid(float), RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_1ST);
-    shader->setUseFunction(alphaBlendUse);
-    static_cast<SPPerObjectUniform*>(shader)
-        ->addAssignerFunction("fog_enabled", fogUniformAssigner);
-    g_shaders.push_back(shader);
-
-    shader = new SPShader("additive_skinned", 1, true);
-    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
-    shader->linkShaderFiles(RP_1ST);
-    shader->use(RP_1ST);
-    shader->addBasicUniforms(RP_1ST);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_1ST);
-    shader->addUniform("skinning_offset", typeid(int), RP_1ST);
-    shader->addUniform("joint_count", typeid(int), RP_1ST);
-    shader->addUniform("fog_enabled", typeid(int), RP_1ST);
-    shader->addUniform("custom_alpha", typeid(float), RP_1ST);
-    shader->addPrefilledTextures(RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_1ST);
-    shader->setUseFunction(additiveUse);
-    static_cast<SPPerObjectUniform*>(shader)
-        ->addAssignerFunction("fog_enabled", fogUniformAssigner);
-    g_shaders.push_back(shader);
-
-    shader = new SPShader("additive", 1, true);
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
-    shader->linkShaderFiles(RP_1ST);
-    shader->use(RP_1ST);
-    shader->addBasicUniforms(RP_1ST);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_1ST);
-    shader->addUniform("fog_enabled", typeid(int), RP_1ST);
-    shader->addUniform("custom_alpha", typeid(float), RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_1ST);
-    shader->setUseFunction(additiveUse);
-    static_cast<SPPerObjectUniform*>(shader)
-        ->addAssignerFunction("fog_enabled", fogUniformAssigner);
-    g_shaders.push_back(shader);
-
-    shader = new SPShader("ghost_kart", 1, true);
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
-    shader->linkShaderFiles(RP_1ST);
-    shader->use(RP_1ST);
-    shader->addBasicUniforms(RP_1ST);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_1ST);
-    shader->addUniform("fog_enabled", typeid(int), RP_1ST);
-    shader->addUniform("custom_alpha", typeid(float), RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_1ST);
-    shader->setUseFunction(ghostKartUse);
-    static_cast<SPPerObjectUniform*>(shader)
-        ->addAssignerFunction("fog_enabled", fogUniformAssigner);
-    g_shaders.push_back(shader);
+/*
 
     shader = new SPShader("ghost_kart_skinned", 1, true);
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);

@@ -1,14 +1,16 @@
-uniform sampler2D layer_one_tex;
+// spm layer 1 texture
+uniform sampler2D tex_layer_0;
+
 uniform int fog_enabled;
 uniform float custom_alpha;
 
 in vec2 uv;
 in vec4 color;
-out vec4 FragColor;
+out vec4 o_frag_color;
 
 void main()
 {
-    vec4 diffusecolor = texture(layer_one_tex, uv);
+    vec4 diffusecolor = texture(tex_layer_0, uv);
     vec4 finalcolor = vec4(0.);
     if (fog_enabled == 0)
     {
@@ -26,10 +28,10 @@ void main()
         xpos = u_inverse_projection_matrix * xpos;
         xpos.xyz /= xpos.w;
         float dist = length(xpos.xyz);
-        float fog = smoothstep(fog_data.x, fog_data.y, dist);
-        fog = min(fog, fog_data.z);
-        finalcolor = fog_color * fog + diffusecolor * (1. - fog);
+        float fog = smoothstep(u_fog_data.x, u_fog_data.y, dist);
+        fog = min(fog, u_fog_data.z);
+        finalcolor = u_fog_color * fog + diffusecolor * (1. - fog);
     }
-    FragColor = vec4(finalcolor.rgb * (finalcolor.a * (1.0 - custom_alpha)),
+    o_frag_color = vec4(finalcolor.rgb * (finalcolor.a * (1.0 - custom_alpha)),
         finalcolor.a * (1.0 - custom_alpha));
 }

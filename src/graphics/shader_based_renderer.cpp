@@ -233,6 +233,7 @@ void ShaderBasedRenderer::renderSSAO() const
 // ----------------------------------------------------------------------------
 void ShaderBasedRenderer::renderShadows()
 {
+    PROFILER_PUSH_CPU_MARKER("- Shadow Pass", 0xFF, 0x00, 0x00);
     glDepthFunc(GL_LEQUAL);
     glDepthMask(GL_TRUE);
     glEnable(GL_DEPTH_TEST);
@@ -256,6 +257,7 @@ void ShaderBasedRenderer::renderShadows()
         SP::draw(SP::RP_SHADOW, (SP::DrawCallType)(SP::DCT_SHADOW1 + cascade));
     }
     glDisable(GL_POLYGON_OFFSET_FILL);
+    PROFILER_POP_CPU_MARKER();
 }
 
 // ----------------------------------------------------------------------------
@@ -493,11 +495,8 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
     {
         PROFILER_PUSH_CPU_MARKER("- Transparent Pass", 0xFF, 0x00, 0x00);
         ScopedGPUTimer Timer(irr_driver->getGPUTimer(Q_TRANSPARENT));
-        m_geometry_passes->renderTransparent(m_draw_calls,
-                                             m_rtts->getFBO(FBO_TMP1_WITH_DS),
-                                             m_rtts->getFBO(FBO_DISPLACE),
-                                             m_rtts->getFBO(FBO_COLORS),                                             
-                                             m_post_processing);
+        SP::draw(SP::RP_1ST, SP::DCT_TRANSPARENT);
+        SP::draw(SP::RP_2ND, SP::DCT_TRANSPARENT);
         PROFILER_POP_CPU_MARKER();
     }
 
@@ -704,6 +703,10 @@ void ShaderBasedRenderer::onUnloadWorld()
 // ----------------------------------------------------------------------------
 void ShaderBasedRenderer::resetPostProcessing()
 {
+    if (CVS->isARBUniformBufferObjectUsable())
+    {
+        uploadLightingData();
+    }
     m_post_processing->reset();
 }
 
@@ -721,10 +724,6 @@ void ShaderBasedRenderer::addSkyBox(const std::vector<video::ITexture*> &texture
     if(spherical_harmonics_textures.size() == 6)
     {
         m_spherical_harmonics->setTextures(spherical_harmonics_textures);
-    }
-    if (CVS->isARBUniformBufferObjectUsable())
-    {
-        uploadLightingData();
     }
 }
 
