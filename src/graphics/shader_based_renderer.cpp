@@ -45,6 +45,8 @@
 #include "tracks/track.hpp"
 #include "utils/profiler.hpp"
 
+#include "../../lib/irrlicht/source/Irrlicht/CSceneManager.h"
+#include "../../lib/irrlicht/source/Irrlicht/os.h"
 #include <algorithm> 
 
 // ----------------------------------------------------------------------------
@@ -231,7 +233,6 @@ void ShaderBasedRenderer::renderSSAO() const
 // ----------------------------------------------------------------------------
 void ShaderBasedRenderer::renderShadows()
 {
-    PROFILER_PUSH_CPU_MARKER("- Shadow", 0x30, 0x6F, 0x90);
     glDepthFunc(GL_LEQUAL);
     glDepthMask(GL_TRUE);
     glEnable(GL_DEPTH_TEST);
@@ -255,7 +256,6 @@ void ShaderBasedRenderer::renderShadows()
         SP::draw(SP::RP_SHADOW, (SP::DrawCallType)(SP::DCT_SHADOW1 + cascade));
     }
     glDisable(GL_POLYGON_OFFSET_FILL);
-    PROFILER_POP_CPU_MARKER();
 }
 
 // ----------------------------------------------------------------------------
@@ -831,10 +831,17 @@ void ShaderBasedRenderer::render(float dt)
     
     RaceGUIBase *rg = world->getRaceGUI();
     if (rg) rg->update(dt);
-    
+
     if (!CVS->isDefferedEnabled())
     {
         prepareForwardRenderer();
+    }
+
+    {
+        PROFILER_PUSH_CPU_MARKER("Update scene", 0x0, 0xFF, 0x0);
+        static_cast<scene::CSceneManager *>(irr_driver->getSceneManager())
+            ->OnAnimate(os::Timer::getTime());
+        PROFILER_POP_CPU_MARKER();
     }
 
     assert(Camera::getNumCameras() < MAX_PLAYER_COUNT + 1);
@@ -857,10 +864,8 @@ void ShaderBasedRenderer::render(float dt)
         if (!CVS->isDefferedEnabled() && CVS->isARBSRGBFramebufferUsable())
             glEnable(GL_FRAMEBUFFER_SRGB);
 #endif
-        
-        PROFILER_PUSH_CPU_MARKER("UBO upload", 0x0, 0xFF, 0x0);
+
         computeMatrixesAndCameras(camnode, m_rtts->getWidth(), m_rtts->getHeight());
-        PROFILER_POP_CPU_MARKER();
         renderScene(camnode, dt, track->hasShadows(), false); 
         
         if (irr_driver->getBoundingBoxesViz())
@@ -926,7 +931,7 @@ void ShaderBasedRenderer::render(float dt)
     drawDebugMeshes();
 #endif
 
-    PROFILER_PUSH_CPU_MARKER("EndSccene", 0x45, 0x75, 0x45);
+    PROFILER_PUSH_CPU_MARKER("EndScene", 0x45, 0x75, 0x45);
     irr_driver->getVideoDriver()->endScene();
     PROFILER_POP_CPU_MARKER();
 
@@ -955,7 +960,8 @@ void ShaderBasedRenderer::renderToTexture(GL3RenderTarget *render_target,
     assert(m_rtts != NULL);
 
     irr_driver->getSceneManager()->setActiveCamera(camera);
-
+    static_cast<scene::CSceneManager *>(irr_driver->getSceneManager())
+        ->OnAnimate(os::Timer::getTime());
     computeMatrixesAndCameras(camera, m_rtts->getWidth(), m_rtts->getHeight());
     if (CVS->isARBUniformBufferObjectUsable())
         uploadLightingData();
@@ -987,61 +993,5 @@ void ShaderBasedRenderer::renderToTexture(GL3RenderTarget *render_target,
     irr_driver->getSceneManager()->setActiveCamera(NULL);
 
 } //renderToTexture
-
-// ----------------------------------------------------------------------------
-void ShaderBasedRenderer::preloadShaderFiles()
-{
-    SharedGPUObjects::init();
-/*    ShaderFilesManager* sfm = ShaderFilesManager::getInstance();
-
-    sfm->addShaderFile("object_pass.vert", GL_VERTEX_SHADER);
-    sfm->addShaderFile("object_pass1.frag", GL_FRAGMENT_SHADER);
-    sfm->addShaderFile("splatting.frag", GL_FRAGMENT_SHADER);
-    if (CVS->supportsHardwareSkinning())
-        sfm->addShaderFile("skinning.vert", GL_VERTEX_SHADER);
-    sfm->addShaderFile("transparent.frag", GL_FRAGMENT_SHADER);
-    sfm->addShaderFile("coloredquad.vert", GL_VERTEX_SHADER);
-    sfm->addShaderFile("coloredquad.frag", GL_FRAGMENT_SHADER);
-    sfm->addShaderFile("screenquad.vert", GL_VERTEX_SHADER);
-    sfm->addShaderFile("tonemap.frag", GL_FRAGMENT_SHADER);
-    if (!GraphicsRestrictions::isDisabled
-        (GraphicsRestrictions::GR_FRAMEBUFFER_SRGB_WORKAROUND1))
-        sfm->addShaderFile("passthrough.frag", GL_FRAGMENT_SHADER);
-
-    sfm->addShaderFile("alphatest_particle.vert", GL_VERTEX_SHADER);
-    sfm->addShaderFile("alphatest_particle.frag", GL_FRAGMENT_SHADER);
-    sfm->addShaderFile("simple_particle.vert", GL_VERTEX_SHADER);
-    sfm->addShaderFile("simple_particle.frag", GL_FRAGMENT_SHADER);
-
-    if (CVS->supportsIndirectInstancingRendering())
-    {
-        sfm->addShaderFile("instanced_object_pass.vert", GL_VERTEX_SHADER);
-        if (CVS->supportsHardwareSkinning())
-            sfm->addShaderFile("instanced_skinning.vert", GL_VERTEX_SHADER);
-        sfm->addShaderFile("instanced_object_pass1.frag", GL_FRAGMENT_SHADER);
-        sfm->addShaderFile("instanced_object_pass2.frag", GL_FRAGMENT_SHADER);
-        sfm->addShaderFile("instanced_objectref_pass1.frag", GL_FRAGMENT_SHADER);
-        sfm->addShaderFile("instanced_objectref_pass2.frag", GL_FRAGMENT_SHADER);
-        sfm->addShaderFile("instanced_object_unlit.frag", GL_FRAGMENT_SHADER);
-        sfm->addShaderFile("instanced_normalmap.frag", GL_FRAGMENT_SHADER);
-        sfm->addShaderFile("instanced_grass.vert", GL_VERTEX_SHADER);
-        sfm->addShaderFile("instanced_grass_pass2.frag", GL_FRAGMENT_SHADER);
-        sfm->addShaderFile("instanced_objectpass_spheremap.frag", GL_FRAGMENT_SHADER);
-        sfm->addShaderFile("instanced_detailed_object_pass2.frag", GL_FRAGMENT_SHADER);
-    }
-    else
-    {
-        sfm->addShaderFile("object_pass2.frag", GL_FRAGMENT_SHADER);
-        sfm->addShaderFile("objectref_pass1.frag", GL_FRAGMENT_SHADER);
-        sfm->addShaderFile("objectref_pass2.frag", GL_FRAGMENT_SHADER);
-        sfm->addShaderFile("object_unlit.frag", GL_FRAGMENT_SHADER);
-        sfm->addShaderFile("normalmap.frag", GL_FRAGMENT_SHADER);
-        sfm->addShaderFile("grass_pass.vert", GL_VERTEX_SHADER);
-        sfm->addShaderFile("grass_pass2.frag", GL_FRAGMENT_SHADER);
-        sfm->addShaderFile("objectpass_spheremap.frag", GL_FRAGMENT_SHADER);
-        sfm->addShaderFile("detailed_object_pass2.frag", GL_FRAGMENT_SHADER);
-    }
-*/
-} //preloadShaderFiles
 
 #endif   // !SERVER_ONLY

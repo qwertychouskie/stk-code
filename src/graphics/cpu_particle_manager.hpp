@@ -21,6 +21,7 @@
 #ifndef SERVER_ONLY
 
 #include "graphics/gl_headers.hpp"
+#include "utils/constants.hpp"
 #include "utils/mini_glm.hpp"
 #include "utils/no_copy.hpp"
 #include "utils/singleton.hpp"
@@ -32,7 +33,7 @@
 
 #include <cassert>
 #include <string>
-#include <tuple>
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -69,12 +70,34 @@ struct CPUParticle
     }
 };
 
+
 class STKParticle;
 class Material;
 
 class CPUParticleManager : public Singleton<CPUParticleManager>, NoCopy
 {
 private:
+    struct GLParticle : public NoCopy
+    {
+        GLuint m_vao[MAX_PLAYER_COUNT][2];
+        GLuint m_vbo[MAX_PLAYER_COUNT][2];
+        unsigned m_size[MAX_PLAYER_COUNT][2];
+        // --------------------------------------------------------------------
+        GLParticle(bool flips);
+        // --------------------------------------------------------------------
+        ~GLParticle()
+        {
+            for (unsigned i = 0; i < MAX_PLAYER_COUNT; i++)
+            {
+                for (int j = 0; j < 2; j++)
+                {
+                    glDeleteVertexArrays(1, &m_vao[i][j]);
+                    glDeleteBuffers(1, &m_vbo[i][j]);
+                }
+            }
+        }
+    };
+
     std::unordered_map<std::string, std::vector<STKParticle*> >
         m_particles_queue;
 
@@ -84,14 +107,14 @@ private:
     std::unordered_map<std::string, std::vector<CPUParticle> >
         m_particles_generated;
 
-    std::unordered_map<std::string, std::tuple<GLuint/*VAO*/,
-        GLuint/*VBO*/, unsigned/*VBO size*/> > m_gl_particles;
+    std::unordered_map<std::string, std::unique_ptr<GLParticle> >
+        m_gl_particles;
 
     std::unordered_map<std::string, Material*> m_material_map;
 
     std::unordered_set<std::string> m_flips_material;
 
-    GLuint m_particle_quad;
+    static GLuint m_particle_quad;
 
     // ------------------------------------------------------------------------
     bool isFlipsMaterial(const std::string& name)
@@ -117,12 +140,8 @@ public:
     // ------------------------------------------------------------------------
     ~CPUParticleManager()
     {
-        for (auto& p : m_gl_particles)
-        {
-            glDeleteVertexArrays(1, &std::get<0>(p.second));
-            glDeleteBuffers(1, &std::get<1>(p.second));
-        }
         glDeleteBuffers(1, &m_particle_quad);
+        m_particle_quad = 0;
     }
     // ------------------------------------------------------------------------
     void addParticleNode(STKParticle* node);

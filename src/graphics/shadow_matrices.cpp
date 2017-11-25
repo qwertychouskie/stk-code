@@ -34,8 +34,6 @@
 #include <limits>
 #include <ICameraSceneNode.h>
 #include <SViewFrustum.h>
-#include "../../lib/irrlicht/source/Irrlicht/CSceneManager.h"
-#include "../../lib/irrlicht/source/Irrlicht/os.h"
 
 #define MAX2(a, b) ((a) > (b) ? (a) : (b))
 #define MIN2(a, b) ((a) > (b) ? (b) : (a))
@@ -326,8 +324,6 @@ void ShadowMatrices::computeMatrixesAndCameras(scene::ICameraSceneNode *const ca
 {
     if (CVS->isSDSMEnabled())
         updateSplitAndLightcoordRangeFromComputeShaders(width, height, depth_stencil_texture);
-    static_cast<scene::CSceneManager *>(irr_driver->getSceneManager())
-        ->OnAnimate(os::Timer::getTime());
     camnode->render();
     irr_driver->setProjMatrix(irr_driver->getVideoDriver()
                               ->getTransform(video::ETS_PROJECTION));
