@@ -37,6 +37,7 @@
 #include "graphics/stk_animated_mesh.hpp"
 #include "graphics/stk_mesh_loader.hpp"
 #include "graphics/sp_mesh_loader.hpp"
+#include "graphics/sp/sp_base.hpp"
 #include "graphics/sp/sp_mesh.hpp"
 #include "graphics/sp/sp_mesh_node.hpp"
 #include "graphics/stk_mesh_scene_node.hpp"
@@ -1701,8 +1702,8 @@ void IrrDriver::displayFPS()
         fps_string = StringUtils::insertValues
                     (L"FPS: %d/%d/%d  - PolyCount: %d Solid, "
                       "%d Shadows - LightDist : %d, Total skinning joints: %d",
-                    min, fps, max, m_renderer->getPolyCount(SOLID_NORMAL_AND_DEPTH_PASS),
-                    m_renderer->getPolyCount(SHADOW_PASS), m_last_light_bucket_distance,
+                    min, fps, max, SP::sp_solid_poly_count,
+                    SP::sp_shadow_poly_count, m_last_light_bucket_distance,
                     m_skinning_joint);
     }
     else

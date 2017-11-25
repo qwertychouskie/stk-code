@@ -398,14 +398,6 @@ public:
     // ------------------------------------------------------------------------
     void bindSkinningTexture()
     {
-        glActiveTexture(GL_TEXTURE0 + 15);
-#ifdef USE_GLES2
-        glBindTexture(GL_TEXTURE_2D, SharedGPUObjects::getSkinningTexture());
-#else
-        glBindTexture(GL_TEXTURE_BUFFER,
-            SharedGPUObjects::getSkinningTexture());
-#endif
-        glBindSampler(15, 0);
     }
 };
 

@@ -1758,7 +1758,7 @@ void Track::loadTrackModel(bool reverse_track, unsigned int mode_id)
 #ifndef SERVER_ONLY
     if (!ProfileWorld::isNoGraphics() && CVS->isGLSL())
     {
-        glBindBuffer(GL_UNIFORM_BUFFER, SP::sp_mat_ubo);
+        glBindBuffer(GL_UNIFORM_BUFFER, SP::sp_fog_ubo);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, 4, &m_fog_start);
         glBufferSubData(GL_UNIFORM_BUFFER, 4, 4, &m_fog_end);
         glBufferSubData(GL_UNIFORM_BUFFER, 8, 4, &m_fog_max);

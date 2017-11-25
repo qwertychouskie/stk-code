@@ -78,8 +78,6 @@ std::array<GLuint, ST_COUNT> g_samplers;
 // ----------------------------------------------------------------------------
 std::vector<GLuint> sp_prefilled_tex (5);
 // ----------------------------------------------------------------------------
-GLuint g_skinning_buffer;
-// ----------------------------------------------------------------------------
 std::vector<float> g_bounding_boxes;
 // ----------------------------------------------------------------------------
 core::vector3df g_wind_dir;
@@ -92,8 +90,9 @@ unsigned sp_solid_poly_count = 0;
 // ----------------------------------------------------------------------------
 unsigned sp_shadow_poly_count = 0;
 // ----------------------------------------------------------------------------
-unsigned sp_draw_call_count = 0;
+unsigned sp_cur_player = 0;
 // ----------------------------------------------------------------------------
+unsigned sp_cur_buf_id[MAX_PLAYER_COUNT] = {};
 // ----------------------------------------------------------------------------
 unsigned g_skinning_offset = 0;
 // ----------------------------------------------------------------------------
@@ -110,11 +109,18 @@ void initSTKShadowMatrices(ShadowMatrices* sm)
     g_stk_sm = sm;
 }   // initSTKShadowMatrices
 // ----------------------------------------------------------------------------
-GLuint sp_mat_ubo = 0;
+GLuint sp_mat_ubo[MAX_PLAYER_COUNT][2] = {};
+// ----------------------------------------------------------------------------
+GLsync sp_sync[2] = {};
 // ----------------------------------------------------------------------------
 GLuint sp_fog_ubo = 0;
 // ----------------------------------------------------------------------------
-
+GLuint g_skinning_tex[MAX_PLAYER_COUNT][2] = {};
+// ----------------------------------------------------------------------------
+GLuint g_skinning_buf[MAX_PLAYER_COUNT][2] = {};
+// ----------------------------------------------------------------------------
+unsigned g_skinning_size[MAX_PLAYER_COUNT][2] = {};
+// ----------------------------------------------------------------------------
 #ifndef SERVER_ONLY
 // ----------------------------------------------------------------------------
 void shadowCascadeUniformAssigner(SPUniformAssigner* ua)
@@ -169,6 +175,91 @@ void ghostKartUse()
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 }   // ghostKartUse
 #endif
+
+// ----------------------------------------------------------------------------
+void resizeSkinning(unsigned number, unsigned player_id, unsigned buf_id)
+{
+    const irr::core::matrix4 m;
+    g_skinning_size[player_id][buf_id] = number;
+
+#ifdef USE_GLES2
+
+    glBindTexture(GL_TEXTURE_2D, g_skinning_tex[player_id][buf_id]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 4, number, 0, GL_RGBA,
+        GL_FLOAT, NULL);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 1, GL_RGBA, GL_FLOAT,
+        m.pointer());
+    glBindTexture(GL_TEXTURE_2D, 0);
+#else
+
+    glBindBuffer(GL_TEXTURE_BUFFER, g_skinning_buf[player_id][buf_id]);
+    glBufferData(GL_TEXTURE_BUFFER, number << 6, NULL, GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_TEXTURE_BUFFER, 0, 64, m.pointer());
+#endif
+}   // resizeSkinning
+
+// ----------------------------------------------------------------------------
+void initSkinning()
+{
+#ifndef SERVER_ONLY
+
+    int max_size = 0;
+#ifdef USE_GLES2
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
+
+    if (stk_config->m_max_skinning_bones > (unsigned)max_size)
+    {
+        Log::warn("SharedGPUObjects", "Too many bones for skinning, max: %d",
+            max_size);
+        stk_config->m_max_skinning_bones = max_size;
+    }
+    Log::info("SharedGPUObjects", "Hardware Skinning enabled, method: %u"
+        " (max bones) * 16 RGBA float texture",
+        stk_config->m_max_skinning_bones);
+#else
+
+    glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &max_size);
+    if (stk_config->m_max_skinning_bones << 6 > (unsigned)max_size)
+    {
+        Log::warn("SharedGPUObjects", "Too many bones for skinning, max: %d",
+            max_size >> 6);
+        stk_config->m_max_skinning_bones = max_size >> 6;
+    }
+    Log::info("SharedGPUObjects", "Hardware Skinning enabled, method: TBO, "
+        "max bones: %u", stk_config->m_max_skinning_bones);
+#endif
+
+
+    // Reserve 1 identity matrix for non-weighted vertices
+    // All buffer / skinning texture start with 2 bones for power of 2 increase
+    const irr::core::matrix4 m;
+#ifdef USE_GLES2
+    for (unsigned i = 0; i < MAX_PLAYER_COUNT; i++)
+    {
+        for (int j = 0; j < 2; j++)
+        {
+            glGenTextures(1, &g_skinning_tex[i][j]);
+            resizeSkinning(2, i, j);
+        }
+    }
+#else
+    for (unsigned i = 0; i < MAX_PLAYER_COUNT; i++)
+    {
+        for (int j = 0; j < 2; j++)
+        {
+            glGenBuffers(1, &g_skinning_buf[i][j]);
+            resizeSkinning(2, i, j);
+            glGenTextures(1, &g_skinning_tex[i][j]);
+            glBindTexture(GL_TEXTURE_BUFFER, g_skinning_tex[i][j]);
+            glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, g_skinning_buf[i][j]);
+            glBindTexture(GL_TEXTURE_BUFFER, 0);
+        }
+    }
+#endif
+
+#endif
+
+}   // initSkinning
 
 // ----------------------------------------------------------------------------
 void addShader(SPShader* shader)
@@ -513,16 +604,21 @@ void init()
     }
 #ifndef SERVER_ONLY
 
-    sp_prefilled_tex[4] = SharedGPUObjects::getSkinningTexture();
-
-    glGenBuffers(1, &sp_mat_ubo);
-    glBindBuffer(GL_UNIFORM_BUFFER, sp_mat_ubo);
-    glBufferData(GL_UNIFORM_BUFFER, (16 * 9 + 2) * sizeof(float), NULL,
-        GL_STREAM_DRAW);
+    initSkinning();
+    for (unsigned i = 0; i < MAX_PLAYER_COUNT; i++)
+    {
+        for (int j = 0; j < 2; j++)
+        {
+            glGenBuffers(1, &sp_mat_ubo[i][j]);
+            glBindBuffer(GL_UNIFORM_BUFFER, sp_mat_ubo[i][j]);
+            glBufferData(GL_UNIFORM_BUFFER, (16 * 9 + 2) * sizeof(float), NULL,
+                GL_DYNAMIC_DRAW);
+        }
+    }
 
     glGenBuffers(1, &sp_fog_ubo);
     glBindBuffer(GL_UNIFORM_BUFFER, sp_fog_ubo);
-    glBufferData(GL_UNIFORM_BUFFER, 8 * sizeof(float), NULL, GL_STREAM_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, 8 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, 2, sp_fog_ubo);
 
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -678,7 +774,17 @@ void destroy()
     }
     g_shaders.clear();
 #ifndef SERVER_ONLY
-    glDeleteBuffers(1, &sp_mat_ubo);
+    for (unsigned i = 0; i < MAX_PLAYER_COUNT; i++)
+    {
+        for (int j = 0; j < 2; j++)
+        {
+            glDeleteBuffers(1, &sp_mat_ubo[i][j]);
+            glDeleteBuffers(1, &g_skinning_tex[i][j]);
+#ifndef USE_GLES2
+            glDeleteTextures(1, &g_skinning_buf[i][j]);
+#endif
+        }
+    }
     glDeleteBuffers(1, &sp_fog_ubo);
     glDeleteSamplers((unsigned)g_samplers.size() - 1, g_samplers.data());
 #endif
@@ -805,13 +911,15 @@ inline core::vector3df getCorner(const core::aabbox3df& bbox, unsigned n)
 // ----------------------------------------------------------------------------
 void prepareDrawCalls()
 {
+    sp_prefilled_tex[4] =
+        g_skinning_tex[sp_cur_player][sp_cur_buf_id[sp_cur_player]];
     if (!sp_culling)
     {
         return;
     }
     g_wind_dir = core::vector3df(1.0f, 0.0f, 0.0f) *
         (irr_driver->getDevice()->getTimer()->getTime() / 1000.0f) * 1.5f;
-    sp_solid_poly_count = sp_shadow_poly_count = sp_draw_call_count = 0;
+    sp_solid_poly_count = sp_shadow_poly_count = 0;
     // 1st one is identity
     g_skinning_offset = 1;
     g_skinning_mesh.clear();
@@ -979,37 +1087,73 @@ void updateModelMatrix()
 }
 
 // ----------------------------------------------------------------------------
-void uploadAll()
+void uploadSkinningMatrices()
 {
 #ifndef SERVER_ONLY
+    if (g_skinning_mesh.empty())
+    {
+        return;
+    }
+
+    unsigned new_size =
+        g_skinning_size[sp_cur_player][sp_cur_buf_id[sp_cur_player]];
+    while (g_skinning_offset > new_size)
+    {
+        new_size <<= 1;
+    }
+    if (new_size !=
+        g_skinning_size[sp_cur_player][sp_cur_buf_id[sp_cur_player]])
+    {
+        resizeSkinning(new_size, sp_cur_player, sp_cur_buf_id[sp_cur_player]);
+    }
 
     unsigned buffer_offset = 0;
+#ifndef USE_GLES2
+    glBindBuffer(GL_TEXTURE_BUFFER,
+        g_skinning_buf[sp_cur_player][sp_cur_buf_id[sp_cur_player]]);
+    std::array<float, 16>* joint_ptr = (std::array<float, 16>*)
+        glMapBufferRange(GL_TEXTURE_BUFFER, 64, (g_skinning_offset - 1) * 64,
+        GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT |
+        GL_MAP_INVALIDATE_RANGE_BIT);
+#else
     static std::vector<std::array<float, 16> >
         tmp_buf(stk_config->m_max_skinning_bones);
+    std::array<float, 16>* joint_ptr = tmp_buf.data();
+#endif
+
     for (unsigned i = 0; i < g_skinning_mesh.size(); i++)
     {
-        memcpy(tmp_buf.data() + buffer_offset,
+        memcpy(joint_ptr + buffer_offset,
             g_skinning_mesh[i]->getSkinningMatrices(),
-            g_skinning_mesh[i]->getTotalJoints() << 6);
+            g_skinning_mesh[i]->getTotalJoints() * 64);
         buffer_offset += g_skinning_mesh[i]->getTotalJoints();
     }
 
 #ifdef USE_GLES2
-    glBindTexture(GL_TEXTURE_2D, SharedGPUObjects::getSkinningTexture());
+    glBindTexture(GL_TEXTURE_2D,
+        g_skinning_tex[sp_cur_player][sp_cur_buf_id[sp_cur_player]]);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 1, 4, buffer_offset, GL_RGBA,
         GL_FLOAT, tmp_buf.data());
     glBindTexture(GL_TEXTURE_2D, 0);
 #else
-    glBindBuffer(GL_TEXTURE_BUFFER, SharedGPUObjects::getSkinningBuffer());
-    glBufferSubData(GL_TEXTURE_BUFFER, 64, buffer_offset << 6, tmp_buf.data());
+    glUnmapBuffer(GL_TEXTURE_BUFFER);
     glBindBuffer(GL_TEXTURE_BUFFER, 0);
 #endif
 
+#endif
+}
+
+// ----------------------------------------------------------------------------
+void uploadAll()
+{
+#ifndef SERVER_ONLY
+    uploadSkinningMatrices();
     for (auto& p : g_instances)
     {
         p.first->uploadInstanceData();
     }
-    glBindBuffer(GL_UNIFORM_BUFFER, sp_mat_ubo);
+    glBindBuffer(GL_UNIFORM_BUFFER,
+        sp_mat_ubo[sp_cur_player][sp_cur_buf_id[sp_cur_player]]);
     void* ptr = glMapBufferRange(GL_UNIFORM_BUFFER, 0,
         (16 * 9 + 2) * sizeof(float), GL_MAP_WRITE_BIT |
         GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
@@ -1669,449 +1813,6 @@ void d()
 }
 
 /*
-// ----------------------------------------------------------------------------
-void prepareDrawCalls(const scene::ICameraSceneNode* cam, bool shadow)
-{
-    if (!sp_culling)
-    {
-        return;
-    }
-    sp_solid_poly_count = sp_shadow_poly_count = sp_draw_call_count = 0;
-    g_skinning_offset = 0;
-    g_skinning_mesh.clear();
-    for (unsigned i = 0; i < DCT_COUNT; i++)
-    {
-        g_draw_calls[i].clear();
-    }
-    if (sp_null_device)
-    {
-        return;
-    }
-#ifndef SERVER_ONLY
-    int sector_visible = 0;
-    mathPlaneFrustumf(g_frustums[0], irr_driver->getProjViewMatrix());
-    if (shadow)
-    {
-        mathPlaneFrustumf(g_frustums[1],
-            g_stk_sbr->getShadowMatrices()->getSunOrthoMatrices()[0]);
-        mathPlaneFrustumf(g_frustums[2],
-            g_stk_sbr->getShadowMatrices()->getSunOrthoMatrices()[1]);
-        mathPlaneFrustumf(g_frustums[3],
-            g_stk_sbr->getShadowMatrices()->getSunOrthoMatrices()[2]);
-        mathPlaneFrustumf(g_frustums[4],
-            g_stk_sbr->getShadowMatrices()->getSunOrthoMatrices()[3]);
-    }
-
-    std::unordered_map<SPShader*, std::vector<SPDrawCall*> > dc_list[6];
-    const bool build_rsm_for_track = CVS->isGlobalIlluminationEnabled() &&
-        !g_stk_sbr->getShadowMatrices()->isRSMMapAvail();
-
-    for (SPDynamicDrawCall* dy_dc : g_dy_dc)
-    {
-        const bool discard =
-            dy_dc->handleCulling(g_frustums[0], trueset_depth);
-        SPShader* shader = dy_dc->getShader();
-        if (!discard)
-        {
-            dc_list[0][shader].push_back(dy_dc);
-        }
-        if (shadow && !shader->isTransparent())
-        {
-            for (int i = 1; i < 5; i++)
-            {
-                const bool discard = dy_dc->handleCulling(g_frustums[i]);
-                if (!discard)
-                {
-                    dc_list[i][shader].push_back(dy_dc);
-                }
-            }
-        }
-    }
-
-    for (unsigned sec_num = 0; sec_num < g_sectors.size(); sec_num++)
-    {
-        SPSector* sec = g_sectors[sec_num];
-        sec->setVisible(false);
-        if (sec->getMeshCount() == 0)
-        {
-            continue;
-        }
-        if (irr_driver->getBoundingBoxesViz() && sec_num != 0)
-        {
-            addEdgeForViz(getCorner(sec->getSectorBBox(), 0),
-                getCorner(sec->getSectorBBox(), 1));
-            addEdgeForViz(getCorner(sec->getSectorBBox(), 1),
-                getCorner(sec->getSectorBBox(), 5));
-            addEdgeForViz(getCorner(sec->getSectorBBox(), 5),
-                getCorner(sec->getSectorBBox(), 4));
-            addEdgeForViz(getCorner(sec->getSectorBBox(), 4),
-                getCorner(sec->getSectorBBox(), 0));
-            addEdgeForViz(getCorner(sec->getSectorBBox(), 2),
-                getCorner(sec->getSectorBBox(), 3));
-            addEdgeForViz(getCorner(sec->getSectorBBox(), 3),
-                getCorner(sec->getSectorBBox(), 7));
-            addEdgeForViz(getCorner(sec->getSectorBBox(), 7),
-                getCorner(sec->getSectorBBox(), 6));
-            addEdgeForViz(getCorner(sec->getSectorBBox(), 6),
-                getCorner(sec->getSectorBBox(), 2));
-            addEdgeForViz(getCorner(sec->getSectorBBox(), 0),
-                getCorner(sec->getSectorBBox(), 2));
-            addEdgeForViz(getCorner(sec->getSectorBBox(), 1),
-                getCorner(sec->getSectorBBox(), 3));
-            addEdgeForViz(getCorner(sec->getSectorBBox(), 5),
-                getCorner(sec->getSectorBBox(), 7));
-            addEdgeForViz(getCorner(sec->getSectorBBox(), 4),
-                getCorner(sec->getSectorBBox(), 6));
-        }
-        std::vector<bool> discard;
-        discard.resize((shadow ? 6 : 1), false);
-        discard[5] = !build_rsm_for_track;
-        for (int dc_type = 0; dc_type < (shadow ? 5 : 1); dc_type++)
-        {
-            if (sec_num == 0)
-            {
-                break;
-            }
-            for (int i = 0; i < 24; i += 4)
-            {
-                bool outside = true;
-                for (int j = 0; j < 8; j++)
-                {
-                    const float dist = getCorner
-                        (sec->getSectorBBox(), j).X * g_frustums[dc_type][i] +
-                        getCorner(sec->getSectorBBox(), j).Y *
-                        g_frustums[dc_type][i + 1] +
-                        getCorner(sec->getSectorBBox(), j).Z *
-                        g_frustums[dc_type][i + 2] + g_frustums[dc_type][i + 3];
-                    outside = outside && dist < 0.0f;
-                    if (!outside)
-                    {
-                        break;
-                    }
-                }
-                if (outside)
-                {
-                    discard[dc_type] = true;
-                    break;
-                }
-            }
-        }
-        if (shadow ?
-            (discard[0] && discard[1] && discard[2] && discard[3] &&
-            discard[4] && discard[5]) : discard[0])
-        {
-            continue;
-        }
-        sec->setVisible(true);
-        sector_visible++;
-        auto it = sec->getInstanceIter();
-        for (unsigned i = 0; i < sec->getMeshCount(); i++)
-        {
-            SPInstance* instance = it->second;
-            const float depth = instance->calculateDepth(g_frustums[0]);
-            if (instance->getInstanceCount() == 0 ||
-                instance->discardByAbsoluteDepth())
-            {
-                it++;
-                continue;
-            }
-            for (int dc_type = 0; dc_type < (shadow ? 6 : 1); dc_type++)
-            {
-                if (discard[dc_type])
-                {
-                    continue;
-                }
-                for (unsigned j = 0; j < instance->getDrawCallCount(); j++)
-                {
-                    SPDrawCall* dc = instance->getDrawCall(j);
-                    SPMesh* spm = it->first;
-                    if (dc_type == 0)
-                    {
-                        dc->setDepth(depth);
-                    }
-                    else if (dc_type == 5)
-                    {
-                        // Only render track mesh (space partitioned mesh) for
-                        // rsm
-                        assert(build_rsm_for_track);
-                        if (!spm->isSpacePartitioned())
-                        {
-                            continue;
-                        }
-                    }
-                    SPShader* dc_shader = dc->getShader();
-                    if (dc_shader == NULL || (dc_type != 0 &&
-                        dc_shader->isTransparent()))
-                    {
-                        continue;
-                    }
-                    if (dc_type == 0)
-                    {
-                        sp_solid_poly_count += instance->getInstanceCount() *
-                            (dc->getIndicesCount() / 3);
-                    }
-                    else if (dc_type != 5)
-                    {
-                        sp_shadow_poly_count += instance->getInstanceCount() *
-                            (dc->getIndicesCount() / 3);
-                    }
-                    dc_list[dc_type][dc_shader].push_back(dc);
-                }
-            }
-            for (unsigned j = 0; j < instance->getInstanceCount(); j++)
-            {
-                SPMeshNode* node = instance->getInstanceNode(j);
-                if (node->getChildren().size() > 0)
-                {
-                    g_stk_sbr->getDrawCalls()->parseSceneManagerSP
-                        (node->getChildren(), cam);
-                }
-                if (node->getSPMesh()->isAnimated())
-                {
-                    g_skinning_mesh.push_back(node);
-                }
-            }
-            it++;
-        }
-    }
-    for (auto& each_dc : dc_list)
-    {
-        for (auto& p : each_dc)
-        {
-            std::sort(p.second.begin(), p.second.end(),
-                [](const SPDrawCall* a, const SPDrawCall* b)->bool
-                {
-                    return a->getMaterial() < b->getMaterial();
-                });
-        }
-    }
-
-    std::vector<SPDrawCall*> glow_dc;
-    // Solid
-    for (auto& p : dc_list[0])
-    {
-        std::vector<std::pair<SPMaterial*, std::vector<SPDrawCall*> > > a;
-        std::vector<SPDrawCall*> b;
-        SPMaterial* cur_mat = p.second.front()->getMaterial();
-        for (auto& dc : p.second)
-        {
-            if (dc->getMaterial() != cur_mat)
-            {
-                a.emplace_back(cur_mat, std::move(b));
-                assert(b.empty());
-                cur_mat = dc->getMaterial();
-            }
-            b.push_back(dc);
-        }
-        if (!b.empty())
-        {
-            a.emplace_back(cur_mat, std::move(b));
-            assert(b.empty());
-        }
-        if (UserConfigParams::m_glow && CVS->isDefferedEnabled())
-        {
-            for (auto& p : a)
-            {
-                for (auto& q : p.second)
-                {
-                    if (q->renderGlow())
-                    {
-                        glow_dc.push_back(q);
-                    }
-                }
-            }
-        }
-        if (p.first->isTransparent())
-        {
-            g_draw_calls[DCT_TRANSPARENT].emplace_back(p.first, std::move(a));
-        }
-        else
-        {
-            g_draw_calls[DCT_NORMAL].emplace_back(p.first, std::move(a));
-        }
-        assert(a.empty());
-    }
-
-    if (!glow_dc.empty())
-    {
-        std::sort(glow_dc.begin(), glow_dc.end(),
-            [](const SPDrawCall* a, const SPDrawCall* b)->bool
-            {
-                return a->getDepth() < b->getDepth();
-            });
-        std::vector<std::pair<SPMaterial*, std::vector<SPDrawCall*> > > glow =
-            { std::make_pair((SPMaterial*)NULL, std::move(glow_dc)) };
-        assert(glow_dc.empty());
-        g_draw_calls[DCT_GLOW].emplace_back(g_glow_shader, std::move(glow));
-        assert(glow.empty());
-    }
-
-    if (shadow)
-    {
-        for (int i = 1; i < 6; i++)
-        {
-            for (auto& p : dc_list[i])
-            {
-                std::vector<std::pair<SPMaterial*, std::vector<SPDrawCall*> > > a;
-                std::vector<SPDrawCall*> b;
-                SPMaterial* cur_mat = p.second.front()->getMaterial();
-                for (auto& dc : p.second)
-                {
-                    if (dc->getMaterial() != cur_mat)
-                    {
-                        a.emplace_back(cur_mat, std::move(b));
-                        assert(b.empty());
-                        cur_mat = dc->getMaterial();
-                    }
-                    b.push_back(dc);
-                }
-                if (!b.empty())
-                {
-                    a.emplace_back(cur_mat, std::move(b));
-                    assert(b.empty());
-                }
-                g_draw_calls[(DrawCallType)i + 1].emplace_back(p.first,
-                    std::move(a));
-                assert(a.empty());
-            }
-        }
-    }
-
-    for (auto& p : g_draw_calls[DCT_NORMAL])
-    {
-        std::sort(p.second.begin(), p.second.end(),
-            [](const std::pair<SPMaterial*, std::vector<SPDrawCall*> >& a,
-            const std::pair<SPMaterial*, std::vector<SPDrawCall*> >& b)->bool
-            {
-                return a.second.size() > b.second.size();
-            });
-        for (auto& q : p.second)
-        {
-            std::sort(q.second.begin(), q.second.end(),
-                [](const SPDrawCall* a, const SPDrawCall* b)->bool
-                {
-                    return a->getDepth() < b->getDepth();
-                });
-        }
-    }
-
-    for (auto& p : g_draw_calls[DCT_TRANSPARENT])
-    {
-        std::sort(p.second.begin(), p.second.end(),
-            [](const std::pair<SPMaterial*, std::vector<SPDrawCall*> >& a,
-            const std::pair<SPMaterial*, std::vector<SPDrawCall*> >& b)->bool
-            {
-                return a.second.size() > b.second.size();
-            });
-        for (auto& q : p.second)
-        {
-            std::sort(q.second.begin(), q.second.end(),
-                [](const SPDrawCall* a, const SPDrawCall* b)->bool
-                {
-                    return a->getDepth() > b->getDepth();
-                });
-        }
-    }
-#endif
-}   // prepareDrawCalls
-
-// ----------------------------------------------------------------------------
-void draw(RenderPass rp, DrawCallType dct)
-{
-#ifndef SERVER_ONLY
-    DrawCall* dc = NULL;
-    if (dct == DCT_TRANSPARENT)
-    {
-        dc = &g_draw_calls[DCT_TRANSPARENT];
-    }
-    else if (dct == DCT_GLOW)
-    {
-        dc = &g_draw_calls[DCT_GLOW];
-    }
-    else
-    {
-        switch (rp)
-        {
-        case RP_1ST:
-        case RP_2ND:
-            dc = &g_draw_calls[DCT_NORMAL];
-            break;
-        case RP_SHADOW:
-            if (dct == DCT_SHADOW1)
-                dc = &g_draw_calls[DCT_SHADOW1];
-            if (dct == DCT_SHADOW2)
-                dc = &g_draw_calls[DCT_SHADOW2];
-            if (dct == DCT_SHADOW3)
-                dc = &g_draw_calls[DCT_SHADOW3];
-            if (dct == DCT_SHADOW4)
-                dc = &g_draw_calls[DCT_SHADOW4];
-            break;
-        case RP_RSM:
-            assert(CVS->isGlobalIlluminationEnabled() &&
-                !g_stk_sbr->getShadowMatrices()->isRSMMapAvail() &&
-                !g_draw_calls[DCT_RSM].empty());
-            dc = &g_draw_calls[DCT_RSM];
-            break;
-        default:
-            assert(false);
-            break;
-        }
-    }
-
-    std::stringstream profiler_name;
-    profiler_name << "SP::Draw " << dct << " with " << rp;
-    PROFILER_PUSH_CPU_MARKER(profiler_name.str().c_str(),
-        (uint8_t)(float(dct + rp + 2) / float(DCT_COUNT + RP_COUNT) * 255.0f),
-        (uint8_t)(float(dct + 1) / (float)DCT_COUNT * 255.0f) ,
-        (uint8_t)(float(rp + 1) / (float)RP_COUNT * 255.0f));
-    for (auto& p : *dc)
-    {
-        if (!p.first->hasShader(rp))
-        {
-            continue;
-        }
-        p.first->use(rp);
-        std::vector<SPUniformAssigner*> shader_uniforms;
-        p.first->setUniformsPerObject(static_cast<SPPerObjectUniform*>
-            (p.first), &shader_uniforms, rp);
-        p.first->bindPrefilledTextures(rp);
-        for (auto& q : p.second)
-        {
-            std::vector<SPUniformAssigner*> material_uniforms;
-            if (q.first != NULL)
-            {
-                p.first->setUniformsPerObject(static_cast<SPPerObjectUniform*>
-                    (q.first), &material_uniforms, rp);
-                q.first->bindTexturesToShader(p.first, rp);
-            }
-            for (auto& draw_call : q.second)
-            {
-                std::vector<SPUniformAssigner*> draw_call_uniforms;
-                p.first->setUniformsPerObject(static_cast<SPPerObjectUniform*>
-                    (draw_call), &draw_call_uniforms, rp);
-                sp_draw_call_count++;
-                draw_call->draw();
-                for (SPUniformAssigner* ua : draw_call_uniforms)
-                {
-                    ua->reset();
-                }
-            }
-            for (SPUniformAssigner* ua : material_uniforms)
-            {
-                ua->reset();
-            }
-        }
-        for (SPUniformAssigner* ua : shader_uniforms)
-        {
-            ua->reset();
-        }
-        p.first->unuse(rp);
-    }
-    glBindVertexArray(0);
-    PROFILER_POP_CPU_MARKER();
-#endif
-}   // draw
-
 //-----------------------------------------------------------------------------
 void updateTransformation()
 {
@@ -2177,51 +1878,6 @@ void unsynchronisedUpdate()
         dy_dc->update(true);
     }
 }   // unsynchronisedUpdate
-
-// ----------------------------------------------------------------------------
-void prepareScene()
-{
-    if (!sp_culling)
-    {
-        return;
-    }
-    for (SPDynamicDrawCall* dy_dc : g_dy_dc)
-    {
-        dy_dc->update();
-    }
-    for (SPMeshNode* node : g_all_nodes)
-    {
-        node->OnAnimate(irr_driver->getDevice()->getTimer()->getTime());
-    }
-    for (SPMeshNode* node : g_all_nodes)
-    {
-        node->updateSector();
-    }
-    g_wind_dir = core::vector3df(1.0f, 0.0f, 0.0f) *
-        (irr_driver->getDevice()->getTimer()->getTime() / 1000.0f) * 1.5f;
-}   // prepareScene
-
-// ----------------------------------------------------------------------------
-void drawBoundingBoxes()
-{
-#ifndef SERVER_ONLY
-    Shaders::ColoredLine *line = Shaders::ColoredLine::getInstance();
-    line->use();
-    line->bindVertexArray();
-    line->bindBuffer();
-    line->setUniforms(irr::video::SColor(255, 255, 0, 0));
-    const float *tmp = g_bounding_boxes.data();
-    for (unsigned int i = 0; i < g_bounding_boxes.size(); i += 1024 * 6)
-    {
-        unsigned count = std::min((unsigned)g_bounding_boxes.size() - i,
-            (unsigned)1024 * 6);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, count * sizeof(float), &tmp[i]);
-
-        glDrawArrays(GL_LINES, 0, count / 3);
-    }
-#endif
-    g_bounding_boxes.clear();
-}   // drawBoundingBoxes
 
 // ----------------------------------------------------------------------------
 void addDynamicDrawCall(SPDynamicDrawCall* dy_dc)

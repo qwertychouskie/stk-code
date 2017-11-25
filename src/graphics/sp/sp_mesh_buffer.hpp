@@ -51,9 +51,13 @@ private:
 
     std::vector<SPInstancedData> m_ins_dat;
 
-    unsigned m_gl_instance_size;
+    GLuint m_ibo, m_vbo;
 
-    GLuint m_vao, m_ibo, m_vbo, m_ins_array;
+    unsigned m_gl_instance_size[MAX_PLAYER_COUNT][2];
+
+    GLuint m_vao[MAX_PLAYER_COUNT][2];
+
+    GLuint m_ins_array[MAX_PLAYER_COUNT][2];
 
     std::string m_tex_cmp;
 
@@ -66,12 +70,22 @@ public:
         setDebugName("SMeshBuffer");
 #endif
         m_stk_material = NULL;
-        m_gl_instance_size = 1;
+
+        for (unsigned i = 0; i < MAX_PLAYER_COUNT; i++)
+        {
+            for (int j = 0; j < 2; j++)
+            {
+                m_gl_instance_size[i][j] = 1;
 #ifndef SERVER_ONLY
-        glGenVertexArrays(1, &m_vao);
+                glGenVertexArrays(1, &m_vao[i][j]);
+                glGenBuffers(1, &m_ins_array[i][j]);
+#endif
+            }
+        }
+
+#ifndef SERVER_ONLY
         glGenBuffers(1, &m_ibo);
         glGenBuffers(1, &m_vbo);
-        glGenBuffers(1, &m_ins_array);
 #endif
         m_uploaded = false;
     }
@@ -79,14 +93,20 @@ public:
     ~SPMeshBuffer()
     {
 #ifndef SERVER_ONLY
-        glDeleteVertexArrays(1, &m_vao);
+        for (unsigned i = 0; i < MAX_PLAYER_COUNT; i++)
+        {
+            for (int j = 0; j < 2; j++)
+            {
+                glDeleteVertexArrays(1, &m_vao[i][j]);
+                glDeleteBuffers(1, &m_ins_array[i][j]);
+            }
+        }
         glDeleteBuffers(1, &m_ibo);
         glDeleteBuffers(1, &m_vbo);
-        glDeleteBuffers(1, &m_ins_array);
 #endif
     }
     // ------------------------------------------------------------------------
-    void bindVAO() const                          { glBindVertexArray(m_vao); }
+    void bindVAO() const;
     // ------------------------------------------------------------------------
     void draw() const
     {
@@ -113,25 +133,7 @@ public:
         m_ins_dat.push_back(id);
     }
     // ------------------------------------------------------------------------
-    void uploadInstanceData()
-    {
-#ifndef SERVER_ONLY
-        glBindBuffer(GL_ARRAY_BUFFER, m_ins_array);
-        if (m_ins_dat.size() > m_gl_instance_size)
-        {
-            m_gl_instance_size = m_ins_dat.size() * 2;
-            glBufferData(GL_ARRAY_BUFFER, m_gl_instance_size * 32, NULL,
-                GL_DYNAMIC_DRAW);
-        }
-        void* ptr = glMapBufferRange(GL_ARRAY_BUFFER, 0,
-            m_ins_dat.size() * 32, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT |
-            GL_MAP_INVALIDATE_BUFFER_BIT);
-        memcpy(ptr, m_ins_dat.data(), m_ins_dat.size() * 32);
-        glUnmapBuffer(GL_ARRAY_BUFFER);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-#endif
-        m_uploaded = true;
-    }
+    void uploadInstanceData();
     // ------------------------------------------------------------------------
     video::S3DVertexSkinnedMesh* getSPMVertex()
     {

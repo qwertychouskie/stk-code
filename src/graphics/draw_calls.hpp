@@ -61,11 +61,6 @@ private:
 
     void clearLists();
 
-    void handleSTKCommon(scene::ISceneNode *Node,
-                         std::vector<scene::ISceneNode *> *ImmediateDraw,
-                         const scene::ICameraSceneNode *cam,
-                         ShadowMatrices& shadow_matrices);
-
     void parseSceneManager(core::list<scene::ISceneNode*> &List,
                            std::vector<scene::ISceneNode *> *ImmediateDraw,
                            const scene::ICameraSceneNode *cam,

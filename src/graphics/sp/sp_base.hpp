@@ -19,8 +19,10 @@
 #define HEADER_SP_BASE_HPP
 
 #include "graphics/gl_headers.hpp"
+#include "utils/constants.hpp"
 #include "utils/no_copy.hpp"
 
+#include <array>
 #include <functional>
 #include <ostream>
 #include <memory>
@@ -85,17 +87,17 @@ class SPMeshNode;
 class SPShader;
 class SPMeshBuffer;
 
-extern GLuint sp_mat_ubo;
+extern GLuint sp_mat_ubo[MAX_PLAYER_COUNT][2];
 extern GLuint sp_fog_ubo;
+extern GLsync sp_sync[2];
 extern std::vector<GLuint> sp_prefilled_tex;
 extern unsigned sp_solid_poly_count;
 extern unsigned sp_shadow_poly_count;
-extern unsigned sp_draw_call_count;
 extern int sp_cur_shadow_cascade;
-extern bool sp_vc_srgb_cor;
 extern bool sp_null_device;
-extern std::function<void(SPMeshBuffer*)> sp_mb_upload_cb;
 extern bool sp_culling;
+extern unsigned sp_cur_player;
+extern unsigned sp_cur_buf_id[MAX_PLAYER_COUNT];
 
 // ----------------------------------------------------------------------------
 inline void setPrefilledTextures(const std::vector<GLuint>& tex)
@@ -104,11 +106,6 @@ inline void setPrefilledTextures(const std::vector<GLuint>& tex)
     sp_prefilled_tex[1] = tex[1];
     sp_prefilled_tex[2] = tex[2];
     sp_prefilled_tex[3] = tex[3];
-}
-// ----------------------------------------------------------------------------
-inline void setVertexColorSRGBCorrection(bool val)
-{
-    sp_vc_srgb_cor = val;
 }
 // ----------------------------------------------------------------------------
 void init();

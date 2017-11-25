@@ -58,8 +58,6 @@ void ShaderBasedRenderer::setRTT(RTT* rtts)
                                  rtts->getRenderTarget(RTT_SPECULAR),
                                  rtts->getRenderTarget(RTT_HALF1_R),
                                  rtts->getDepthStencilTexture());
-        m_geometry_passes->setFirstPassRenderTargets(prefilled_textures,
-            rtts->getPrefilledHandles());
         SP::setPrefilledTextures(prefilled_textures);
     }
     m_rtts = rtts;
@@ -268,7 +266,8 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
 {
     if (CVS->isARBUniformBufferObjectUsable())
     {
-        glBindBufferBase(GL_UNIFORM_BUFFER, 0, SP::sp_mat_ubo);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 0,
+            SP::sp_mat_ubo[SP::sp_cur_player][SP::sp_cur_buf_id[SP::sp_cur_player]]);
         glBindBufferBase(GL_UNIFORM_BUFFER, 1, SharedGPUObjects::getLightingDataUBO());
     }
     irr_driver->getSceneManager()->setActiveCamera(camnode);
@@ -509,9 +508,7 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
         renderParticles();
         PROFILER_POP_CPU_MARKER();
     }
-    
-    m_draw_calls.setFenceSync();
-    
+
     if (!CVS->isDefferedEnabled() && !forceRTT)
     {
 #if !defined(USE_GLES2)
@@ -638,8 +635,9 @@ ShaderBasedRenderer::ShaderBasedRenderer()
     m_skybox                = NULL;
     m_spherical_harmonics   = new SphericalHarmonics(irr_driver->getAmbientLight().toSColor());
     m_nb_static_glowing     = 0;
-    Log::info("ShaderBasedRenderer", "Preloading shaders...");
-    preloadShaderFiles();
+    SharedGPUObjects::init();
+    SP::init();
+    SP::initSTKShadowMatrices(&m_shadow_matrices);
 
     if (CVS->isAZDOEnabled())
     {
@@ -656,8 +654,7 @@ ShaderBasedRenderer::ShaderBasedRenderer()
         m_geometry_passes = new GeometryPasses<GL3DrawPolicy>();
         Log::info("ShaderBasedRenderer", "Geometry will be rendered with GL3 policy.");
     }
-    SP::init();
-    SP::initSTKShadowMatrices(&m_shadow_matrices);
+
     m_post_processing = new PostProcessing(irr_driver->getVideoDriver());    
 }
 
@@ -796,13 +793,34 @@ void ShaderBasedRenderer::clearGlowingNodes()
 // ----------------------------------------------------------------------------
 void ShaderBasedRenderer::render(float dt)
 {
+    {
+        PROFILER_PUSH_CPU_MARKER("- Sync Stall", 0xFF, 0x2F, 0x0);
+        if (SP::sp_sync[1] != 0)
+        {
+            GLenum reason = glClientWaitSync(SP::sp_sync[1],
+                GL_SYNC_FLUSH_COMMANDS_BIT, 0);
+            if (reason != GL_ALREADY_SIGNALED)
+            {
+                do
+                {
+                    reason = glClientWaitSync(SP::sp_sync[1],
+                        GL_SYNC_FLUSH_COMMANDS_BIT, 1000000);
+                }
+                while (reason == GL_TIMEOUT_EXPIRED);
+            }
+            glDeleteSync(SP::sp_sync[1]);
+            SP::sp_sync[1] = 0;
+        }
+        PROFILER_POP_CPU_MARKER();
+    }
+    std::swap(SP::sp_sync[0], SP::sp_sync[1]);
     resetObjectCount();
     resetPolyCount();
 
     setOverrideMaterial();
     
     addItemsInGlowingList();
-    
+
     // Start the RTT for post-processing.
     // We do this before beginScene() because we want to capture the glClear()
     // because of tracks that do not have skyboxes (generally add-on tracks)
@@ -818,9 +836,12 @@ void ShaderBasedRenderer::render(float dt)
     {
         prepareForwardRenderer();
     }
-    
+
+    assert(Camera::getNumCameras() < MAX_PLAYER_COUNT + 1);
     for(unsigned int cam = 0; cam < Camera::getNumCameras(); cam++)
-    {    
+    {
+        SP::sp_cur_player = cam;
+        SP::sp_cur_buf_id[cam] = (SP::sp_cur_buf_id[cam] + 1) % 2;
         Camera * const camera = Camera::getCamera(cam);
         scene::ICameraSceneNode * const camnode = camera->getCameraSceneNode();
 
@@ -864,6 +885,7 @@ void ShaderBasedRenderer::render(float dt)
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glUseProgram(0);
+    SP::sp_sync[0] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
     // Set the viewport back to the full screen for race gui
     irr_driver->getVideoDriver()->setViewPort(core::recti(0, 0,
@@ -873,7 +895,7 @@ void ShaderBasedRenderer::render(float dt)
     m_current_screen_size = core::vector2df(
                                     (float)irr_driver->getActualScreenSize().Width, 
                                     (float)irr_driver->getActualScreenSize().Height);
-    
+
     for(unsigned int i=0; i<Camera::getNumCameras(); i++)
     {
         Camera *camera = Camera::getCamera(i);
@@ -925,6 +947,9 @@ void ShaderBasedRenderer::renderToTexture(GL3RenderTarget *render_target,
                                           irr::scene::ICameraSceneNode* camera,
                                           float dt)
 {
+    // For render to texture no double buffering is used
+    SP::sp_cur_player = 0;
+    SP::sp_cur_buf_id[0] = 0;
     resetObjectCount();
     resetPolyCount();
     assert(m_rtts != NULL);
@@ -938,6 +963,19 @@ void ShaderBasedRenderer::renderToTexture(GL3RenderTarget *render_target,
     renderScene(camera, dt, false, true);
     render_target->setFrameBuffer(m_post_processing
         ->render(camera, false, m_rtts));
+
+    GLsync sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    GLenum reason = glClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
+    if (reason != GL_ALREADY_SIGNALED)
+    {
+        do
+        {
+            reason = glClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT,
+                1000000);
+        }
+        while (reason == GL_TIMEOUT_EXPIRED);
+    }
+    glDeleteSync(sync);
 
     // reset
     glViewport(0, 0,
