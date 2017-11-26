@@ -20,10 +20,9 @@ void main()
     vec3 test = sin(wind_direction * (i_position.y * 0.1));
     test += cos(wind_direction) * 0.7;
 
-    vec4 model_rotation = normalize(vec4(i_rotation.xyz, i_scale.w));
     vec4 world_position = getWorldPosition(i_origin + test * i_color.r,
-        model_rotation, i_scale.xyz, i_position);
-    vec3 world_normal = rotateVector(model_rotation, i_normal.xyz);
+        i_rotation, i_scale.xyz, i_position);
+    vec3 world_normal = rotateVector(i_rotation, i_normal.xyz);
 
     normal = (u_view_matrix * vec4(world_normal, 0.0)).xyz;
     uv = i_uv;

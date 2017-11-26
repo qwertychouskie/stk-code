@@ -31,7 +31,6 @@ flat out vec2 color_change;
 
 void main(void)
 {
-    vec4 model_rotation = normalize(vec4(i_rotation.xyz, i_scale.w));
     vec4 idle_position = vec4(i_position, 1.0);
     vec4 idle_normal = i_normal;
     vec4 idle_tangent = vec4(i_tangent.xyz, 0.0);
@@ -67,10 +66,10 @@ void main(void)
         skinned_tangent += i_weight[i] * joint_matrix * idle_tangent;
     }
 
-    vec4 world_position = getWorldPosition(i_origin, model_rotation, i_scale.xyz,
+    vec4 world_position = getWorldPosition(i_origin, i_rotation, i_scale.xyz,
         skinned_position.xyz);
-    vec3 world_normal = rotateVector(model_rotation, skinned_normal.xyz);
-    vec3 world_tangent = rotateVector(model_rotation, skinned_tangent.xyz);
+    vec3 world_normal = rotateVector(i_rotation, skinned_normal.xyz);
+    vec3 world_tangent = rotateVector(i_rotation, skinned_tangent.xyz);
 
     tangent = (u_view_matrix * vec4(world_tangent, 0.0)).xyz;
     bitangent = (u_view_matrix *

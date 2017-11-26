@@ -31,7 +31,7 @@ namespace SP
 class SPInstancedData
 {
 private:
-    char m_data[32];
+    char m_data[40];
 
 public:
     // ------------------------------------------------------------------------
@@ -60,20 +60,16 @@ public:
             rotation.W = -rotation.W;
         }
         memcpy(m_data, position, 12);
-        uint32_t q = compressQuaternion(rotation);
-        memcpy(m_data + 12, &q, 4);
+        short q[4] = { toFloat16(rotation.X), toFloat16(rotation.Y),
+            toFloat16(rotation.Z), toFloat16(rotation.W)};
+        memcpy(m_data + 12, q, 8);
         short s[4] = { toFloat16(scale.X), toFloat16(scale.Y),
-            toFloat16(scale.Z), toFloat16(rotation.W)};
-        memcpy(m_data + 16, s, 8);
-        m_data[24] = core::clamp((char)(texture_trans_x *
-            (texture_trans_x >= 0.0f ? 127.0f : 128.0f)), (char)-128,
-            (char)127);
-        m_data[25] = core::clamp((char)(texture_trans_y *
-            (texture_trans_y >= 0.0f ? 127.0f : 128.0f)), (char)-128,
-            (char)127);
-        m_data[26] = (char)(fminf(hue, 1.0f) * 127.0f);
-        m_data[27] = (char)(fminf(min_sat, 1.0f) * 127.0f);
-        memcpy(m_data + 28, &skinning_offset, 4);
+            toFloat16(scale.Z), 0};
+        memcpy(m_data + 20, s, 8);
+        short md[4] = { toFloat16(texture_trans_x), toFloat16(texture_trans_y),
+            toFloat16(hue), toFloat16(min_sat)};
+        memcpy(m_data + 28, md, 8);
+        memcpy(m_data + 36, &skinning_offset, 4);
     }
     // ------------------------------------------------------------------------
     const void* getData() const { return m_data; }

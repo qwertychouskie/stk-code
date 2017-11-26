@@ -54,6 +54,8 @@ void CentralVideoSettings::init()
     hasTextureSwizzle = false;
     hasPixelBufferObject = false;
     hasSRGBFramebuffer = false;
+    hasSamplerObjects = false;
+    hasVertexType2101010Rev = false;
 
 #if defined(USE_GLES2)
     hasBGRA = false;
@@ -211,7 +213,16 @@ void CentralVideoSettings::init()
             hasSRGBFramebuffer = true;
             Log::info("GLDriver", "ARB framebuffer sRGB Present");
         }
-
+        if (hasGLExtension("GL_ARB_sampler_objects"))
+        {
+            hasSamplerObjects = true;
+            Log::info("GLDriver", "ARB sampler objects Present");
+        }
+        if (hasGLExtension("GL_ARB_vertex_type_2_10_10_10_rev"))
+        {
+            hasVertexType2101010Rev = true;
+            Log::info("GLDriver", "ARB vertex type 2_10_10_10_rev Present");
+        }
         if (GraphicsRestrictions::isDisabled(GraphicsRestrictions::GR_GI))
         {
             m_GI_has_artifact = true;
@@ -251,6 +262,8 @@ void CentralVideoSettings::init()
         {
             hasTextureStorage = true;
             hasTextureSwizzle = true;
+            hasSamplerObjects = true;
+            hasVertexType2101010Rev = true;
         }
 
         if (!GraphicsRestrictions::isDisabled(GraphicsRestrictions::GR_EXPLICIT_ATTRIB_LOCATION) &&
@@ -539,6 +552,16 @@ bool CentralVideoSettings::isARBTextureSwizzleUsable() const
 bool CentralVideoSettings::isARBPixelBufferObjectUsable() const
 {
     return hasPixelBufferObject;
+}
+
+bool CentralVideoSettings::isARBSamplerObjectsUsable() const
+{
+    return hasSamplerObjects;
+}
+
+bool CentralVideoSettings::isARBVertexType2101010RevUsable() const
+{
+    return hasVertexType2101010Rev;
 }
 
 bool CentralVideoSettings::supportsThreadedTextureLoading() const

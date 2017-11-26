@@ -169,8 +169,11 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
 #ifndef SERVER_ONLY
     bool use_2_uv = m_stk_material->use2UV();
     bool use_tangents = !m_stk_material->getNormalMap().empty();
+    const bool vt_2101010 = false;
     const unsigned pitch = 48 - (use_tangents ? 0 : 4) - (use_2_uv ? 0 : 4) -
-        (skinned ? 0 : 16);
+        (skinned ? 0 : 16) + (use_tangents && !vt_2101010 ? 4 : 0)
+        + (!vt_2101010 ? 4 : 0);
+
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     unsigned v_size = m_vertices.size() * pitch;
     glBufferData(GL_ARRAY_BUFFER, v_size, NULL, GL_DYNAMIC_DRAW);
@@ -182,8 +185,21 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
     for (unsigned i = 0 ; i < m_vertices.size(); i++)
     {
         offset = 0;
-        memcpy(ptr + v_size + offset, &m_vertices[i].m_position.X, 16);
-        offset += 16;
+        memcpy(ptr + v_size + offset, &m_vertices[i].m_position.X, 12);
+        offset += 12;
+        if (vt_2101010)
+        {
+            memcpy(ptr + v_size + offset, &m_vertices[i].m_normal, 12);
+            offset += 4;
+        }
+        else
+        {
+            std::array<short, 4>  normal = MiniGLM::vertexType2101010RevTo4HF
+                (m_vertices[i].m_normal);
+            memcpy(ptr + v_size + offset, normal.data(), 8);
+            offset += 8;
+        }
+
         video::SColor vc = m_vertices[i].m_color;
         if (CVS->isDefferedEnabled() ||
             CVS->isARBSRGBFramebufferUsable())
@@ -204,8 +220,18 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
         }
         if (use_tangents)
         {
-            memcpy(ptr + v_size + offset, &m_vertices[i].m_tangent, 4);
-            offset += 4;
+            if (vt_2101010)
+            {
+                memcpy(ptr + v_size + offset, &m_vertices[i].m_tangent, 4);
+                offset += 4;
+            }
+            else
+            {
+                std::array<short, 4> tangent = MiniGLM::
+                    vertexType2101010RevTo4HF(m_vertices[i].m_tangent);
+                memcpy(ptr + v_size + offset, tangent.data(), 8);
+                offset += 8;
+            }
         }
         if (skinned)
         {
@@ -225,7 +251,7 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
         {
             offset = 0;
             glBindBuffer(GL_ARRAY_BUFFER, m_ins_array[i][j]);
-            glBufferData(GL_ARRAY_BUFFER, m_gl_instance_size[i][j] * 32, NULL,
+            glBufferData(GL_ARRAY_BUFFER, m_gl_instance_size[i][j] * 40, NULL,
                 GL_DYNAMIC_DRAW);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindVertexArray(m_vao[i][j]);
@@ -237,9 +263,11 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
             offset += 12;
             // Normal
             glEnableVertexAttribArray(1);
-            glVertexAttribPointer(1, 4, GL_INT_2_10_10_10_REV, GL_TRUE, pitch,
+            glVertexAttribPointer(1, 4,
+                vt_2101010 ? GL_INT_2_10_10_10_REV : GL_HALF_FLOAT,
+                vt_2101010 ? GL_TRUE : GL_FALSE, pitch,
                 (void*)offset);
-            offset += 4;
+            offset += vt_2101010 ? 4 : 8;
             // Vertex color
             glEnableVertexAttribArray(2);
             glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, pitch,
@@ -262,9 +290,11 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
             {
                 // Tangent and bi-tanget sign
                 glEnableVertexAttribArray(5);
-                glVertexAttribPointer(5, 4, GL_INT_2_10_10_10_REV, GL_TRUE,
-                    pitch, (void*)offset);
-                offset += 4;
+                glVertexAttribPointer(5, 4,
+                    vt_2101010 ? GL_INT_2_10_10_10_REV : GL_HALF_FLOAT,
+                    vt_2101010 ? GL_TRUE : GL_FALSE, pitch,
+                    (void*)offset);
+                offset += vt_2101010 ? 4 : 8;
             }
             if (skinned)
             {
@@ -281,25 +311,26 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
             glBindBuffer(GL_ARRAY_BUFFER, m_ins_array[i][j]);
             // Origin
             glEnableVertexAttribArray(8);
-            glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, 32, (void*)0);
+            glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, 40, (void*)0);
             glVertexAttribDivisorARB(8, 1);
             // Rotation (quaternion .xyz)
             glEnableVertexAttribArray(9);
-            glVertexAttribPointer(9, 4, GL_INT_2_10_10_10_REV, GL_TRUE, 32,
+            glVertexAttribPointer(9, 4, GL_HALF_FLOAT, GL_FALSE, 40,
                 (void*)12);
             glVertexAttribDivisorARB(9, 1);
             // Scale (3 half floats and .w for quaternion)
             glEnableVertexAttribArray(10);
-            glVertexAttribPointer(10, 4, GL_HALF_FLOAT, GL_FALSE, 32,
-                (void*)16);
+            glVertexAttribPointer(10, 4, GL_HALF_FLOAT, GL_FALSE, 40,
+                (void*)20);
             glVertexAttribDivisorARB(10, 1);
             // Misc data (texture translation and colorization info)
             glEnableVertexAttribArray(11);
-            glVertexAttribPointer(11, 4, GL_BYTE, GL_TRUE, 32, (void*)24);
+            glVertexAttribPointer(11, 4, GL_HALF_FLOAT, GL_FALSE, 40,
+                (void*)28);
             glVertexAttribDivisorARB(11, 1);
             // Skinning offset
             glEnableVertexAttribArray(12);
-            glVertexAttribIPointer(12, 1, GL_INT, 32, (void*)28);
+            glVertexAttribIPointer(12, 1, GL_INT, 40, (void*)36);
             glVertexAttribDivisorARB(12, 1);
         }
     }
@@ -328,12 +359,12 @@ void SPMeshBuffer::uploadInstanceData()
             m_ins_dat.size() * 2;
         glBufferData(GL_ARRAY_BUFFER,
             m_gl_instance_size[sp_cur_player][sp_cur_buf_id[sp_cur_player]]
-            * 32, NULL, GL_DYNAMIC_DRAW);
+            * 40, NULL, GL_DYNAMIC_DRAW);
     }
     void* ptr = glMapBufferRange(GL_ARRAY_BUFFER, 0,
-        m_ins_dat.size() * 32, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT |
+        m_ins_dat.size() * 40, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT |
         GL_MAP_INVALIDATE_BUFFER_BIT);
-    memcpy(ptr, m_ins_dat.data(), m_ins_dat.size() * 32);
+    memcpy(ptr, m_ins_dat.data(), m_ins_dat.size() * 40);
     glUnmapBuffer(GL_ARRAY_BUFFER);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 #endif

@@ -279,6 +279,53 @@ namespace MiniGLM
         return packed;
     }   // fourFloatsTo1010102
     // ------------------------------------------------------------------------
+    inline std::array<short, 4> vertexType2101010RevTo4HF(uint32_t packed)
+    {
+        std::array<float, 4> ret;
+        int part = packed & 1023;
+        if (part & 512)
+        {
+            ret[0] = (float)(1024 - part) * (-1.0f / 512.0f);
+        }
+        else
+        {
+            ret[0] = (float)part * (1.0f / 511.0f);
+        }
+        part = (packed >> 10) & 1023;
+        if (part & 512)
+        {
+            ret[1] = (float)(1024 - part) * (-1.0f / 512.0f);
+        }
+        else
+        {
+            ret[1] = (float)part * (1.0f / 511.0f);
+        }
+        part = (packed >> 20) & 1023;
+        if (part & 512)
+        {
+            ret[2] = (float)(1024 - part) * (-1.0f / 512.0f);
+        }
+        else
+        {
+            ret[2] = (float)part * (1.0f / 511.0f);
+        }
+        part = (packed >> 30) & 3;
+        if (part & 2)
+        {
+            ret[3] = (float)(4 - part) * (-1.0f / 2.0f);
+        }
+        else
+        {
+            ret[3] = (float)part;
+        }
+        std::array<short, 4> result;
+        for (int i = 0; i < 4; i++)
+        {
+            result[i] = toFloat16(ret[i]);
+        }
+        return result;
+    }   // vertexType2101010RevTo4HF
+    // ------------------------------------------------------------------------
     inline std::array<float, 4> extractNormalizedSignedFloats(uint32_t packed,
         bool calculate_w = false)
     {
@@ -327,48 +374,6 @@ namespace MiniGLM
         }
         return ret;
     }   // extractNormalizedSignedFloats
-    // ------------------------------------------------------------------------
-    inline std::array<float, 4> extract4SignedFloats(uint32_t packed)
-    {
-        std::array<float, 4> ret;
-        int part = packed & 1023;
-        if (part & 512)
-        {
-            ret[0] = (float)(1024 - part) * (-1.0f / 512.0f);
-        }
-        else
-        {
-            ret[0] = (float)part * (1.0f / 511.0f);
-        }
-        part = (packed >> 10) & 1023;
-        if (part & 512)
-        {
-            ret[1] = (float)(1024 - part) * (-1.0f / 512.0f);
-        }
-        else
-        {
-            ret[1] = (float)part * (1.0f / 511.0f);
-        }
-        part = (packed >> 20) & 1023;
-        if (part & 512)
-        {
-            ret[2] = (float)(1024 - part) * (-1.0f / 512.0f);
-        }
-        else
-        {
-            ret[2] = (float)part * (1.0f / 511.0f);
-        }
-        part = (packed >> 30) & 3;
-        if (part & 2)
-        {
-            ret[3] = (float)(4 - part) * (-1.0f / 2.0f);
-        }
-        else
-        {
-            ret[3] = (float)part;
-        }
-        return ret;
-    }   // extract4SignedFloats
     // ------------------------------------------------------------------------
     // Please normalize vector and quaternion before compressing
     // ------------------------------------------------------------------------

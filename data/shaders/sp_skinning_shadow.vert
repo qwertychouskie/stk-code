@@ -21,7 +21,6 @@ out vec2 uv;
 
 void main(void)
 {
-    vec4 model_rotation = normalize(vec4(i_rotation.xyz, i_scale.w));
     vec4 idle_position = vec4(i_position, 1.0);
     vec4 skinned_position = vec4(0.0);
 
@@ -51,7 +50,7 @@ void main(void)
         skinned_position += i_weight[i] * joint_matrix * idle_position;
     }
 
-    vec4 world_position = getWorldPosition(i_origin, model_rotation, i_scale.xyz,
+    vec4 world_position = getWorldPosition(i_origin, i_rotation, i_scale.xyz,
         skinned_position.xyz);
     uv = i_uv;
     gl_Position = u_shadow_projection_view_matrices[layer] * world_position;

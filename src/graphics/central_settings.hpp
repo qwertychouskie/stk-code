@@ -46,6 +46,8 @@ private:
     bool hasTextureSwizzle;
     bool hasPixelBufferObject;
     bool hasSRGBFramebuffer;
+    bool hasSamplerObjects;
+    bool hasVertexType2101010Rev;
 
 #if defined(USE_GLES2)
     bool hasBGRA;
@@ -90,6 +92,8 @@ public:
     bool isARBTextureSwizzleUsable() const;
     bool isARBPixelBufferObjectUsable() const;
     bool isARBSRGBFramebufferUsable() const;
+    bool isARBSamplerObjectsUsable() const;
+    bool isARBVertexType2101010RevUsable() const;
 
 #if defined(USE_GLES2)
     bool isEXTTextureFormatBGRA8888Usable() const;
