@@ -636,7 +636,7 @@ ShaderBasedRenderer::ShaderBasedRenderer()
     m_nb_static_glowing     = 0;
     SharedGPUObjects::init();
     SP::init();
-    SP::initSTKShadowMatrices(&m_shadow_matrices);
+    SP::initSTKRenderer(this);
 
     if (CVS->isAZDOEnabled())
     {

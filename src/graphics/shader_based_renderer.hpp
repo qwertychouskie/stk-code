@@ -123,6 +123,10 @@ public:
 
     void setRTT(RTT* rtts);
 
+    RTT* getRTTs() { return m_rtts; }
+    ShadowMatrices* getShadowMatrices() { return &m_shadow_matrices; }
+    PostProcessing* getPostProcessing() { return m_post_processing; }
+
 };
 
 #endif   // !SERVER_ONLY

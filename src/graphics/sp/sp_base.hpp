@@ -36,7 +36,7 @@ namespace irr
 }
 
 
-class ShadowMatrices;
+class ShaderBasedRenderer;
 
 namespace SP
 {
@@ -118,10 +118,6 @@ GLuint getSampler(SamplerType);
 // ----------------------------------------------------------------------------
 std::shared_ptr<SPMaterial> addSPMaterial(const std::shared_ptr<SPMaterial>&);
 // ----------------------------------------------------------------------------
-void destroySPMaterials();
-// ----------------------------------------------------------------------------
-void initNullSPMaterial();
-// ----------------------------------------------------------------------------
 SPShader* getGlowShader();
 // ----------------------------------------------------------------------------
 SPShader* getSPShader(const std::string& name);
@@ -155,7 +151,7 @@ void cleanAllMeshBuffer();
 // ----------------------------------------------------------------------------
 void updateTransformation();
 // ----------------------------------------------------------------------------
-void initSTKShadowMatrices(ShadowMatrices*);
+void initSTKRenderer(ShaderBasedRenderer*);
 // ----------------------------------------------------------------------------
 void prepareScene();
 // ----------------------------------------------------------------------------

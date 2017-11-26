@@ -95,11 +95,14 @@ private:
 
     const bool m_transparent_shader;
 
+    const int m_drawing_priority;
+
 public:
     // ------------------------------------------------------------------------
     SPShader(const std::string& name, unsigned pass_count = 4,
-             bool transparent_shader = false)
-           : m_name(name),  m_transparent_shader(transparent_shader)
+             bool transparent_shader = false, int drawing_priority = 0)
+           : m_name(name),  m_transparent_shader(transparent_shader),
+             m_drawing_priority(0)
     {
         memset(m_program, 0, sizeof(GLuint) * 4);
 #ifndef SERVER_ONLY

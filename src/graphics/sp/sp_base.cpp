@@ -20,11 +20,14 @@
 #include "config/stk_config.hpp"
 #include "config/user_config.hpp"
 #include "graphics/central_settings.hpp"
+#include "graphics/glwrap.hpp"
+#include "graphics/irr_driver.hpp"
 #include "graphics/shader_based_renderer.hpp"
 #include "graphics/shared_gpu_objects.hpp"
-#include "graphics/shadow_matrices.hpp"
-#include "graphics/irr_driver.hpp"
+#include "graphics/shader_based_renderer.hpp"
+#include "graphics/post_processing.hpp"
 #include "graphics/render_info.hpp"
+#include "graphics/rtts.hpp"
 #include "graphics/shaders.hpp"
 #include "graphics/stk_tex_manager.hpp"
 #include "graphics/sp/sp_instanced_data.hpp"
@@ -37,6 +40,7 @@
 #include "tracks/track.hpp"
 #include "modes/profile_world.hpp"
 #include "utils/log.hpp"
+#include "utils/helpers.hpp"
 #include "utils/profiler.hpp"
 #include "utils/string_utils.hpp"
 
@@ -53,7 +57,7 @@ namespace SP
 {
 
 // ----------------------------------------------------------------------------
-ShadowMatrices* g_stk_sm = NULL;
+ShaderBasedRenderer* g_stk_sbr = NULL;
 // ----------------------------------------------------------------------------
 bool sp_culling = true;
 // ----------------------------------------------------------------------------
@@ -104,10 +108,11 @@ int sp_cur_shadow_cascade = 0;
 // ----------------------------------------------------------------------------
 bool sp_null_device = false;
 // ----------------------------------------------------------------------------
-void initSTKShadowMatrices(ShadowMatrices* sm)
+void initSTKRenderer(ShaderBasedRenderer* sbr)
 {
-    g_stk_sm = sm;
-}   // initSTKShadowMatrices
+    g_stk_sbr = sbr;
+}   // initSTKRenderer
+
 // ----------------------------------------------------------------------------
 GLuint sp_mat_ubo[MAX_PLAYER_COUNT][2] = {};
 // ----------------------------------------------------------------------------
@@ -131,7 +136,7 @@ void shadowCascadeUniformAssigner(SPUniformAssigner* ua)
 // ----------------------------------------------------------------------------
 void rsmUniformAssigner(SPUniformAssigner* ua)
 {
-    ua->setValue(g_stk_sm->getRSMMatrix());
+    ua->setValue(g_stk_sbr->getShadowMatrices()->getRSMMatrix());
 }   // rsmUniformAssigner
 
 // ----------------------------------------------------------------------------
@@ -175,6 +180,37 @@ void ghostKartUse()
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 }   // ghostKartUse
 #endif
+
+
+// ----------------------------------------------------------------------------
+void displaceUniformAssigner(SP::SPUniformAssigner* ua)
+{
+    static std::array<float,4> g_direction = {{ 0, 0, 0, 0 }};
+    if (!Track::getCurrentTrack())
+    {
+        ua->setValue(g_direction);
+        return;
+    }
+    const float time = irr_driver->getDevice()->getTimer()->getTime() /
+        1000.0f;
+    const float speed = Track::getCurrentTrack()->getDisplacementSpeed();
+
+    float strength = time;
+    strength = fabsf(noise2d(strength / 10.0f)) * 0.006f + 0.002f;
+
+    core::vector3df wind = irr_driver->getWind() * strength * speed;
+    g_direction[0] += wind.X;
+    g_direction[1] += wind.Z;
+
+    strength = time * 0.56f + sinf(time);
+    strength = fabsf(noise2d(0.0, strength / 6.0f)) * 0.0095f + 0.0025f;
+
+    wind = irr_driver->getWind() * strength * speed;
+    wind.rotateXZBy(cosf(time));
+    g_direction[2] += wind.X;
+    g_direction[3] += wind.Z;
+    ua->setValue(g_direction);
+}   // displaceUniformAssigner
 
 // ----------------------------------------------------------------------------
 void resizeSkinning(unsigned number, unsigned player_id, unsigned buf_id)
@@ -672,6 +708,91 @@ void loadShaders()
         });
     addShader(shader);
 
+    if (CVS->isDefferedEnabled())
+    {
+        // This displace shader will be drawn the last in transparent pass
+        shader = new SP::SPShader("displace", 2
+            , true/*transparent_shader*/, 999/*drawing_priority*/);
+        shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER,
+            RP_1ST);
+        shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER,
+            RP_1ST);
+        shader->linkShaderFiles(RP_1ST);
+        shader->use(RP_1ST);
+        shader->addBasicUniforms(RP_1ST);
+        shader->setUseFunction([]()->void
+            {
+                assert(g_stk_sbr->getRTTs() != NULL);
+                glEnable(GL_DEPTH_TEST);
+                glDepthMask(GL_FALSE);
+                glDisable(GL_CULL_FACE);
+                glDisable(GL_BLEND);
+                glEnable(GL_STENCIL_TEST);
+                glStencilFunc(GL_ALWAYS, 1, 0xFF);
+                glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+                g_stk_sbr->getRTTs()->getFBO(FBO_COLORS).bind(),
+                glClear(GL_STENCIL_BUFFER_BIT);
+                g_stk_sbr->getRTTs()->getFBO(FBO_TMP1_WITH_DS).bind(),
+                glClear(GL_COLOR_BUFFER_BIT);
+            }, RP_1ST);
+        shader->setUnuseFunction([]()->void
+            {
+                glDisable(GL_STENCIL_TEST);
+                g_stk_sbr->getRTTs()->getFBO(FBO_COLORS).bind();
+            }, RP_1ST);
+        shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER,
+            RP_2ND);
+        shader->addShaderFile("sp_displace.frag", GL_FRAGMENT_SHADER,
+            RP_2ND);
+        shader->linkShaderFiles(RP_2ND);
+        shader->use(RP_2ND);
+        shader->addBasicUniforms(RP_2ND);
+        shader->addUniform("direction", typeid(std::array<float, 4>),
+            RP_2ND);
+        shader->setUseFunction([]()->void
+            {
+                glEnable(GL_DEPTH_TEST);
+                glDepthMask(GL_FALSE);
+                glDisable(GL_CULL_FACE);
+                glDisable(GL_BLEND);
+                glEnable(GL_STENCIL_TEST);
+                glStencilFunc(GL_ALWAYS, 1, 0xFF);
+                glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+                g_stk_sbr->getRTTs()->getFBO(FBO_DISPLACE).bind(),
+                glClear(GL_COLOR_BUFFER_BIT);
+            }, SP::RP_2ND);
+        shader->addCustomPrefilledTextures(ST_BILINEAR,
+            GL_TEXTURE_2D, "displacement_tex", []()->GLuint
+            {
+                return irr_driver->getTexture(FileManager::TEXTURE,
+                    "displace.png")->getOpenGLTextureName();
+            }, RP_2ND);
+        shader->addCustomPrefilledTextures(ST_BILINEAR,
+            GL_TEXTURE_2D, "mask_tex", []()->GLuint
+            {
+                return g_stk_sbr->getRTTs()->getFBO(FBO_TMP1_WITH_DS).getRTT()[0];
+            }, RP_2ND);
+        shader->addCustomPrefilledTextures(ST_BILINEAR,
+            GL_TEXTURE_2D, "color_tex", []()->GLuint
+            {
+                return g_stk_sbr->getRTTs()->getFBO(FBO_COLORS).getRTT()[0];
+            }, RP_2ND);
+        shader->addAllTextures(RP_2ND);
+        shader->setUnuseFunction([]()->void
+            {
+                g_stk_sbr->getRTTs()->getFBO(FBO_COLORS).bind();
+                glStencilFunc(GL_EQUAL, 1, 0xFF);
+                g_stk_sbr->getPostProcessing()->renderPassThrough
+                    (g_stk_sbr->getRTTs()->getFBO(FBO_DISPLACE).getRTT()[0],
+                    g_stk_sbr->getRTTs()->getFBO(FBO_COLORS).getWidth(),
+                    g_stk_sbr->getRTTs()->getFBO(FBO_COLORS).getHeight());
+                glDisable(GL_STENCIL_TEST);
+            }, RP_2ND);
+        static_cast<SP::SPPerObjectUniform*>(shader)
+            ->addAssignerFunction("direction", displaceUniformAssigner);
+        SP::addShader(shader);
+    }
+
 }   // loadShaders
 
 // ----------------------------------------------------------------------------
@@ -1008,14 +1129,18 @@ void prepareDrawCalls()
         Track::getCurrentTrack()->hasShadows() && CVS->isDefferedEnabled() &&
         CVS->isShadowEnabled();
     g_handle_rsm = CVS->isGlobalIlluminationEnabled() &&
-        !g_stk_sm->isRSMMapAvail();
+        !g_stk_sbr->getShadowMatrices()->isRSMMapAvail();
 
     if (g_handle_shadow)
     {
-        mathPlaneFrustumf(g_frustums[1], g_stk_sm->getSunOrthoMatrices()[0]);
-        mathPlaneFrustumf(g_frustums[2], g_stk_sm->getSunOrthoMatrices()[1]);
-        mathPlaneFrustumf(g_frustums[3], g_stk_sm->getSunOrthoMatrices()[2]);
-        mathPlaneFrustumf(g_frustums[4], g_stk_sm->getSunOrthoMatrices()[3]);
+        mathPlaneFrustumf(g_frustums[1],
+            g_stk_sbr->getShadowMatrices()->getSunOrthoMatrices()[0]);
+        mathPlaneFrustumf(g_frustums[2],
+            g_stk_sbr->getShadowMatrices()->getSunOrthoMatrices()[1]);
+        mathPlaneFrustumf(g_frustums[3],
+            g_stk_sbr->getShadowMatrices()->getSunOrthoMatrices()[2]);
+        mathPlaneFrustumf(g_frustums[4],
+            g_stk_sbr->getShadowMatrices()->getSunOrthoMatrices()[3]);
     }
 
     g_instances.clear();
@@ -1236,7 +1361,7 @@ void uploadAll()
     void* ptr = glMapBufferRange(GL_UNIFORM_BUFFER, 0,
         (16 * 9 + 2) * sizeof(float), GL_MAP_WRITE_BIT |
         GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-    memcpy(ptr, g_stk_sm->getMatricesData(), (16 * 9 + 2) * sizeof(float));
+    memcpy(ptr, g_stk_sbr->getShadowMatrices()->getMatricesData(), (16 * 9 + 2) * sizeof(float));
     glUnmapBuffer(GL_UNIFORM_BUFFER);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 #endif
@@ -1275,7 +1400,7 @@ void draw(RenderPass rp, DrawCallType dct)
             break;
         case RP_RSM:
             assert(CVS->isGlobalIlluminationEnabled() &&
-                !g_stk_sm->isRSMMapAvail() && !g_draw_calls[DCT_RSM].empty());
+                !g_stk_sbr->getShadowMatrices()->isRSMMapAvail() && !g_draw_calls[DCT_RSM].empty());
             dc = &g_draw_calls[DCT_RSM];
             break;
         default:
