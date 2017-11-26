@@ -711,7 +711,7 @@ void loadShaders()
     if (CVS->isDefferedEnabled())
     {
         // This displace shader will be drawn the last in transparent pass
-        shader = new SP::SPShader("displace", 2
+        shader = new SPShader("displace", 2
             , true/*transparent_shader*/, 999/*drawing_priority*/);
         shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER,
             RP_1ST);
@@ -760,7 +760,7 @@ void loadShaders()
                 glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
                 g_stk_sbr->getRTTs()->getFBO(FBO_DISPLACE).bind(),
                 glClear(GL_COLOR_BUFFER_BIT);
-            }, SP::RP_2ND);
+            }, RP_2ND);
         shader->addCustomPrefilledTextures(ST_BILINEAR,
             GL_TEXTURE_2D, "displacement_tex", []()->GLuint
             {
@@ -788,9 +788,9 @@ void loadShaders()
                     g_stk_sbr->getRTTs()->getFBO(FBO_COLORS).getHeight());
                 glDisable(GL_STENCIL_TEST);
             }, RP_2ND);
-        static_cast<SP::SPPerObjectUniform*>(shader)
+        static_cast<SPPerObjectUniform*>(shader)
             ->addAssignerFunction("direction", displaceUniformAssigner);
-        SP::addShader(shader);
+        addShader(shader);
     }
 
 }   // loadShaders
