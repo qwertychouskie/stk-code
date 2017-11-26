@@ -112,7 +112,7 @@ public:
     {
         bindVAO();
         glDrawElementsInstanced(GL_TRIANGLES, getIndexCount(),
-            GL_UNSIGNED_SHORT, 0, m_ins_dat.size());
+            GL_UNSIGNED_SHORT, 0, (unsigned)m_ins_dat.size());
     }
     // ------------------------------------------------------------------------
     void initDrawMaterial();
@@ -177,7 +177,7 @@ public:
     // ------------------------------------------------------------------------
     virtual u32 getVertexCount() const
     {
-        return m_vertices.size();
+        return (unsigned)m_vertices.size();
     }
     // ------------------------------------------------------------------------
     virtual video::E_INDEX_TYPE getIndexType() const
@@ -197,7 +197,7 @@ public:
     // ------------------------------------------------------------------------
     virtual u32 getIndexCount() const
     {
-        return m_indices.size();
+        return (unsigned)m_indices.size();
     }
     // ------------------------------------------------------------------------
     virtual const core::aabbox3d<f32>& getBoundingBox() const

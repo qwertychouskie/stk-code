@@ -154,11 +154,11 @@ inline int srgbToLinear(float color_srgb)
     int ret;
     if (color_srgb <= 0.04045f)
     {
-        ret = 255 * (color_srgb / 12.92f);
+        ret = (int)(255.0f * (color_srgb / 12.92f));
     }
     else
     {
-        ret = 255 * (powf((color_srgb + 0.055f) / 1.055f, 2.4f));
+        ret = (int)(255.0f * (powf((color_srgb + 0.055f) / 1.055f, 2.4f)));
     }
     return core::clamp(ret, 0, 255);
 }
@@ -168,14 +168,15 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
 {
 #ifndef SERVER_ONLY
     bool use_2_uv = m_stk_material->use2UV();
-    bool use_tangents = !m_stk_material->getNormalMap().empty();
+    bool use_tangents = !m_stk_material->getNormalMap().empty() &&
+        CVS->isGLSL();
     const bool vt_2101010 = false;
     const unsigned pitch = 48 - (use_tangents ? 0 : 4) - (use_2_uv ? 0 : 4) -
         (skinned ? 0 : 16) + (use_tangents && !vt_2101010 ? 4 : 0)
         + (!vt_2101010 ? 4 : 0);
 
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-    unsigned v_size = m_vertices.size() * pitch;
+    unsigned v_size = (unsigned)m_vertices.size() * pitch;
     glBufferData(GL_ARRAY_BUFFER, v_size, NULL, GL_DYNAMIC_DRAW);
     size_t offset = 0;
     char* ptr = (char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, v_size,
@@ -356,7 +357,7 @@ void SPMeshBuffer::uploadInstanceData()
         m_gl_instance_size[sp_cur_player][sp_cur_buf_id[sp_cur_player]])
     {
         m_gl_instance_size[sp_cur_player][sp_cur_buf_id[sp_cur_player]] =
-            m_ins_dat.size() * 2;
+            (unsigned)m_ins_dat.size() * 2;
         glBufferData(GL_ARRAY_BUFFER,
             m_gl_instance_size[sp_cur_player][sp_cur_buf_id[sp_cur_player]]
             * 40, NULL, GL_DYNAMIC_DRAW);
