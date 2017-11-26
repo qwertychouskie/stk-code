@@ -195,6 +195,9 @@ void resizeSkinning(unsigned number, unsigned player_id, unsigned buf_id)
     glBindBuffer(GL_TEXTURE_BUFFER, g_skinning_buf[player_id][buf_id]);
     glBufferData(GL_TEXTURE_BUFFER, number << 6, NULL, GL_DYNAMIC_DRAW);
     glBufferSubData(GL_TEXTURE_BUFFER, 0, 64, m.pointer());
+    glBindTexture(GL_TEXTURE_BUFFER, g_skinning_tex[player_id][buf_id]);
+    glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, g_skinning_buf[player_id][buf_id]);
+    glBindTexture(GL_TEXTURE_BUFFER, 0);
 #endif
 }   // resizeSkinning
 
@@ -247,12 +250,9 @@ void initSkinning()
     {
         for (int j = 0; j < 2; j++)
         {
+            glGenTextures(1, &g_skinning_tex[i][j]);
             glGenBuffers(1, &g_skinning_buf[i][j]);
             resizeSkinning(2, i, j);
-            glGenTextures(1, &g_skinning_tex[i][j]);
-            glBindTexture(GL_TEXTURE_BUFFER, g_skinning_tex[i][j]);
-            glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, g_skinning_buf[i][j]);
-            glBindTexture(GL_TEXTURE_BUFFER, 0);
         }
     }
 #endif

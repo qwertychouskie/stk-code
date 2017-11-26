@@ -314,12 +314,12 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
             glEnableVertexAttribArray(8);
             glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, 40, (void*)0);
             glVertexAttribDivisorARB(8, 1);
-            // Rotation (quaternion .xyz)
+            // Rotation (quaternion)
             glEnableVertexAttribArray(9);
             glVertexAttribPointer(9, 4, GL_HALF_FLOAT, GL_FALSE, 40,
                 (void*)12);
             glVertexAttribDivisorARB(9, 1);
-            // Scale (3 half floats and .w for quaternion)
+            // Scale (3 half floats and .w unused for padding)
             glEnableVertexAttribArray(10);
             glVertexAttribPointer(10, 4, GL_HALF_FLOAT, GL_FALSE, 40,
                 (void*)20);
