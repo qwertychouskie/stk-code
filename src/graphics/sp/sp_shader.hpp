@@ -102,7 +102,7 @@ public:
     SPShader(const std::string& name, unsigned pass_count = 4,
              bool transparent_shader = false, int drawing_priority = 0)
            : m_name(name),  m_transparent_shader(transparent_shader),
-             m_drawing_priority(0)
+             m_drawing_priority(drawing_priority)
     {
         memset(m_program, 0, sizeof(GLuint) * 4);
 #ifndef SERVER_ONLY
@@ -188,6 +188,8 @@ public:
     }
     // ------------------------------------------------------------------------
     bool isTransparent() const                 { return m_transparent_shader; }
+    // ------------------------------------------------------------------------
+    int getDrawingPriority() const               { return m_drawing_priority; }
 
 };
 

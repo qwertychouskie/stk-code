@@ -336,7 +336,7 @@ void loadShaders()
 
     addShader(shader);
 
-    shader = new SPShader("solid_skinned");
+    shader = new SPShader("solid_skinned", 4, false, 999);
 
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_object_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
@@ -393,7 +393,7 @@ void loadShaders()
 
     addShader(shader);
 
-    shader = new SPShader("decal_skinned");
+    shader = new SPShader("decal_skinned", 4, false, 999);
 
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_object_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
@@ -450,7 +450,7 @@ void loadShaders()
 
     addShader(shader);
 
-    shader = new SPShader("alphatest_skinned");
+    shader = new SPShader("alphatest_skinned", 4, false, 999);
 
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_alpha_test_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
@@ -507,7 +507,7 @@ void loadShaders()
 
     addShader(shader);
 
-    shader = new SPShader("unlit_skinned");
+    shader = new SPShader("unlit_skinned", 4, false, 999);
 
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_alpha_test_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
@@ -564,7 +564,7 @@ void loadShaders()
 
     addShader(shader);
 
-    shader = new SPShader("normalmap_skinned");
+    shader = new SPShader("normalmap_skinned", 4, false, 999);
 
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_normal_map.frag", GL_FRAGMENT_SHADER, RP_1ST);
@@ -632,7 +632,7 @@ void loadShaders()
     // ========================================================================
     // Transparent shader
     // ========================================================================
-    shader = new SPShader("alphablend_skinned", 1, true);
+    shader = new SPShader("alphablend_skinned", 1, true, 899);
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
@@ -670,7 +670,7 @@ void loadShaders()
         });
     addShader(shader);
 
-    shader = new SPShader("additive_skinned", 1, true);
+    shader = new SPShader("additive_skinned", 1, true, 899);
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
@@ -1409,14 +1409,31 @@ void draw(RenderPass rp, DrawCallType dct)
         }
     }
 
+    // Sort dc based on the drawing priority of shaders
+    // The larger the drawing priority int, the last it will be drawn
+    using DrawCallPair = std::pair<SPShader*, std::unordered_map<std::string,
+        std::unordered_set<SPMeshBuffer*> > >;
+    std::vector<DrawCallPair> sorted_dc;
+    for (auto& p : *dc)
+    {
+        sorted_dc.push_back(p);
+    }
+    std::sort(sorted_dc.begin(), sorted_dc.end(),
+        [](const DrawCallPair& a, const DrawCallPair& b)->bool
+        {
+            return a.first->getDrawingPriority() <
+                b.first->getDrawingPriority();
+        });
+
     std::stringstream profiler_name;
     profiler_name << "SP::Draw " << dct << " with " << rp;
     PROFILER_PUSH_CPU_MARKER(profiler_name.str().c_str(),
         (uint8_t)(float(dct + rp + 2) / float(DCT_COUNT + RP_COUNT) * 255.0f),
         (uint8_t)(float(dct + 1) / (float)DCT_COUNT * 255.0f) ,
         (uint8_t)(float(rp + 1) / (float)RP_COUNT * 255.0f));
-    for (auto& p : *dc)
+    for (unsigned i = 0; i < sorted_dc.size(); i++)
     {
+        auto& p = sorted_dc[i];
         if (!p.first->hasShader(rp))
         {
             continue;
