@@ -32,7 +32,7 @@ flat out vec2 color_change;
 void main(void)
 {
     vec4 idle_position = vec4(i_position, 1.0);
-    vec4 idle_normal = i_normal;
+    vec4 idle_normal = vec4(i_normal.xyz, 0.0);
     vec4 idle_tangent = vec4(i_tangent.xyz, 0.0);
     vec4 skinned_position = vec4(0.0);
     vec4 skinned_normal = vec4(0.0);
