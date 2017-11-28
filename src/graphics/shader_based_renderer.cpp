@@ -50,6 +50,9 @@
 #include <algorithm> 
 
 // ----------------------------------------------------------------------------
+
+
+
 void ShaderBasedRenderer::setRTT(RTT* rtts)
 {
     if (m_rtts != rtts && rtts != NULL)
@@ -260,6 +263,28 @@ void ShaderBasedRenderer::renderShadows()
     PROFILER_POP_CPU_MARKER();
 }
 
+// ============================================================================
+class CombineDiffuseColor : public TextureShader<CombineDiffuseColor, 5>
+{
+public:
+    CombineDiffuseColor()
+    {
+        loadProgram(OBJECT, GL_VERTEX_SHADER, "screenquad.vert",
+                            GL_FRAGMENT_SHADER, "combine_diffuse_color.frag");
+        assignSamplerNames(0, "diffuse_map", ST_NEAREST_FILTERED,
+                           1, "specular_map", ST_NEAREST_FILTERED,
+                           2, "ssao_tex", ST_NEAREST_FILTERED,
+                           3, "gloss_map", ST_NEAREST_FILTERED,
+                           4, "diffuse_color", ST_NEAREST_FILTERED);
+    }   // CombineDiffuseColor
+    // ------------------------------------------------------------------------
+    void render(GLuint dm, GLuint sm, GLuint st, GLuint gm, GLuint dc)
+    {
+        setTextureUnits(dm, sm, st, gm, dc);
+        drawFullScreenEffect();
+    }   // render
+};   // CombineDiffuseColor
+
 // ----------------------------------------------------------------------------
 void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
                                       float dt,
@@ -318,7 +343,7 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
     
     if (CVS->isDefferedEnabled() || forceRTT)
     {
-        m_rtts->getFBO(FBO_NORMAL_AND_DEPTHS).bind();
+        m_rtts->getFBO(FBO_SP).bind();
         glClearColor(0., 0., 0., 0.);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         SP::draw(SP::RP_1ST, SP::DCT_NORMAL);
@@ -411,11 +436,18 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
             clearColor.getBlue() / 255.f, clearColor.getAlpha() / 255.f);
         glClear(GL_COLOR_BUFFER_BIT);
         glDepthMask(GL_FALSE);
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
+        CombineDiffuseColor::getInstance()->render(
+            m_rtts->getRenderTarget(RTT_DIFFUSE),
+            m_rtts->getRenderTarget(RTT_SPECULAR),
+            m_rtts->getRenderTarget(RTT_HALF1_R),
+            m_rtts->getRenderTarget(RTT_SP_GLOSS),
+            m_rtts->getRenderTarget(RTT_SP_DIFF_COLOR));
     }
-
-    glEnable(GL_DEPTH_TEST);
+    /*glEnable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
-    SP::draw(SP::RP_2ND, SP::DCT_NORMAL);
+    SP::draw(SP::RP_2ND, SP::DCT_NORMAL);*/
 
     if (irr_driver->getNormals())
     {

@@ -311,18 +311,18 @@ void loadShaders()
     SPShader* shader = new SPShader("solid");
 
     shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_object_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->addShaderFile("sp_solid.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
     shader->use(RP_1ST);
     shader->addBasicUniforms(RP_1ST);
     shader->addAllTextures(RP_1ST);
 
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
+/*    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
     shader->addShaderFile("sp_object_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
     shader->linkShaderFiles(RP_2ND);
     shader->use(RP_2ND);
     shader->addBasicUniforms(RP_2ND);
-    shader->addAllTextures(RP_2ND); 
+    shader->addAllTextures(RP_2ND); */
 
     shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
     shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
@@ -339,18 +339,18 @@ void loadShaders()
     shader = new SPShader("solid_skinned", 4, false, 999);
 
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_object_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->addShaderFile("sp_solid.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
     shader->use(RP_1ST);
     shader->addBasicUniforms(RP_1ST);
     shader->addAllTextures(RP_1ST);
 
-    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_2ND);
+/*    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_2ND);
     shader->addShaderFile("sp_object_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
     shader->linkShaderFiles(RP_2ND);
     shader->use(RP_2ND);
     shader->addBasicUniforms(RP_2ND);
-    shader->addAllTextures(RP_2ND); 
+    shader->addAllTextures(RP_2ND); */
 
     shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
     shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
@@ -368,18 +368,11 @@ void loadShaders()
     shader = new SPShader("decal");
 
     shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_object_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->addShaderFile("sp_decal.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
     shader->use(RP_1ST);
     shader->addBasicUniforms(RP_1ST);
     shader->addAllTextures(RP_1ST);
-
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_decal.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addAllTextures(RP_2ND); 
 
     shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
     shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
@@ -396,18 +389,11 @@ void loadShaders()
     shader = new SPShader("decal_skinned", 4, false, 999);
 
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_object_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->addShaderFile("sp_decal.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
     shader->use(RP_1ST);
     shader->addBasicUniforms(RP_1ST);
     shader->addAllTextures(RP_1ST);
-
-    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_decal.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addAllTextures(RP_2ND); 
 
     shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
     shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
@@ -425,18 +411,11 @@ void loadShaders()
     shader = new SPShader("alphatest");
 
     shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_alpha_test_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->addShaderFile("sp_alpha_test.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
     shader->use(RP_1ST);
     shader->addBasicUniforms(RP_1ST);
     shader->addAllTextures(RP_1ST);
-
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_alpha_test_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addAllTextures(RP_2ND); 
 
     shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
     shader->addShaderFile("sp_shadow_alpha_test.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
@@ -453,18 +432,11 @@ void loadShaders()
     shader = new SPShader("alphatest_skinned", 4, false, 999);
 
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_alpha_test_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->addShaderFile("sp_alpha_test.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
     shader->use(RP_1ST);
     shader->addBasicUniforms(RP_1ST);
     shader->addAllTextures(RP_1ST);
-
-    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_alpha_test_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addAllTextures(RP_2ND); 
 
     shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
     shader->addShaderFile("sp_shadow_alpha_test.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
@@ -482,18 +454,11 @@ void loadShaders()
     shader = new SPShader("unlit");
 
     shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_alpha_test_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->addShaderFile("sp_unlit.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
     shader->use(RP_1ST);
     shader->addBasicUniforms(RP_1ST);
     shader->addAllTextures(RP_1ST);
-
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_unlit.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addAllTextures(RP_2ND); 
 
     shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
     shader->addShaderFile("sp_shadow_alpha_test.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
@@ -510,18 +475,11 @@ void loadShaders()
     shader = new SPShader("unlit_skinned", 4, false, 999);
 
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_alpha_test_pass1.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->addShaderFile("sp_unlit.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
     shader->use(RP_1ST);
     shader->addBasicUniforms(RP_1ST);
     shader->addAllTextures(RP_1ST);
-
-    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_unlit.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addAllTextures(RP_2ND); 
 
     shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
     shader->addShaderFile("sp_shadow_alpha_test.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
@@ -545,13 +503,6 @@ void loadShaders()
     shader->addBasicUniforms(RP_1ST);
     shader->addAllTextures(RP_1ST);
 
-    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_object_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addAllTextures(RP_2ND); 
-
     shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
     shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
@@ -573,13 +524,6 @@ void loadShaders()
     shader->addBasicUniforms(RP_1ST);
     shader->addAllTextures(RP_1ST);
 
-    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_object_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addAllTextures(RP_2ND); 
-
     shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
     shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
@@ -595,21 +539,13 @@ void loadShaders()
     // ========================================================================
     shader = new SPShader("grass");
     shader->addShaderFile("sp_grass_pass.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_alpha_test_pass1.frag", GL_FRAGMENT_SHADER,
+    shader->addShaderFile("sp_grass.frag", GL_FRAGMENT_SHADER,
         RP_1ST);
     shader->linkShaderFiles(RP_1ST);
     shader->use(RP_1ST);
     shader->addBasicUniforms(RP_1ST);
     shader->addUniform("wind_direction", typeid(core::vector3df), RP_1ST);
     shader->addAllTextures(RP_1ST);
-
-    shader->addShaderFile("sp_grass_pass.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_grass.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addUniform("wind_direction", typeid(core::vector3df), RP_2ND);
-    shader->addAllTextures(RP_2ND);
 
     shader->addShaderFile("sp_grass_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
     shader->addShaderFile("sp_shadow_alpha_test.frag", GL_FRAGMENT_SHADER, RP_SHADOW);

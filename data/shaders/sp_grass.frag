@@ -7,10 +7,14 @@ uniform sampler2D tex_layer_4;
 
 flat in vec2 color_change;
 
+in vec3 normal;
 in vec2 uv;
-out vec4 o_frag_color;
 
-#stk_include "utils/getLightFactor.frag"
+layout(location = 0) out vec3 o_normal_depth;
+layout(location = 1) out vec3 o_gloss_map;
+layout(location = 2) out vec3 o_diffuse_color;
+
+#stk_include "utils/encode_normal.frag"
 #stk_include "utils/rgb_conversion.frag"
 
 void main(void)
@@ -32,9 +36,8 @@ void main(void)
         col = vec4(new_color.r, new_color.g, new_color.b, col.a);
     }
 
-    float specmap = texture(tex_layer_2, uv).g;
-    float emitmap = texture(tex_layer_2, uv).b;
-    vec3 light_factor = col.xyz * 0.1 + getLightFactor(col.xyz, vec3(1.0),
-        specmap, emitmap);
-    o_frag_color = vec4(light_factor, 1.);
+	o_normal_depth.xy = 0.5 * EncodeNormal(normalize(normal)) + 0.5;
+	o_normal_depth.z = texture(tex_layer_2, uv).x;
+    o_gloss_map = 0.1 * texture(tex_layer_2, uv).rgb;
+    o_diffuse_color = col.xyz;
 }

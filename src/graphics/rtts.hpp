@@ -73,6 +73,7 @@ enum TypeFBO
     FBO_BLOOM_128,
     FBO_TMP_128,
     FBO_LENS_128,
+    FBO_SP,
     FBO_COUNT
 };
 
@@ -133,6 +134,9 @@ enum TypeRTT : unsigned int
     RTT_BLOOM_128,
     RTT_TMP_128,
     RTT_LENS_128,
+
+    RTT_SP_GLOSS,
+    RTT_SP_DIFF_COLOR,
 
     RTT_COUNT
 };

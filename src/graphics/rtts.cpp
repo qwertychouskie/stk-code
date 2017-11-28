@@ -149,6 +149,9 @@ RTT::RTT(unsigned int width, unsigned int height, float rtt_scale)
     RenderTargetTextures[RTT_TMP_128] = generateRTT(shadowsize3, rgba_internal_format, rgb_format, type);
     RenderTargetTextures[RTT_LENS_128] = generateRTT(shadowsize3, rgba_internal_format, rgb_format, type);
 
+    RenderTargetTextures[RTT_SP_GLOSS] = generateRTT(res, GL_RGB5_A1, rgb_format, GL_UNSIGNED_BYTE);
+    RenderTargetTextures[RTT_SP_DIFF_COLOR] = generateRTT(res, GL_RGBA8, rgb_format, GL_UNSIGNED_BYTE);
+
     std::vector<GLuint> somevector;
     somevector.push_back(RenderTargetTextures[RTT_SSAO]);
     FrameBuffers.push_back(new FrameBuffer(somevector, res.Width, res.Height));
@@ -254,6 +257,12 @@ RTT::RTT(unsigned int width, unsigned int height, float rtt_scale)
 	somevector.clear();
     somevector.push_back(RenderTargetTextures[RTT_LENS_128]);
     FrameBuffers.push_back(new FrameBuffer(somevector, shadowsize3.Width, shadowsize3.Height));
+
+	somevector.clear();
+    somevector.push_back(RenderTargetTextures[RTT_NORMAL_AND_DEPTH]);
+    somevector.push_back(RenderTargetTextures[RTT_SP_GLOSS]);
+    somevector.push_back(RenderTargetTextures[RTT_SP_DIFF_COLOR]);
+    FrameBuffers.push_back(new FrameBuffer(somevector, DepthStencilTexture, res.Width, res.Height));
 
     if (CVS->isShadowEnabled())
     {
