@@ -472,13 +472,13 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
 
     // Render ambient scattering
     const Track * const track = Track::getCurrentTrack();
-   /* if (CVS->isDefferedEnabled() && track && track->isFogEnabled())
+    if (CVS->isDefferedEnabled() && track && track->isFogEnabled())
     {
         PROFILER_PUSH_CPU_MARKER("- Ambient scatter", 0xFF, 0x00, 0x00);
         ScopedGPUTimer Timer(irr_driver->getGPUTimer(Q_FOG));
         m_lighting_passes.renderAmbientScatter(m_rtts->getDepthStencilTexture());
         PROFILER_POP_CPU_MARKER();
-    }*/
+    }
 
     {
         PROFILER_PUSH_CPU_MARKER("- Skybox", 0xFF, 0x00, 0xFF);

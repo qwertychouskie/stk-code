@@ -155,6 +155,7 @@ public:
     void addBasicUniforms(RenderPass rp = RP_1ST)
     {
 #ifndef SERVER_ONLY
+        // Assign ubo indices
         GLuint block_index = glGetUniformBlockIndex(m_program[rp],
             "Matrices");
         if (block_index != GL_INVALID_INDEX)
@@ -162,6 +163,12 @@ public:
         block_index = glGetUniformBlockIndex(m_program[rp], "SPFogData");
         if (block_index != GL_INVALID_INDEX)
             glUniformBlockBinding(m_program[rp], block_index, 2);
+#ifndef USE_GLES2
+        // Assign framebuffer output
+        glBindFragDataLocation(m_program[rp], 0, "o_diffuse_color");
+        glBindFragDataLocation(m_program[rp], 1, "o_normal_depth");
+        glBindFragDataLocation(m_program[rp], 2, "o_gloss_map");
+#endif
 #endif
     }
     // ------------------------------------------------------------------------
