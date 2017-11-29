@@ -11,8 +11,12 @@ void main()
 {
     vec2 tc = gl_FragCoord.xy / u_screen;
     vec3 diffuseMatColor = texture(diffuse_color, tc).xyz;
-    float specMapValue = texture(gloss_map, tc).y;
-    float emitMapValue = texture(gloss_map, tc).z;
+
+    // Gloss map here is stored in red and green for spec and emit map
+    // Real gloss channel is stored in normal and depth framebuffer .z
+    float specMapValue = texture(gloss_map, tc).x;
+    float emitMapValue = texture(gloss_map, tc).y;
+
     float ao = texture(ssao_tex, tc).x;
     vec3 DiffuseComponent = texture(diffuse_map, tc).xyz;
     vec3 SpecularComponent = texture(specular_map, tc).xyz;

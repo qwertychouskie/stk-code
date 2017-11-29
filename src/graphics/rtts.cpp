@@ -113,7 +113,7 @@ RTT::RTT(unsigned int width, unsigned int height, float rtt_scale)
     RenderTargetTextures[RTT_TMP3] = generateRTT(res, rgba_internal_format, rgba_format, type);
     RenderTargetTextures[RTT_TMP4] = generateRTT(res, red_internal_format, red_format, type);
     RenderTargetTextures[RTT_LINEAR_DEPTH] = generateRTT(res, red32_internal_format, red_format, type, linear_depth_mip_levels);
-    RenderTargetTextures[RTT_NORMAL_AND_DEPTH] = generateRTT(res, rgba_internal_format, GL_RGBA, type);
+    RenderTargetTextures[RTT_NORMAL_AND_DEPTH] = generateRTT(res, rgba_internal_format, rgba_format, type);
     RenderTargetTextures[RTT_COLOR] = generateRTT(res, rgba_internal_format, rgba_format, type);
     RenderTargetTextures[RTT_MLAA_COLORS] = generateRTT(res, srgb_internal_format, rgb_format, GL_UNSIGNED_BYTE);
     RenderTargetTextures[RTT_MLAA_TMP] = generateRTT(res, srgb_internal_format, rgb_format, GL_UNSIGNED_BYTE);
@@ -149,7 +149,7 @@ RTT::RTT(unsigned int width, unsigned int height, float rtt_scale)
     RenderTargetTextures[RTT_TMP_128] = generateRTT(shadowsize3, rgba_internal_format, rgb_format, type);
     RenderTargetTextures[RTT_LENS_128] = generateRTT(shadowsize3, rgba_internal_format, rgb_format, type);
 
-    RenderTargetTextures[RTT_SP_GLOSS] = generateRTT(res, GL_RGB5_A1, rgb_format, GL_UNSIGNED_BYTE);
+    RenderTargetTextures[RTT_SP_GLOSS] = generateRTT(res, GL_RG8, GL_RG, GL_UNSIGNED_BYTE);
     RenderTargetTextures[RTT_SP_DIFF_COLOR] = generateRTT(res, GL_RGBA8, rgb_format, GL_UNSIGNED_BYTE);
 
     std::vector<GLuint> somevector;
@@ -259,9 +259,9 @@ RTT::RTT(unsigned int width, unsigned int height, float rtt_scale)
     FrameBuffers.push_back(new FrameBuffer(somevector, shadowsize3.Width, shadowsize3.Height));
 
 	somevector.clear();
+    somevector.push_back(RenderTargetTextures[RTT_SP_DIFF_COLOR]);
     somevector.push_back(RenderTargetTextures[RTT_NORMAL_AND_DEPTH]);
     somevector.push_back(RenderTargetTextures[RTT_SP_GLOSS]);
-    somevector.push_back(RenderTargetTextures[RTT_SP_DIFF_COLOR]);
     FrameBuffers.push_back(new FrameBuffer(somevector, DepthStencilTexture, res.Width, res.Height));
 
     if (CVS->isShadowEnabled())

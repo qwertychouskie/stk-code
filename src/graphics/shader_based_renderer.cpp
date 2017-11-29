@@ -252,7 +252,7 @@ void ShaderBasedRenderer::renderShadows()
     for (unsigned cascade = 0; cascade < 4; cascade++)
     {
         m_rtts->getShadowFrameBuffer().bindLayerDepthOnly(cascade);
-        glClearColor(1., 1., 1., 1.);
+        //glClearColor(1., 1., 1., 1.);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
         glClearColor(0., 0., 0., 0.);
         SP::sp_cur_shadow_cascade = cascade;
@@ -341,14 +341,14 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
     glDisable(GL_BLEND);
     glEnable(GL_CULL_FACE);
     
-    if (CVS->isDefferedEnabled() || forceRTT)
+    if (CVS->isDefferedEnabled())
     {
         m_rtts->getFBO(FBO_SP).bind();
         glClearColor(0., 0., 0., 0.);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         SP::draw(SP::RP_1ST, SP::DCT_NORMAL);
     }
-    else
+    else if (!forceRTT)
     {
         // We need a cleared depth buffer for some effect (eg particles depth blending)
 #if !defined(USE_GLES2)
@@ -372,7 +372,12 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
 #endif
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
-
+    else
+    {
+        m_rtts->getFBO(FBO_NORMAL_AND_DEPTHS).bind();
+        glClearColor(0., 0., 0., 0.);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    }
 
     // Lights
     {
@@ -435,8 +440,12 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
         glClearColor(clearColor.getRed() / 255.f, clearColor.getGreen() / 255.f,
             clearColor.getBlue() / 255.f, clearColor.getAlpha() / 255.f);
         glClear(GL_COLOR_BUFFER_BIT);
+    }
+    if (CVS->isDefferedEnabled())
+    {
+        PROFILER_PUSH_CPU_MARKER("- Combine diffuse color", 0x2F, 0x77, 0x33);
         glDepthMask(GL_FALSE);
-        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_DEPTH_TEST);
         glDisable(GL_BLEND);
         CombineDiffuseColor::getInstance()->render(
             m_rtts->getRenderTarget(RTT_DIFFUSE),
@@ -444,10 +453,15 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
             m_rtts->getRenderTarget(RTT_HALF1_R),
             m_rtts->getRenderTarget(RTT_SP_GLOSS),
             m_rtts->getRenderTarget(RTT_SP_DIFF_COLOR));
+        PROFILER_POP_CPU_MARKER();
     }
-    /*glEnable(GL_DEPTH_TEST);
-    glDisable(GL_BLEND);
-    SP::draw(SP::RP_2ND, SP::DCT_NORMAL);*/
+    else
+    {
+        glDepthMask(GL_TRUE);
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
+        SP::draw(SP::RP_1ST, SP::DCT_NORMAL);
+    }
 
     if (irr_driver->getNormals())
     {
@@ -458,13 +472,13 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
 
     // Render ambient scattering
     const Track * const track = Track::getCurrentTrack();
-    if (CVS->isDefferedEnabled() && track && track->isFogEnabled())
+   /* if (CVS->isDefferedEnabled() && track && track->isFogEnabled())
     {
         PROFILER_PUSH_CPU_MARKER("- Ambient scatter", 0xFF, 0x00, 0x00);
         ScopedGPUTimer Timer(irr_driver->getGPUTimer(Q_FOG));
         m_lighting_passes.renderAmbientScatter(m_rtts->getDepthStencilTexture());
         PROFILER_POP_CPU_MARKER();
-    }
+    }*/
 
     {
         PROFILER_PUSH_CPU_MARKER("- Skybox", 0xFF, 0x00, 0xFF);

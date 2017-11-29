@@ -6,7 +6,7 @@ uniform float custom_alpha;
 
 in vec2 uv;
 in vec4 color;
-out vec4 o_frag_color;
+out vec4 o_diffuse_color;
 
 void main()
 {
@@ -32,6 +32,6 @@ void main()
         fog = min(fog, u_fog_data.z);
         finalcolor = u_fog_color * fog + diffusecolor * (1. - fog);
     }
-    o_frag_color = vec4(finalcolor.rgb * (finalcolor.a * (1.0 - custom_alpha)),
+    o_diffuse_color = vec4(finalcolor.rgb * (finalcolor.a * (1.0 - custom_alpha)),
         finalcolor.a * (1.0 - custom_alpha));
 }
