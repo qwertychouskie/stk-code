@@ -78,6 +78,8 @@ DrawCall g_draw_calls[DCT_COUNT];
 std::vector<std::pair<SPShader*, std::vector<std::vector<SPMeshBuffer*> > > >
                                                g_final_draw_calls[DCT_FOR_VAO];
 // ----------------------------------------------------------------------------
+std::unordered_set<SPMeshBuffer*> g_instances;
+// ----------------------------------------------------------------------------
 std::array<GLuint, ST_COUNT> g_samplers;
 // ----------------------------------------------------------------------------
 std::vector<GLuint> sp_prefilled_tex (5);
@@ -1072,6 +1074,7 @@ void prepareDrawCalls()
     {
         p.clear();
     }
+    g_instances.clear();
 #endif
 }
 
@@ -1197,6 +1200,7 @@ void addObject(SPMeshNode* node)
                 ret[mb->getTextureCompare()].insert(mb);
                 mb->addInstanceData(id, (DrawCallType)dc_type);
             }
+            g_instances.insert(mb);
         }
     }
 
@@ -1328,18 +1332,9 @@ void uploadAll()
         return;
     }
 
-    for (auto& p : g_draw_calls)
+    for (SPMeshBuffer* spmb : g_instances)
     {
-        for (auto& q : p)
-        {
-            for (auto& r : q.second)
-            {
-                for (auto& s : r.second)
-                {
-                    s->uploadInstanceData();
-                }
-            }
-        }
+        spmb->uploadInstanceData();
     }
 
 #endif
