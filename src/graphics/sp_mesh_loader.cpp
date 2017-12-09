@@ -216,7 +216,8 @@ scene::IAnimatedMesh* SPMeshLoader::createMesh(io::IReadFile* f)
         SP::SPMesh* spm = static_cast<SP::SPMesh*>(m_mesh);
         spm->m_bind_frame = m_bind_frame;
         spm->m_joint_using = m_joint_count;
-        spm->m_frame_count = m_frame_count;
+        // Because the last frame in spm is usable
+        spm->m_frame_count = m_frame_count + 1;
         for (unsigned i = 0; i < m_all_armatures.size(); i++)
         {
             // This is diffferent from m_joint_using
