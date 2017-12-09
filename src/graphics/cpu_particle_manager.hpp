@@ -79,22 +79,16 @@ class CPUParticleManager : public Singleton<CPUParticleManager>, NoCopy
 private:
     struct GLParticle : public NoCopy
     {
-        GLuint m_vao[MAX_PLAYER_COUNT][2];
-        GLuint m_vbo[MAX_PLAYER_COUNT][2];
-        unsigned m_size[MAX_PLAYER_COUNT][2];
+        GLuint m_vao;
+        GLuint m_vbo;
+        unsigned m_size;
         // --------------------------------------------------------------------
         GLParticle(bool flips);
         // --------------------------------------------------------------------
         ~GLParticle()
         {
-            for (unsigned i = 0; i < MAX_PLAYER_COUNT; i++)
-            {
-                for (int j = 0; j < 2; j++)
-                {
-                    glDeleteVertexArrays(1, &m_vao[i][j]);
-                    glDeleteBuffers(1, &m_vbo[i][j]);
-                }
-            }
+            glDeleteVertexArrays(1, &m_vao);
+            glDeleteBuffers(1, &m_vbo);
         }
     };
 
