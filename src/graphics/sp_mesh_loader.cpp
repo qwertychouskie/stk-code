@@ -24,6 +24,7 @@
 #include "utils/constants.hpp"
 #include "utils/mini_glm.hpp"
 
+#include "../../lib/irrlicht/source/Irrlicht/CSkinnedMesh.h"
 const uint8_t VERSION_NOW = 1;
 
 #include <algorithm>
@@ -225,6 +226,9 @@ scene::IAnimatedMesh* SPMeshLoader::createMesh(io::IReadFile* f)
         spm->m_all_armatures = std::move(m_all_armatures);
     }
     m_mesh->finalize();
+    // Because the last frame in spm is usable
+    static_cast<scene::CSkinnedMesh*>(m_mesh)->AnimationFrames =
+        (float)m_frame_count + 1.0f;
     m_all_armatures.clear();
     m_to_bind_pose_matrices.clear();
     m_joints.clear();
