@@ -19,6 +19,7 @@
 #define HEADER_SP_MESH_BUFFER_HPP
 
 #include "graphics/gl_headers.hpp"
+#include "graphics/sp/sp_base.hpp"
 #include "graphics/sp/sp_instanced_data.hpp"
 #include "utils/types.hpp"
 
@@ -49,15 +50,15 @@ private:
 
     core::aabbox3d<f32> m_bounding_box;
 
-    std::vector<SPInstancedData> m_ins_dat;
+    std::vector<SPInstancedData> m_ins_dat[DCT_FOR_VAO];
 
     GLuint m_ibo, m_vbo;
 
-    unsigned m_gl_instance_size[MAX_PLAYER_COUNT][2];
+    unsigned m_gl_instance_size[DCT_FOR_VAO];
 
-    GLuint m_vao[MAX_PLAYER_COUNT][2];
+    GLuint m_vao[DCT_FOR_VAO];
 
-    GLuint m_ins_array[MAX_PLAYER_COUNT][2];
+    GLuint m_ins_array[DCT_FOR_VAO];
 
     std::string m_tex_cmp;
 
@@ -71,16 +72,13 @@ public:
 #endif
         m_stk_material = NULL;
 
-        for (unsigned i = 0; i < MAX_PLAYER_COUNT; i++)
+        for (unsigned i = 0; i < DCT_FOR_VAO; i++)
         {
-            for (int j = 0; j < 2; j++)
-            {
-                m_gl_instance_size[i][j] = 1;
+            m_gl_instance_size[i] = 1;
 #ifndef SERVER_ONLY
-                glGenVertexArrays(1, &m_vao[i][j]);
-                glGenBuffers(1, &m_ins_array[i][j]);
+            glGenVertexArrays(1, &m_vao[i]);
+            glGenBuffers(1, &m_ins_array[i]);
 #endif
-            }
         }
 
 #ifndef SERVER_ONLY
@@ -93,26 +91,23 @@ public:
     ~SPMeshBuffer()
     {
 #ifndef SERVER_ONLY
-        for (unsigned i = 0; i < MAX_PLAYER_COUNT; i++)
+        for (unsigned i = 0; i < DCT_FOR_VAO; i++)
         {
-            for (int j = 0; j < 2; j++)
-            {
-                glDeleteVertexArrays(1, &m_vao[i][j]);
-                glDeleteBuffers(1, &m_ins_array[i][j]);
-            }
+            glDeleteVertexArrays(1, &m_vao[i]);
+            glDeleteBuffers(1, &m_ins_array[i]);
         }
         glDeleteBuffers(1, &m_ibo);
         glDeleteBuffers(1, &m_vbo);
 #endif
     }
     // ------------------------------------------------------------------------
-    void bindVAO() const;
+    void bindVAO(DrawCallType dct) const     { glBindVertexArray(m_vao[dct]); }
     // ------------------------------------------------------------------------
-    void draw() const
+    void draw(DrawCallType dct) const
     {
-        bindVAO();
+        glBindVertexArray(m_vao[dct]);
         glDrawElementsInstanced(GL_TRIANGLES, getIndexCount(),
-            GL_UNSIGNED_SHORT, 0, (unsigned)m_ins_dat.size());
+            GL_UNSIGNED_SHORT, 0, (unsigned)m_ins_dat[dct].size());
     }
     // ------------------------------------------------------------------------
     void initDrawMaterial();
@@ -123,14 +118,17 @@ public:
     // ------------------------------------------------------------------------
     const std::string& getTextureCompare() const          { return m_tex_cmp; }
     // ------------------------------------------------------------------------
-    void addInstanceData(const SPInstancedData& id)
+    void addInstanceData(const SPInstancedData& id, DrawCallType dct)
     {
         if (m_uploaded)
         {
-            m_ins_dat.clear();
-            m_uploaded = false;
+            for (unsigned i = 0; i < DCT_FOR_VAO; i++)
+            {
+                m_ins_dat[i].clear();
+                m_uploaded = false;
+            }
         }
-        m_ins_dat.push_back(id);
+        m_ins_dat[dct].push_back(id);
     }
     // ------------------------------------------------------------------------
     void uploadInstanceData();

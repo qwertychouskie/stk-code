@@ -44,13 +44,14 @@ namespace SP
 enum DrawCallType: unsigned int
 {
     DCT_NORMAL = 0,
-    DCT_TRANSPARENT,
     DCT_SHADOW1,
     DCT_SHADOW2,
     DCT_SHADOW3,
     DCT_SHADOW4,
-    DCT_RSM,
+    DCT_TRANSPARENT,
     DCT_GLOW,
+    DCT_FOR_VAO = DCT_GLOW,
+    DCT_RSM,
     DCT_COUNT
 };
 
@@ -87,7 +88,7 @@ class SPMeshNode;
 class SPShader;
 class SPMeshBuffer;
 
-extern GLuint sp_mat_ubo[MAX_PLAYER_COUNT][2];
+extern GLuint sp_mat_ubo[MAX_PLAYER_COUNT][3];
 extern GLuint sp_fog_ubo;
 extern GLsync sp_sync[2];
 extern std::vector<GLuint> sp_prefilled_tex;

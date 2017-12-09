@@ -69,14 +69,14 @@ std::unordered_map<std::string, SPShader*> g_shaders;
 // ----------------------------------------------------------------------------
 SPShader* g_glow_shader = NULL;
 // ----------------------------------------------------------------------------
-std::unordered_map<SPMeshBuffer*, std::pair<std::vector<SPMeshNode*>,
-    unsigned/*mb_index*/> > g_instances;
-// ----------------------------------------------------------------------------
 // std::string is layer_1 and layer_2 texture name combined
 typedef std::unordered_map<SPShader*, std::unordered_map<std::string,
     std::unordered_set<SPMeshBuffer*> > > DrawCall;
 
 DrawCall g_draw_calls[DCT_COUNT];
+// ----------------------------------------------------------------------------
+std::vector<std::pair<SPShader*, std::vector<std::vector<SPMeshBuffer*> > > >
+                                               g_final_draw_calls[DCT_FOR_VAO];
 // ----------------------------------------------------------------------------
 std::array<GLuint, ST_COUNT> g_samplers;
 // ----------------------------------------------------------------------------
@@ -114,17 +114,17 @@ void initSTKRenderer(ShaderBasedRenderer* sbr)
 }   // initSTKRenderer
 
 // ----------------------------------------------------------------------------
-GLuint sp_mat_ubo[MAX_PLAYER_COUNT][2] = {};
+GLuint sp_mat_ubo[MAX_PLAYER_COUNT][3] = {};
 // ----------------------------------------------------------------------------
 GLsync sp_sync[2] = {};
 // ----------------------------------------------------------------------------
 GLuint sp_fog_ubo = 0;
 // ----------------------------------------------------------------------------
-GLuint g_skinning_tex[MAX_PLAYER_COUNT][2] = {};
+GLuint g_skinning_tex;
 // ----------------------------------------------------------------------------
-GLuint g_skinning_buf[MAX_PLAYER_COUNT][2] = {};
+GLuint g_skinning_buf;
 // ----------------------------------------------------------------------------
-unsigned g_skinning_size[MAX_PLAYER_COUNT][2] = {};
+unsigned g_skinning_size;
 // ----------------------------------------------------------------------------
 #ifndef SERVER_ONLY
 // ----------------------------------------------------------------------------
@@ -213,14 +213,14 @@ void displaceUniformAssigner(SP::SPUniformAssigner* ua)
 }   // displaceUniformAssigner
 
 // ----------------------------------------------------------------------------
-void resizeSkinning(unsigned number, unsigned player_id, unsigned buf_id)
+void resizeSkinning(unsigned number)
 {
     const irr::core::matrix4 m;
-    g_skinning_size[player_id][buf_id] = number;
+    g_skinning_size = number;
 
 #ifdef USE_GLES2
 
-    glBindTexture(GL_TEXTURE_2D, g_skinning_tex[player_id][buf_id]);
+    glBindTexture(GL_TEXTURE_2D, g_skinning_tex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 4, number, 0, GL_RGBA,
         GL_FLOAT, NULL);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 1, GL_RGBA, GL_FLOAT,
@@ -228,11 +228,11 @@ void resizeSkinning(unsigned number, unsigned player_id, unsigned buf_id)
     glBindTexture(GL_TEXTURE_2D, 0);
 #else
 
-    glBindBuffer(GL_TEXTURE_BUFFER, g_skinning_buf[player_id][buf_id]);
+    glBindBuffer(GL_TEXTURE_BUFFER, g_skinning_buf);
     glBufferData(GL_TEXTURE_BUFFER, number << 6, NULL, GL_DYNAMIC_DRAW);
     glBufferSubData(GL_TEXTURE_BUFFER, 0, 64, m.pointer());
-    glBindTexture(GL_TEXTURE_BUFFER, g_skinning_tex[player_id][buf_id]);
-    glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, g_skinning_buf[player_id][buf_id]);
+    glBindTexture(GL_TEXTURE_BUFFER, g_skinning_tex);
+    glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, g_skinning_buf);
     glBindTexture(GL_TEXTURE_BUFFER, 0);
 #endif
 }   // resizeSkinning
@@ -272,28 +272,13 @@ void initSkinning()
     // Reserve 1 identity matrix for non-weighted vertices
     // All buffer / skinning texture start with 2 bones for power of 2 increase
     const irr::core::matrix4 m;
-#ifdef USE_GLES2
-    for (unsigned i = 0; i < MAX_PLAYER_COUNT; i++)
-    {
-        for (int j = 0; j < 2; j++)
-        {
-            glGenTextures(1, &g_skinning_tex[i][j]);
-            resizeSkinning(2, i, j);
-        }
-    }
-#else
-    for (unsigned i = 0; i < MAX_PLAYER_COUNT; i++)
-    {
-        for (int j = 0; j < 2; j++)
-        {
-            glGenTextures(1, &g_skinning_tex[i][j]);
-            glGenBuffers(1, &g_skinning_buf[i][j]);
-            resizeSkinning(2, i, j);
-        }
-    }
+    glGenTextures(1, &g_skinning_tex);
+#ifndef USE_GLES2
+    glGenBuffers(1, &g_skinning_buf);
 #endif
-
+    resizeSkinning(2);
 #endif
+    sp_prefilled_tex[4] = g_skinning_tex;
 
 }   // initSkinning
 
@@ -743,7 +728,7 @@ void init()
     initSkinning();
     for (unsigned i = 0; i < MAX_PLAYER_COUNT; i++)
     {
-        for (int j = 0; j < 2; j++)
+        for (int j = 0; j < 3; j++)
         {
             glGenBuffers(1, &sp_mat_ubo[i][j]);
             glBindBuffer(GL_UNIFORM_BUFFER, sp_mat_ubo[i][j]);
@@ -910,15 +895,17 @@ void destroy()
     }
     g_shaders.clear();
 #ifndef SERVER_ONLY
+
+#ifndef USE_GLES2
+    glDeleteBuffers(1, &g_skinning_buf);
+#endif
+    glDeleteTextures(1, &g_skinning_tex);
+
     for (unsigned i = 0; i < MAX_PLAYER_COUNT; i++)
     {
-        for (int j = 0; j < 2; j++)
+        for (int j = 0; j < 3; j++)
         {
             glDeleteBuffers(1, &sp_mat_ubo[i][j]);
-            glDeleteBuffers(1, &g_skinning_tex[i][j]);
-#ifndef USE_GLES2
-            glDeleteTextures(1, &g_skinning_buf[i][j]);
-#endif
         }
     }
     glDeleteBuffers(1, &sp_fog_ubo);
@@ -1047,8 +1034,6 @@ inline core::vector3df getCorner(const core::aabbox3df& bbox, unsigned n)
 // ----------------------------------------------------------------------------
 void prepareDrawCalls()
 {
-    sp_prefilled_tex[4] =
-        g_skinning_tex[sp_cur_player][sp_cur_buf_id[sp_cur_player]];
     if (!sp_culling)
     {
         return;
@@ -1079,8 +1064,11 @@ void prepareDrawCalls()
             g_stk_sbr->getShadowMatrices()->getSunOrthoMatrices()[3]);
     }
 
-    g_instances.clear();
     for (auto& p : g_draw_calls)
+    {
+        p.clear();
+    }
+    for (auto& p : g_final_draw_calls)
     {
         p.clear();
     }
@@ -1163,10 +1151,19 @@ void addObject(SPMeshNode* node)
             g_skinning_mesh.push_back(node);
             g_skinning_offset = skinning_offset;
         }
-        auto& ret = g_instances[mb];
-        ret.first.push_back(node);
-        ret.second = m;
-        for (int dc_type = 0; dc_type < (g_handle_shadow ? 6 : 1); dc_type++)
+
+        float hue = mb->getSTKMaterial()->isColorizable() ?
+            node->getRenderInfo(m) ?
+            node->getRenderInfo(m)->getHue() : 0.0f : 0.0f;
+        float min_sat = mb->getSTKMaterial()->isColorizable() ?
+            mb->getSTKMaterial()->getColorizationFactor() : 0.0f;
+        const core::matrix4& texture_matrix =
+            node->getMaterial(m).getTextureMatrix(0);
+        SPInstancedData id = SPInstancedData
+            (node->getAbsoluteTransformation(), texture_matrix[8],
+            texture_matrix[9], hue, min_sat, node->getSkinningOffset());
+
+        for (int dc_type = 0; dc_type < (g_handle_shadow ? 5 : 1); dc_type++)
         {
             if (discard[dc_type])
             {
@@ -1187,6 +1184,7 @@ void addObject(SPMeshNode* node)
                 {
                     auto& ret = g_draw_calls[DCT_TRANSPARENT][shader];
                     ret[mb->getTextureCompare()].insert(mb);
+                    mb->addInstanceData(id, DCT_TRANSPARENT);
                 }
                 else
                 {
@@ -1195,9 +1193,9 @@ void addObject(SPMeshNode* node)
             }
             else
             {
-                auto& ret = g_draw_calls[(DrawCallType)
-                    (dc_type == 0 ? dc_type : dc_type + 1)][shader];
+                auto& ret = g_draw_calls[dc_type][shader];
                 ret[mb->getTextureCompare()].insert(mb);
+                mb->addInstanceData(id, (DrawCallType)dc_type);
             }
         }
     }
@@ -1207,21 +1205,50 @@ void addObject(SPMeshNode* node)
 // ----------------------------------------------------------------------------
 void updateModelMatrix()
 {
-    irr_driver->setSkinningJoint(g_skinning_offset - 1);
-    for (auto& p : g_instances)
+    if (!sp_culling)
     {
-        for (auto& q : p.second.first)
+        return;
+    }
+    irr_driver->setSkinningJoint(g_skinning_offset - 1);
+
+    for (unsigned i = 0; i < DCT_FOR_VAO; i++)
+    {
+        DrawCall* dc = &g_draw_calls[(DrawCallType)i];
+        // Sort dc based on the drawing priority of shaders
+        // The larger the drawing priority int, the last it will be drawn
+        using DrawCallPair = std::pair<SPShader*, std::unordered_map<std::string,
+            std::unordered_set<SPMeshBuffer*> > >;
+        std::vector<DrawCallPair> sorted_dc;
+        for (auto& p : *dc)
         {
-            float hue = p.first->getSTKMaterial()->isColorizable() ?
-                q->getRenderInfo(p.second.second) ?
-                q->getRenderInfo(p.second.second)->getHue() : 0.0f : 0.0f;
-            float min_sat = p.first->getSTKMaterial()->isColorizable() ?
-                p.first->getSTKMaterial()->getColorizationFactor() : 0.0f;
-            const core::matrix4& texture_matrix =
-                q->getMaterial(p.second.second).getTextureMatrix(0);
-            p.first->addInstanceData(SPInstancedData
-                (q->getAbsoluteTransformation(), texture_matrix[8],
-                texture_matrix[9], hue, min_sat, q->getSkinningOffset()));
+            sorted_dc.push_back(p);
+        }
+        std::sort(sorted_dc.begin(), sorted_dc.end(),
+            [](const DrawCallPair& a, const DrawCallPair& b)->bool
+            {
+                return a.first->getDrawingPriority() <
+                    b.first->getDrawingPriority();
+            });
+        for (unsigned dc = 0; dc < sorted_dc.size(); dc++)
+        {
+            auto& p = sorted_dc[dc];
+            g_final_draw_calls[i].emplace_back(p.first,
+                std::vector<std::vector<SPMeshBuffer*> >());
+            unsigned texture = 0;
+            for (auto& q : p.second)
+            {
+                if (q.second.empty())
+                {
+                    continue;
+                }
+                g_final_draw_calls[i][dc].second.push_back
+                    (std::vector<SPMeshBuffer*>());
+                for (SPMeshBuffer* spmb : q.second)
+                {
+                    g_final_draw_calls[i][dc].second[texture].push_back(spmb);
+                }
+                texture++;
+            }
         }
     }
 }
@@ -1235,22 +1262,19 @@ void uploadSkinningMatrices()
         return;
     }
 
-    unsigned new_size =
-        g_skinning_size[sp_cur_player][sp_cur_buf_id[sp_cur_player]];
+    unsigned new_size = g_skinning_size;
     while (g_skinning_offset > new_size)
     {
         new_size <<= 1;
     }
-    if (new_size !=
-        g_skinning_size[sp_cur_player][sp_cur_buf_id[sp_cur_player]])
+    if (new_size != g_skinning_size)
     {
-        resizeSkinning(new_size, sp_cur_player, sp_cur_buf_id[sp_cur_player]);
+        resizeSkinning(new_size);
     }
 
     unsigned buffer_offset = 0;
 #ifndef USE_GLES2
-    glBindBuffer(GL_TEXTURE_BUFFER,
-        g_skinning_buf[sp_cur_player][sp_cur_buf_id[sp_cur_player]]);
+    glBindBuffer(GL_TEXTURE_BUFFER, g_skinning_buf);
     std::array<float, 16>* joint_ptr = (std::array<float, 16>*)
         glMapBufferRange(GL_TEXTURE_BUFFER, 64, (g_skinning_offset - 1) * 64,
         GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT |
@@ -1270,8 +1294,7 @@ void uploadSkinningMatrices()
     }
 
 #ifdef USE_GLES2
-    glBindTexture(GL_TEXTURE_2D,
-        g_skinning_tex[sp_cur_player][sp_cur_buf_id[sp_cur_player]]);
+    glBindTexture(GL_TEXTURE_2D, g_skinning_tex);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 1, 4, buffer_offset, GL_RGBA,
         GL_FLOAT, tmp_buf.data());
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -1288,18 +1311,37 @@ void uploadAll()
 {
 #ifndef SERVER_ONLY
     uploadSkinningMatrices();
-    for (auto& p : g_instances)
-    {
-        p.first->uploadInstanceData();
-    }
     glBindBuffer(GL_UNIFORM_BUFFER,
         sp_mat_ubo[sp_cur_player][sp_cur_buf_id[sp_cur_player]]);
-    void* ptr = glMapBufferRange(GL_UNIFORM_BUFFER, 0,
+    /*void* ptr = glMapBufferRange(GL_UNIFORM_BUFFER, 0,
         (16 * 9 + 2) * sizeof(float), GL_MAP_WRITE_BIT |
         GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-    memcpy(ptr, g_stk_sbr->getShadowMatrices()->getMatricesData(), (16 * 9 + 2) * sizeof(float));
-    glUnmapBuffer(GL_UNIFORM_BUFFER);
+    memcpy(ptr, g_stk_sbr->getShadowMatrices()->getMatricesData(),
+        (16 * 9 + 2) * sizeof(float));
+    glUnmapBuffer(GL_UNIFORM_BUFFER);*/
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, (16 * 9 + 2) * sizeof(float),
+        g_stk_sbr->getShadowMatrices()->getMatricesData());
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    if (!sp_culling)
+    {
+        return;
+    }
+
+    for (auto& p : g_draw_calls)
+    {
+        for (auto& q : p)
+        {
+            for (auto& r : q.second)
+            {
+                for (auto& s : r.second)
+                {
+                    s->uploadInstanceData();
+                }
+            }
+        }
+    }
+
 #endif
 }
 
@@ -1307,69 +1349,17 @@ void uploadAll()
 void draw(RenderPass rp, DrawCallType dct)
 {
 #ifndef SERVER_ONLY
-    DrawCall* dc = NULL;
-    if (dct == DCT_TRANSPARENT)
-    {
-        dc = &g_draw_calls[DCT_TRANSPARENT];
-    }
-    else if (dct == DCT_GLOW)
-    {
-        dc = &g_draw_calls[DCT_GLOW];
-    }
-    else
-    {
-        switch (rp)
-        {
-        case RP_1ST:
-        case RP_2ND:
-            dc = &g_draw_calls[DCT_NORMAL];
-            break;
-        case RP_SHADOW:
-            if (dct == DCT_SHADOW1)
-                dc = &g_draw_calls[DCT_SHADOW1];
-            if (dct == DCT_SHADOW2)
-                dc = &g_draw_calls[DCT_SHADOW2];
-            if (dct == DCT_SHADOW3)
-                dc = &g_draw_calls[DCT_SHADOW3];
-            if (dct == DCT_SHADOW4)
-                dc = &g_draw_calls[DCT_SHADOW4];
-            break;
-        case RP_RSM:
-            assert(CVS->isGlobalIlluminationEnabled() &&
-                !g_stk_sbr->getShadowMatrices()->isRSMMapAvail() && !g_draw_calls[DCT_RSM].empty());
-            dc = &g_draw_calls[DCT_RSM];
-            break;
-        default:
-            assert(false);
-            break;
-        }
-    }
-
-    // Sort dc based on the drawing priority of shaders
-    // The larger the drawing priority int, the last it will be drawn
-    using DrawCallPair = std::pair<SPShader*, std::unordered_map<std::string,
-        std::unordered_set<SPMeshBuffer*> > >;
-    std::vector<DrawCallPair> sorted_dc;
-    for (auto& p : *dc)
-    {
-        sorted_dc.push_back(p);
-    }
-    std::sort(sorted_dc.begin(), sorted_dc.end(),
-        [](const DrawCallPair& a, const DrawCallPair& b)->bool
-        {
-            return a.first->getDrawingPriority() <
-                b.first->getDrawingPriority();
-        });
-
     std::stringstream profiler_name;
     profiler_name << "SP::Draw " << dct << " with " << rp;
     PROFILER_PUSH_CPU_MARKER(profiler_name.str().c_str(),
         (uint8_t)(float(dct + rp + 2) / float(DCT_COUNT + RP_COUNT) * 255.0f),
         (uint8_t)(float(dct + 1) / (float)DCT_COUNT * 255.0f) ,
         (uint8_t)(float(rp + 1) / (float)RP_COUNT * 255.0f));
-    for (unsigned i = 0; i < sorted_dc.size(); i++)
+
+    assert(dct < DCT_FOR_VAO);
+    for (unsigned i = 0; i < g_final_draw_calls[dct].size(); i++)
     {
-        auto& p = sorted_dc[i];
+        auto& p = g_final_draw_calls[dct][i];
         if (!p.first->hasShader(rp))
         {
             continue;
@@ -1379,7 +1369,7 @@ void draw(RenderPass rp, DrawCallType dct)
         p.first->setUniformsPerObject(static_cast<SPPerObjectUniform*>
             (p.first), &shader_uniforms, rp);
         p.first->bindPrefilledTextures(rp);
-        for (auto& q : p.second)
+        for (unsigned j = 0; j < p.second.size(); j++)
         {
             /*std::vector<SPUniformAssigner*> material_uniforms;
             if (q.first != NULL)
@@ -1388,18 +1378,15 @@ void draw(RenderPass rp, DrawCallType dct)
                     (q.first), &material_uniforms, rp);
                 
             }*/
-            if (q.second.empty())
-            {
-                continue;
-            }
-            p.first->bindTextures((*q.second.begin())->getMaterial(), rp);
-            for (SPMeshBuffer* spmb : q.second)
+            assert(!p.second[j].empty());
+            p.first->bindTextures(p.second[j][0]->getMaterial(), rp);
+            for (unsigned k = 0; k < p.second[j].size(); k++)
             {
                 /*std::vector<SPUniformAssigner*> draw_call_uniforms;
                 p.first->setUniformsPerObject(static_cast<SPPerObjectUniform*>
                     (draw_call), &draw_call_uniforms, rp);
                 sp_draw_call_count++;*/
-                spmb->draw();
+                p.second[j][k]->draw(dct);
                 /*for (SPUniformAssigner* ua : draw_call_uniforms)
                 {
                     ua->reset();
@@ -1416,7 +1403,6 @@ void draw(RenderPass rp, DrawCallType dct)
         }
         p.first->unuse(rp);
     }
-    glBindVertexArray(0);
     PROFILER_POP_CPU_MARKER();
 #endif
 }   // draw

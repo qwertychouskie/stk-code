@@ -219,14 +219,14 @@ void CPUParticleManager::uploadAll()
                 (new GLParticle(isFlipsMaterial(p.first)));
         }
         glBindBuffer(GL_ARRAY_BUFFER, m_gl_particles.at(p.first)
-            ->m_vbo[sp_cur_player][sp_cur_buf_id[sp_cur_player]]);
+            ->m_vbo[0][0]);
 
         // Check "real" particle buffer size in opengl
         if (m_gl_particles.at(p.first)
-            ->m_size[sp_cur_player][sp_cur_buf_id[sp_cur_player]] < vbo_size)
+            ->m_size[0][0] < vbo_size)
         {
             m_gl_particles.at(p.first)->m_size
-                [sp_cur_player][sp_cur_buf_id[sp_cur_player]] = vbo_size * 2;
+                [0][0] = vbo_size * 2;
             glBufferData(GL_ARRAY_BUFFER, vbo_size * 2 * 20, NULL,
                 GL_DYNAMIC_DRAW);
         }
@@ -316,7 +316,7 @@ void CPUParticleManager::drawAll()
             AlphaTestParticleRenderer::getInstance()->setUniforms(flips);
         }
         glBindVertexArray(m_gl_particles.at(p.second)->m_vao
-            [sp_cur_player][sp_cur_buf_id[sp_cur_player]]);
+            [0][0]);
         glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4,
             (unsigned)m_particles_generated.at(p.second).size());
     }

@@ -219,13 +219,6 @@ DrawCalls::DrawCalls()
     m_reflective_shadow_map_cmd_buffer = NULL;
     m_glow_cmd_buffer = NULL;
 
-    if(CVS->supportsIndirectInstancingRendering())
-    {
-        m_solid_cmd_buffer                 = new SolidCommandBuffer();
-        m_shadow_cmd_buffer                = new ShadowCommandBuffer();
-        m_reflective_shadow_map_cmd_buffer = new ReflectiveShadowMapCommandBuffer();
-        m_glow_cmd_buffer                  = new GlowCommandBuffer();        
-    }
 #endif // !defined(USE_GLES2)
 } //DrawCalls
 
@@ -233,12 +226,6 @@ DrawCalls::~DrawCalls()
 {
     CPUParticleManager::kill();
     STKParticle::destroyFlipsBuffer();
-#if !defined(USE_GLES2)
-    delete m_solid_cmd_buffer;
-    delete m_shadow_cmd_buffer;
-    delete m_reflective_shadow_map_cmd_buffer;
-    delete m_glow_cmd_buffer;
-#endif // !defined(USE_GLES2)
 } //~DrawCalls
 
 // ----------------------------------------------------------------------------
@@ -278,6 +265,39 @@ void DrawCalls::prepareDrawCalls( ShadowMatrices& shadow_matrices,
     PROFILER_PUSH_CPU_MARKER("- cpu particle generation", 0x2F, 0x1F, 0x11);
     CPUParticleManager::getInstance()->generateAll();
     PROFILER_POP_CPU_MARKER();
+
+    // Add a 1 s timeout
+    if (!m_sync)
+        m_sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    PROFILER_PUSH_CPU_MARKER("- Sync Stall", 0xFF, 0x0, 0x0);
+    GLenum reason = glClientWaitSync(m_sync, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
+
+    if (reason != GL_ALREADY_SIGNALED)
+    {
+        do
+        {
+            reason = glClientWaitSync(m_sync, GL_SYNC_FLUSH_COMMANDS_BIT, 1000000);
+        } 
+        while (reason == GL_TIMEOUT_EXPIRED);
+    }
+    glDeleteSync(m_sync);
+    PROFILER_POP_CPU_MARKER();
+
+    /*    switch (reason)
+    {
+    case GL_ALREADY_SIGNALED:
+    printf("Already Signaled\n");
+    break;
+    case GL_TIMEOUT_EXPIRED:
+    printf("Timeout Expired\n");
+    break;
+    case GL_CONDITION_SATISFIED:
+    printf("Condition Satisfied\n");
+    break;
+    case GL_WAIT_FAILED:
+    printf("Wait Failed\n");
+    break;
+    }*/
 
     PROFILER_PUSH_CPU_MARKER("- cpu particle upload", 0x3F, 0x03, 0x61);
     CPUParticleManager::getInstance()->uploadAll();

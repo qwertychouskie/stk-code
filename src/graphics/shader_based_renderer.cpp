@@ -554,6 +554,8 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
         PROFILER_POP_CPU_MARKER();
     }
 
+    m_draw_calls.setFenceSync();
+
     if (!CVS->isDefferedEnabled() && !forceRTT)
     {
 #if !defined(USE_GLES2)
@@ -838,27 +840,6 @@ void ShaderBasedRenderer::clearGlowingNodes()
 // ----------------------------------------------------------------------------
 void ShaderBasedRenderer::render(float dt)
 {
-    {
-        PROFILER_PUSH_CPU_MARKER("- Sync Stall", 0xFF, 0x2F, 0x0);
-        if (SP::sp_sync[1] != 0)
-        {
-            GLenum reason = glClientWaitSync(SP::sp_sync[1],
-                GL_SYNC_FLUSH_COMMANDS_BIT, 0);
-            if (reason != GL_ALREADY_SIGNALED)
-            {
-                do
-                {
-                    reason = glClientWaitSync(SP::sp_sync[1],
-                        GL_SYNC_FLUSH_COMMANDS_BIT, 1000000);
-                }
-                while (reason == GL_TIMEOUT_EXPIRED);
-            }
-            glDeleteSync(SP::sp_sync[1]);
-            SP::sp_sync[1] = 0;
-        }
-        PROFILER_POP_CPU_MARKER();
-    }
-    std::swap(SP::sp_sync[0], SP::sp_sync[1]);
     resetObjectCount();
     resetPolyCount();
 
@@ -893,7 +874,7 @@ void ShaderBasedRenderer::render(float dt)
     for(unsigned int cam = 0; cam < Camera::getNumCameras(); cam++)
     {
         SP::sp_cur_player = cam;
-        SP::sp_cur_buf_id[cam] = (SP::sp_cur_buf_id[cam] + 1) % 2;
+        SP::sp_cur_buf_id[cam] = (SP::sp_cur_buf_id[cam] + 1) % 3;
         Camera * const camera = Camera::getCamera(cam);
         scene::ICameraSceneNode * const camnode = camera->getCameraSceneNode();
 
@@ -935,7 +916,6 @@ void ShaderBasedRenderer::render(float dt)
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glUseProgram(0);
-    SP::sp_sync[0] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
     // Set the viewport back to the full screen for race gui
     irr_driver->getVideoDriver()->setViewPort(core::recti(0, 0,
@@ -997,7 +977,7 @@ void ShaderBasedRenderer::renderToTexture(GL3RenderTarget *render_target,
                                           irr::scene::ICameraSceneNode* camera,
                                           float dt)
 {
-    // For render to texture no double buffering is used
+    // For render to texture no triple buffering of ubo is used
     SP::sp_cur_player = 0;
     SP::sp_cur_buf_id[0] = 0;
     resetObjectCount();
@@ -1014,19 +994,6 @@ void ShaderBasedRenderer::renderToTexture(GL3RenderTarget *render_target,
     renderScene(camera, dt, false, true);
     render_target->setFrameBuffer(m_post_processing
         ->render(camera, false, m_rtts));
-
-    GLsync sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    GLenum reason = glClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
-    if (reason != GL_ALREADY_SIGNALED)
-    {
-        do
-        {
-            reason = glClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT,
-                1000000);
-        }
-        while (reason == GL_TIMEOUT_EXPIRED);
-    }
-    glDeleteSync(sync);
 
     // reset
     glViewport(0, 0,
