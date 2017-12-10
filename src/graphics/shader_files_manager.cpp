@@ -141,7 +141,7 @@ GLuint ShaderFilesManager::loadShader(const std::string &file, unsigned type)
     }
 #endif
 
-    if (CVS->isAMDVertexShaderLayerUsable())
+    if (CVS->supportsGLLayerInVertexShader())
         code << "#extension GL_AMD_vertex_shader_layer : enable\n";
 
     if (CVS->isARBExplicitAttribLocationUsable())
@@ -160,7 +160,7 @@ GLuint ShaderFilesManager::loadShader(const std::string &file, unsigned type)
     code << "//" << file << "\n";
     if (!CVS->isARBUniformBufferObjectUsable())
         code << "#define UBO_DISABLED\n";
-    if (CVS->isAMDVertexShaderLayerUsable())
+    if (CVS->supportsGLLayerInVertexShader())
         code << "#define VSLayer\n";
     if (CVS->needsRGBBindlessWorkaround())
         code << "#define SRGBBindlessFix\n";

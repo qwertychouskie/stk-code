@@ -48,6 +48,7 @@ private:
     bool hasSRGBFramebuffer;
     bool hasSamplerObjects;
     bool hasVertexType2101010Rev;
+    bool hasSparseBuffer;
 
 #if defined(USE_GLES2)
     bool hasBGRA;
@@ -76,7 +77,6 @@ public:
     bool isARBTextureViewUsable() const;
     bool isARBGeometryShadersUsable() const;
     bool isARBTextureStorageUsable() const;
-    bool isAMDVertexShaderLayerUsable() const;
     bool isARBComputeShaderUsable() const;
     bool isARBArraysOfArraysUsable() const;
     bool isARBBindlessTextureUsable() const;
@@ -94,6 +94,7 @@ public:
     bool isARBSRGBFramebufferUsable() const;
     bool isARBSamplerObjectsUsable() const;
     bool isARBVertexType2101010RevUsable() const;
+    bool isARBSparseBufferUsable() const;
 
 #if defined(USE_GLES2)
     bool isEXTTextureFormatBGRA8888Usable() const;
@@ -110,6 +111,8 @@ public:
     bool supportsHardwareSkinning() const;
     bool supportsThreadedTextureLoading() const;
     bool supportsTextureCompression() const;
+
+    bool supportsGLLayerInVertexShader() const;
 
     // "Macro" around feature support and user config
     bool isShadowEnabled() const;

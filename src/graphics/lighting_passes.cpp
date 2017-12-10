@@ -188,7 +188,7 @@ class RadianceHintsConstructionShader
 public:
     RadianceHintsConstructionShader()
     {
-        if (CVS->isAMDVertexShaderLayerUsable())
+        if (CVS->supportsGLLayerInVertexShader())
         {
             loadProgram(OBJECT, GL_VERTEX_SHADER, "slicedscreenquad.vert",
                                 GL_FRAGMENT_SHADER, "rh.frag");

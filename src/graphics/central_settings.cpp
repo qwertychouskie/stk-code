@@ -56,6 +56,7 @@ void CentralVideoSettings::init()
     hasSRGBFramebuffer = false;
     hasSamplerObjects = false;
     hasVertexType2101010Rev = false;
+    hasSparseBuffer = false;
 
 #if defined(USE_GLES2)
     hasBGRA = false;
@@ -104,9 +105,15 @@ void CentralVideoSettings::init()
         }
 
 #if !defined(USE_GLES2)
-        if (hasGLExtension("GL_AMD_vertex_shader_layer")) {
+        if (hasGLExtension("GL_AMD_vertex_shader_layer"))
+        {
             hasVSLayer = true;
             Log::info("GLDriver", "AMD Vertex Shader Layer Present");
+        }
+        if (hasGLExtension("GL_ARB_shader_viewport_layer_array"))
+        {
+            hasVSLayer = true;
+            Log::info("GLDriver", "ARB Shader Viewport Layer Array Present");
         }
         if (!GraphicsRestrictions::isDisabled(GraphicsRestrictions::GR_BUFFER_STORAGE) &&
             hasGLExtension("GL_ARB_buffer_storage")  )
@@ -216,12 +223,17 @@ void CentralVideoSettings::init()
         if (hasGLExtension("GL_ARB_sampler_objects"))
         {
             hasSamplerObjects = true;
-            Log::info("GLDriver", "ARB sampler objects Present");
+            Log::info("GLDriver", "ARB Sampler Objects Present");
         }
         if (hasGLExtension("GL_ARB_vertex_type_2_10_10_10_rev"))
         {
             hasVertexType2101010Rev = true;
-            Log::info("GLDriver", "ARB vertex type 2_10_10_10_rev Present");
+            Log::info("GLDriver", "ARB Vertex Type 2_10_10_10_rev Present");
+        }
+        if (hasGLExtension("GL_ARB_sparse_buffer"))
+        {
+            hasSparseBuffer = true;
+            Log::info("GLDriver", "ARB Sparse Buffer Present");
         }
         if (GraphicsRestrictions::isDisabled(GraphicsRestrictions::GR_GI))
         {
@@ -393,7 +405,7 @@ bool CentralVideoSettings::isARBDrawIndirectUsable() const
     return hasDrawIndirect;
 }
 
-bool CentralVideoSettings::isAMDVertexShaderLayerUsable() const
+bool CentralVideoSettings::supportsGLLayerInVertexShader() const
 {
     return hasVSLayer;
 }
@@ -562,6 +574,11 @@ bool CentralVideoSettings::isARBSamplerObjectsUsable() const
 bool CentralVideoSettings::isARBVertexType2101010RevUsable() const
 {
     return hasVertexType2101010Rev;
+}
+
+bool CentralVideoSettings::isARBSparseBufferUsable() const
+{
+    return hasSparseBuffer;
 }
 
 bool CentralVideoSettings::supportsThreadedTextureLoading() const

@@ -117,7 +117,7 @@ ShadowShader::ShadowShader()
     // Geometry shader needed
     if (CVS->getGLSLVersion() < 150)
         return;
-    if (CVS->isAMDVertexShaderLayerUsable())
+    if (CVS->supportsGLLayerInVertexShader())
     {
         loadProgram(OBJECT, GL_VERTEX_SHADER, "shadow.vert",
                             GL_FRAGMENT_SHADER, "shadow.frag");
@@ -139,7 +139,7 @@ InstancedShadowShader::InstancedShadowShader()
     // Geometry shader needed
     if (CVS->getGLSLVersion() < 150)
         return;
-    if (CVS->isAMDVertexShaderLayerUsable())
+    if (CVS->supportsGLLayerInVertexShader())
     {
         loadProgram(OBJECT, GL_VERTEX_SHADER, "instanced_shadow.vert",
                             GL_FRAGMENT_SHADER, "shadow.frag");
@@ -287,7 +287,7 @@ RefShadowShader::RefShadowShader()
     // Geometry shader needed
     if (CVS->getGLSLVersion() < 150)
         return;
-    if (CVS->isAMDVertexShaderLayerUsable())
+    if (CVS->supportsGLLayerInVertexShader())
     {
         loadProgram(OBJECT, GL_VERTEX_SHADER, "shadow.vert",
                             GL_FRAGMENT_SHADER, "shadowref.frag");
@@ -310,7 +310,7 @@ InstancedRefShadowShader::InstancedRefShadowShader()
     // Geometry shader needed
     if (CVS->getGLSLVersion() < 150)
         return;
-    if (CVS->isAMDVertexShaderLayerUsable())
+    if (CVS->supportsGLLayerInVertexShader())
     {
         loadProgram(OBJECT, GL_VERTEX_SHADER, "instanced_shadow.vert",
                             GL_FRAGMENT_SHADER, "instanced_shadowref.frag");
@@ -384,7 +384,7 @@ GrassShadowShader::GrassShadowShader()
     // Geometry shader needed
     if (CVS->getGLSLVersion() < 150)
         return;
-    if (CVS->isAMDVertexShaderLayerUsable())
+    if (CVS->supportsGLLayerInVertexShader())
     {
         loadProgram(OBJECT, GL_VERTEX_SHADER, "shadow_grass.vert",
                             GL_FRAGMENT_SHADER, "instanced_shadowref.frag");
@@ -407,7 +407,7 @@ InstancedGrassShadowShader::InstancedGrassShadowShader()
     // Geometry shader needed
     if (CVS->getGLSLVersion() < 150)
         return;
-    if (CVS->isAMDVertexShaderLayerUsable())
+    if (CVS->supportsGLLayerInVertexShader())
     {
         loadProgram(OBJECT, GL_VERTEX_SHADER, "instanced_grassshadow.vert",
                             GL_FRAGMENT_SHADER, "instanced_shadowref.frag");
@@ -699,7 +699,7 @@ SkinnedShadowShader::SkinnedShadowShader()
     // Geometry shader needed
     if (CVS->getGLSLVersion() < 150 || !CVS->supportsHardwareSkinning())
         return;
-    if (CVS->isAMDVertexShaderLayerUsable())
+    if (CVS->supportsGLLayerInVertexShader())
     {
         loadProgram(SKINNED_MESH, GL_VERTEX_SHADER, "skinning_shadow.vert",
                                   GL_FRAGMENT_SHADER, "shadow.frag");
@@ -725,7 +725,7 @@ InstancedSkinnedShadowShader::InstancedSkinnedShadowShader()
     // Geometry shader needed
     if (CVS->getGLSLVersion() < 150 || !CVS->supportsHardwareSkinning())
         return;
-    if (CVS->isAMDVertexShaderLayerUsable())
+    if (CVS->supportsGLLayerInVertexShader())
     {
         loadProgram(SKINNED_MESH,
                     GL_VERTEX_SHADER, "instanced_skinning_shadow.vert",
@@ -753,7 +753,7 @@ SkinnedRefShadowShader::SkinnedRefShadowShader()
     // Geometry shader needed
     if (CVS->getGLSLVersion() < 150 || !CVS->supportsHardwareSkinning())
          return;
-    if (CVS->isAMDVertexShaderLayerUsable())
+    if (CVS->supportsGLLayerInVertexShader())
     {
         loadProgram(SKINNED_MESH, GL_VERTEX_SHADER, "skinning_shadow.vert",
                                   GL_FRAGMENT_SHADER, "shadowref.frag");
@@ -780,7 +780,7 @@ InstancedSkinnedRefShadowShader::InstancedSkinnedRefShadowShader()
     // Geometry shader needed
     if (CVS->getGLSLVersion() < 150 || !CVS->supportsHardwareSkinning())
         return;
-    if (CVS->isAMDVertexShaderLayerUsable())
+    if (CVS->supportsGLLayerInVertexShader())
     {
         loadProgram(SKINNED_MESH,
                     GL_VERTEX_SHADER, "instanced_skinning_shadow.vert",

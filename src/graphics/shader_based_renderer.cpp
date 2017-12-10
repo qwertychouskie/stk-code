@@ -378,7 +378,7 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
         glClearColor(0., 0., 0., 0.);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     }
-
+    m_draw_calls.setFenceSync();
     // Lights
     {
         PROFILER_PUSH_CPU_MARKER("- Light", 0x00, 0xFF, 0x00);
@@ -554,7 +554,7 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
         PROFILER_POP_CPU_MARKER();
     }
 
-    m_draw_calls.setFenceSync();
+
 
     if (!CVS->isDefferedEnabled() && !forceRTT)
     {
