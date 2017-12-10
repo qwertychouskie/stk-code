@@ -22,6 +22,7 @@
 
 #include "graphics/central_settings.hpp"
 #include "graphics/draw_calls.hpp"
+#include "graphics/frame_buffer.hpp"
 #include "graphics/glwrap.hpp"
 #include "graphics/irr_driver.hpp"
 #include "graphics/shadow_matrices.hpp"

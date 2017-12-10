@@ -14,6 +14,11 @@ out vec2 uv;
 
 void main()
 {
+
+#ifdef VSLayer
+    gl_Layer = layer;
+#endif
+
     vec3 test = sin(wind_direction * (i_position.y * 0.1));
     test += cos(wind_direction) * 0.7;
 

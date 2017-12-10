@@ -24,6 +24,7 @@
 #include <stddef.h>
 
 class FrameBuffer;
+class FrameBufferLayer;
 
 namespace irr {
     namespace video {
@@ -150,9 +151,9 @@ public:
     unsigned int getWidth () const { return m_width ; }
     unsigned int getHeight() const { return m_height; }
 
-    FrameBuffer &getShadowFrameBuffer() { return *m_shadow_FBO; }
-    FrameBuffer &getRadianceHintFrameBuffer() { return *m_RH_FBO; }
-    FrameBuffer &getReflectiveShadowMapFrameBuffer() { return *m_RSM; }
+    FrameBufferLayer &getShadowFrameBuffer() { return *m_shadow_FBO; }
+    FrameBufferLayer &getRadianceHintFrameBuffer() { return *m_RH_FBO; }
+    FrameBufferLayer &getReflectiveShadowMapFrameBuffer() { return *m_RSM; }
 
     unsigned getDepthStencilTexture() const { return DepthStencilTexture; }
     unsigned getRenderTarget(enum TypeRTT target) const { return RenderTargetTextures[target]; }
@@ -171,7 +172,7 @@ private:
     unsigned shadowColorTex, shadowDepthTex;
     unsigned RSM_Color, RSM_Normal, RSM_Depth;
     unsigned RH_Red, RH_Green, RH_Blue;
-    FrameBuffer* m_shadow_FBO, *m_RSM, *m_RH_FBO;
+    FrameBufferLayer* m_shadow_FBO, *m_RSM, *m_RH_FBO;
 
     LEAK_CHECK();
 };

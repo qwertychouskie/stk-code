@@ -18,6 +18,8 @@
 #ifndef CENTRAL_SETTINGS_HPP
 #define CENTRAL_SETTINGS_HPP
 
+#include <string>
+
 class CentralVideoSettings
 {
 private:
@@ -25,7 +27,7 @@ private:
     bool                  m_glsl;
 
     int m_gl_major_version, m_gl_minor_version;
-    bool hasVSLayer;
+    std::string m_vs_layer_extension;
     bool hasBaseInstance;
     bool hasDrawIndirect;
     bool hasBufferStorage;
@@ -95,6 +97,8 @@ public:
     bool isARBSamplerObjectsUsable() const;
     bool isARBVertexType2101010RevUsable() const;
     bool isARBSparseBufferUsable() const;
+
+    const std::string& getVSLayerExtension() const { return m_vs_layer_extension; }
 
 #if defined(USE_GLES2)
     bool isEXTTextureFormatBGRA8888Usable() const;

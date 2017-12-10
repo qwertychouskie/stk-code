@@ -33,7 +33,6 @@ void CentralVideoSettings::init()
     m_gl_minor_version = 1;
 
     // Parse extensions
-    hasVSLayer = false;
     hasBaseInstance = false;
     hasBufferStorage = false;
     hasDrawIndirect = false;
@@ -107,12 +106,12 @@ void CentralVideoSettings::init()
 #if !defined(USE_GLES2)
         if (hasGLExtension("GL_AMD_vertex_shader_layer"))
         {
-            hasVSLayer = true;
+            m_vs_layer_extension = "GL_AMD_vertex_shader_layer";
             Log::info("GLDriver", "AMD Vertex Shader Layer Present");
         }
         if (hasGLExtension("GL_ARB_shader_viewport_layer_array"))
         {
-            hasVSLayer = true;
+            m_vs_layer_extension = "GL_ARB_shader_viewport_layer_array";
             Log::info("GLDriver", "ARB Shader Viewport Layer Array Present");
         }
         if (!GraphicsRestrictions::isDisabled(GraphicsRestrictions::GR_BUFFER_STORAGE) &&
@@ -407,7 +406,7 @@ bool CentralVideoSettings::isARBDrawIndirectUsable() const
 
 bool CentralVideoSettings::supportsGLLayerInVertexShader() const
 {
-    return hasVSLayer;
+    return !m_vs_layer_extension.empty();
 }
 
 bool CentralVideoSettings::isARBBufferStorageUsable() const

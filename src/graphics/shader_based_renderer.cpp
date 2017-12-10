@@ -23,8 +23,8 @@
 #include "graphics/camera.hpp"
 #include "graphics/central_settings.hpp"
 #include "graphics/draw_policies.hpp"
+#include "graphics/frame_buffer_layer.hpp"
 #include "graphics/geometry_passes.hpp"
-#include "graphics/glwrap.hpp"
 #include "graphics/graphics_restrictions.hpp"
 #include "graphics/irr_driver.hpp"
 #include "graphics/lod_node.hpp"
@@ -224,7 +224,7 @@ void ShaderBasedRenderer::renderSSAO() const
                                   m_rtts->getFBO(FBO_SSAO),
                                   m_rtts->getDepthStencilTexture());
     // Blur it to reduce noise.
-    FrameBuffer::Blit(m_rtts->getFBO(FBO_SSAO),
+    FrameBuffer::blit(m_rtts->getFBO(FBO_SSAO),
                       m_rtts->getFBO(FBO_HALF1_R), 
                       GL_COLOR_BUFFER_BIT, GL_LINEAR);
     m_post_processing->renderGaussian17TapBlur(m_rtts->getFBO(FBO_HALF1_R), 
@@ -249,12 +249,22 @@ void ShaderBasedRenderer::renderShadows()
         glEnable(GL_POLYGON_OFFSET_FILL);
         glPolygonOffset(1.5, 50.);
     }
-    for (unsigned cascade = 0; cascade < 4; cascade++)
+    if (CVS->supportsGLLayerInVertexShader())
     {
-        m_rtts->getShadowFrameBuffer().bindLayerDepthOnly(cascade);
-        //glClearColor(1., 1., 1., 1.);
+        m_rtts->getShadowFrameBuffer().bindDepthOnly();
+        glClearColor(1., 1., 1., 1.);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
         glClearColor(0., 0., 0., 0.);
+    }
+    for (unsigned cascade = 0; cascade < 4; cascade++)
+    {
+        if (!CVS->supportsGLLayerInVertexShader())
+        {
+            m_rtts->getShadowFrameBuffer().bindLayerDepthOnly(cascade);
+            glClearColor(1., 1., 1., 1.);
+            glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+            glClearColor(0., 0., 0., 0.);
+        }
         SP::sp_cur_shadow_cascade = cascade;
         ScopedGPUTimer Timer(irr_driver->getGPUTimer(Q_SHADOWS_CASCADE0 + cascade));
         SP::draw(SP::RP_SHADOW, (SP::DrawCallType)(SP::DCT_SHADOW1 + cascade));
@@ -637,7 +647,7 @@ void ShaderBasedRenderer::renderPostProcessing(Camera * const camera)
 
     if (irr_driver->getNormals())
     {
-        m_rtts->getFBO(FBO_NORMAL_AND_DEPTHS).BlitToDefault(
+        m_rtts->getFBO(FBO_NORMAL_AND_DEPTHS).blitToDefault(
             viewport.UpperLeftCorner.X, 
             irr_driver->getActualScreenSize().Height - viewport.LowerRightCorner.Y, 
             viewport.LowerRightCorner.X, 

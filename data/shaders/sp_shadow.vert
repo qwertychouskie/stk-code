@@ -16,6 +16,11 @@ out vec2 uv;
 
 void main(void)
 {
+
+#ifdef VSLayer
+    gl_Layer = layer;
+#endif
+
     vec4 world_position = getWorldPosition(i_origin, i_rotation, i_scale.xyz,
         i_position);
     uv = i_uv;

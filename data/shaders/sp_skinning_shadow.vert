@@ -21,6 +21,11 @@ out vec2 uv;
 
 void main(void)
 {
+
+#ifdef VSLayer
+    gl_Layer = layer;
+#endif
+
     vec4 idle_position = vec4(i_position, 1.0);
     vec4 skinned_position = vec4(0.0);
 

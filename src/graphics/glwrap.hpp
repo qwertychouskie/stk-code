@@ -61,32 +61,6 @@ public:
     unsigned elapsedTimeus();
 };
 
-class FrameBuffer : public NoCopy
-{
-private:
-    GLuint fbo;
-    std::array<GLuint, 4> fbolayer;
-    std::vector<GLuint> RenderTargets;
-    GLuint DepthTexture;
-    unsigned int width, height;
-public:
-    FrameBuffer();
-    FrameBuffer(const std::vector <GLuint> &RTTs, unsigned int w, unsigned int h, bool layered = false);
-    FrameBuffer(const std::vector <GLuint> &RTTs, GLuint DS, unsigned int w, unsigned int h, bool layered = false);
-    ~FrameBuffer();
-    void bind() const;
-    void bindLayer(unsigned) const;
-    void bindLayerDepthOnly(unsigned) const;
-    const std::vector<GLuint> &getRTT() const { return RenderTargets; }
-    GLuint getDepthTexture() const { assert(DepthTexture); return DepthTexture; }
-    unsigned int getWidth() const { return width; }
-    unsigned int getHeight() const { return height; }
-    static void Blit(const FrameBuffer &Src, const FrameBuffer &Dst, GLbitfield mask = GL_COLOR_BUFFER_BIT, GLenum filter = GL_NEAREST);
-    void BlitToDefault(size_t, size_t, size_t, size_t);
-
-    LEAK_CHECK();
-};
-
 class VertexUtils
 {
 public:

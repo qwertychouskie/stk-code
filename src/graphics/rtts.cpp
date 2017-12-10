@@ -21,7 +21,7 @@
 
 #include "config/user_config.hpp"
 #include "graphics/central_settings.hpp"
-#include "graphics/glwrap.hpp"
+#include "graphics/frame_buffer_layer.hpp"
 #include "graphics/materials.hpp"
 #include "utils/log.hpp"
 
@@ -271,7 +271,7 @@ RTT::RTT(unsigned int width, unsigned int height, float rtt_scale)
 
         somevector.clear();
         somevector.push_back(shadowColorTex);
-        m_shadow_FBO = new FrameBuffer(somevector, shadowDepthTex, UserConfigParams::m_shadows_resolution, UserConfigParams::m_shadows_resolution, true);
+        m_shadow_FBO = new FrameBufferLayer(somevector, shadowDepthTex, UserConfigParams::m_shadows_resolution, UserConfigParams::m_shadows_resolution, 4);
     }
 
     if (CVS->isGlobalIlluminationEnabled())

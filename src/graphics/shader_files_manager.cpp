@@ -142,7 +142,7 @@ GLuint ShaderFilesManager::loadShader(const std::string &file, unsigned type)
 #endif
 
     if (CVS->supportsGLLayerInVertexShader())
-        code << "#extension GL_AMD_vertex_shader_layer : enable\n";
+        code << "#extension " << CVS->getVSLayerExtension() << " : enable\n";
 
     if (CVS->isARBExplicitAttribLocationUsable())
     {
