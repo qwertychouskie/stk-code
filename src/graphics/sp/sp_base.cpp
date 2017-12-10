@@ -59,6 +59,8 @@ namespace SP
 // ----------------------------------------------------------------------------
 ShaderBasedRenderer* g_stk_sbr = NULL;
 // ----------------------------------------------------------------------------
+std::array<float, 16>* g_joint_ptr = NULL;
+// ----------------------------------------------------------------------------
 bool sp_culling = true;
 // ----------------------------------------------------------------------------
 bool g_handle_shadow = false;
@@ -228,11 +230,31 @@ void resizeSkinning(unsigned number)
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 1, GL_RGBA, GL_FLOAT,
         m.pointer());
     glBindTexture(GL_TEXTURE_2D, 0);
+    static std::vector<std::array<float, 16> >
+        tmp_buf(stk_config->m_max_skinning_bones);
+    g_joint_ptr = tmp_buf.data();
+
 #else
 
     glBindBuffer(GL_TEXTURE_BUFFER, g_skinning_buf);
-    glBufferData(GL_TEXTURE_BUFFER, number << 6, NULL, GL_DYNAMIC_DRAW);
-    glBufferSubData(GL_TEXTURE_BUFFER, 0, 64, m.pointer());
+    if (CVS->isARBBufferStorageUsable())
+    {
+        glBufferStorage(GL_TEXTURE_BUFFER, number << 6, NULL,
+            GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+        g_joint_ptr = (std::array<float, 16>*)glMapBufferRange(
+            GL_TEXTURE_BUFFER, 0, 64,
+            GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+        memcpy(g_joint_ptr, m.pointer(), 64);
+        glUnmapBuffer(GL_TEXTURE_BUFFER);
+        g_joint_ptr = (std::array<float, 16>*)glMapBufferRange(
+            GL_TEXTURE_BUFFER, 64, (number - 1) << 6,
+            GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+    }
+    else
+    {
+        glBufferData(GL_TEXTURE_BUFFER, number << 6, NULL, GL_DYNAMIC_DRAW);
+        glBufferSubData(GL_TEXTURE_BUFFER, 0, 64, m.pointer());
+    }
     glBindTexture(GL_TEXTURE_BUFFER, g_skinning_tex);
     glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, g_skinning_buf);
     glBindTexture(GL_TEXTURE_BUFFER, 0);
@@ -243,6 +265,8 @@ void resizeSkinning(unsigned number)
 void initSkinning()
 {
 #ifndef SERVER_ONLY
+
+    static_assert(sizeof(std::array<float, 16>) == 64, "No padding");
 
     int max_size = 0;
 #ifdef USE_GLES2
@@ -278,7 +302,7 @@ void initSkinning()
 #ifndef USE_GLES2
     glGenBuffers(1, &g_skinning_buf);
 #endif
-    resizeSkinning(2);
+    resizeSkinning(stk_config->m_max_skinning_bones);
 #endif
     sp_prefilled_tex[4] = g_skinning_tex;
 
@@ -899,6 +923,12 @@ void destroy()
 #ifndef SERVER_ONLY
 
 #ifndef USE_GLES2
+    if (CVS->isARBBufferStorageUsable())
+    {
+        glBindBuffer(GL_TEXTURE_BUFFER, g_skinning_buf);
+        glUnmapBuffer(GL_TEXTURE_BUFFER);
+        glBindBuffer(GL_TEXTURE_BUFFER, 0);
+    }
     glDeleteBuffers(1, &g_skinning_buf);
 #endif
     glDeleteTextures(1, &g_skinning_tex);
@@ -1266,32 +1296,21 @@ void uploadSkinningMatrices()
         return;
     }
 
-    unsigned new_size = g_skinning_size;
-    while (g_skinning_offset > new_size)
-    {
-        new_size <<= 1;
-    }
-    if (new_size != g_skinning_size)
-    {
-        resizeSkinning(new_size);
-    }
-
     unsigned buffer_offset = 0;
 #ifndef USE_GLES2
-    glBindBuffer(GL_TEXTURE_BUFFER, g_skinning_buf);
-    std::array<float, 16>* joint_ptr = (std::array<float, 16>*)
-        glMapBufferRange(GL_TEXTURE_BUFFER, 64, (g_skinning_offset - 1) * 64,
-        GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT |
-        GL_MAP_INVALIDATE_RANGE_BIT);
-#else
-    static std::vector<std::array<float, 16> >
-        tmp_buf(stk_config->m_max_skinning_bones);
-    std::array<float, 16>* joint_ptr = tmp_buf.data();
+    if (!CVS->isARBBufferStorageUsable())
+    {
+        glBindBuffer(GL_TEXTURE_BUFFER, g_skinning_buf);
+        g_joint_ptr = (std::array<float, 16>*)
+            glMapBufferRange(GL_TEXTURE_BUFFER, 64, (g_skinning_offset - 1) * 64,
+            GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT |
+            GL_MAP_INVALIDATE_RANGE_BIT);
+    }
 #endif
 
     for (unsigned i = 0; i < g_skinning_mesh.size(); i++)
     {
-        memcpy(joint_ptr + buffer_offset,
+        memcpy(g_joint_ptr + buffer_offset,
             g_skinning_mesh[i]->getSkinningMatrices(),
             g_skinning_mesh[i]->getTotalJoints() * 64);
         buffer_offset += g_skinning_mesh[i]->getTotalJoints();
@@ -1300,11 +1319,14 @@ void uploadSkinningMatrices()
 #ifdef USE_GLES2
     glBindTexture(GL_TEXTURE_2D, g_skinning_tex);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 1, 4, buffer_offset, GL_RGBA,
-        GL_FLOAT, tmp_buf.data());
+        GL_FLOAT, g_joint_ptr);
     glBindTexture(GL_TEXTURE_2D, 0);
 #else
-    glUnmapBuffer(GL_TEXTURE_BUFFER);
-    glBindBuffer(GL_TEXTURE_BUFFER, 0);
+    if (!CVS->isARBBufferStorageUsable())
+    {
+        glUnmapBuffer(GL_TEXTURE_BUFFER);
+        glBindBuffer(GL_TEXTURE_BUFFER, 0);
+    }
 #endif
 
 #endif
@@ -1438,63 +1460,6 @@ void d()
 }
 
 /*
-//-----------------------------------------------------------------------------
-void updateTransformation()
-{
-    if (!sp_culling)
-    {
-        return;
-    }
-#ifndef SERVER_ONLY
-#ifndef USE_GLES2
-    const GLuint skinning_target = GL_TEXTURE_BUFFER;
-#else
-    const GLuint skinning_target = GL_UNIFORM_BUFFER;
-#endif
-#endif
-    unsigned total_joint = std::accumulate(g_skinning_mesh.begin(),
-        g_skinning_mesh.end(), 0,
-        [] (const unsigned previous, const SPMeshNode* n)
-        { return previous + n->getSPMesh()->getJointCount(); });
-    if (total_joint > 1024)
-    {
-#ifndef SERVER_ONLY
-        Log::error("SP", "Don't have enough space to render all skinned"
-            " mesh! Max joints can hold: %d",
-            SharedGPUObjects::getMaxMat4Size());
-#endif
-        total_joint = 0;
-    }
-
-    irr_driver->setSkinningJoint(total_joint);
-    if (total_joint > 0)
-    {
-#ifndef SERVER_ONLY
-        glBindBuffer(skinning_target, g_skinning_buffer);
-        SPMesh* mesh_instance = NULL;
-        unsigned cur_sector = 100000000;
-        for (unsigned i = 0; i < g_skinning_mesh.size(); i++)
-        {
-            SPMeshNode* node = g_skinning_mesh[i];
-            node->uploadJoints(g_skinning_offset * 16);
-            if (node->getSPMesh() != mesh_instance ||
-                node->getSector()->getID() != cur_sector)
-            {
-                node->setSkinningOffset(g_skinning_offset);
-                mesh_instance = node->getSPMesh();
-                cur_sector = node->getSector()->getID();
-            }
-            g_skinning_offset += node->getSPMesh()->getJointCount() * 4;
-        }
-        glBindBuffer(skinning_target, 0);
-#endif
-    }
-    for (SPSector* sec : g_sectors)
-    {
-        sec->updateInstance();
-    }
-}   // updateTransformation
-
 // ----------------------------------------------------------------------------
 void unsynchronisedUpdate()
 {

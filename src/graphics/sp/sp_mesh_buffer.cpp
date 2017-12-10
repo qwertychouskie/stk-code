@@ -322,7 +322,11 @@ void SPMeshBuffer::recreateVAO(unsigned i)
             GL_DYNAMIC_DRAW);
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glDeleteVertexArrays(1, &m_vao[i]);
+    glGenVertexArrays(1, &m_vao[i]);
     glBindVertexArray(m_vao[i]);
+
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     // Position
     glEnableVertexAttribArray(0);
