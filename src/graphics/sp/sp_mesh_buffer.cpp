@@ -27,6 +27,29 @@
 namespace SP
 {
 // ----------------------------------------------------------------------------
+SPMeshBuffer::~SPMeshBuffer()
+{
+#ifndef SERVER_ONLY
+    for (unsigned i = 0; i < DCT_FOR_VAO; i++)
+    {
+        glDeleteVertexArrays(1, &m_vao[i]);
+        if (m_ins_array[i] != 0)
+        {
+            if (CVS->isARBBufferStorageUsable())
+            {
+                glBindBuffer(GL_ARRAY_BUFFER, m_ins_array[i]);
+                glUnmapBuffer(GL_ARRAY_BUFFER);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+            }
+            glDeleteBuffers(1, &m_ins_array[i]);
+        }
+    }
+    glDeleteBuffers(1, &m_ibo);
+    glDeleteBuffers(1, &m_vbo);
+#endif
+}   // ~SPMeshBuffer
+
+// ----------------------------------------------------------------------------
 void SPMeshBuffer::initDrawMaterial()
 {
 #ifndef SERVER_ONLY
@@ -165,6 +188,7 @@ inline int srgbToLinear(float color_srgb)
 // ----------------------------------------------------------------------------
 void SPMeshBuffer::uploadGLMesh(bool skinned)
 {
+    m_skinned = skinned;
 #ifndef SERVER_ONLY
     bool use_2_uv = m_stk_material->use2UV();
     bool use_tangents = !m_stk_material->getNormalMap().empty() &&
@@ -247,90 +271,130 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
 
     for (unsigned i = 0; i < DCT_FOR_VAO; i++)
     {
-        offset = 0;
-        glBindBuffer(GL_ARRAY_BUFFER, m_ins_array[i]);
+        recreateVAO(i);
+    }
+#endif
+}   // uploadGLMesh
+
+// ----------------------------------------------------------------------------
+void SPMeshBuffer::recreateVAO(unsigned i)
+{
+#ifndef SERVER_ONLY
+    bool use_2_uv = m_stk_material->use2UV();
+    bool use_tangents = !m_stk_material->getNormalMap().empty() &&
+        CVS->isGLSL();
+    const bool vt_2101010 = CVS->isARBVertexType2101010RevUsable();
+    const unsigned pitch = 48 - (use_tangents ? 0 : 4) - (use_2_uv ? 0 : 4) -
+        (m_skinned ? 0 : 16) + (use_tangents && !vt_2101010 ? 4 : 0)
+        + (!vt_2101010 ? 4 : 0);
+
+    size_t offset = 0;
+
+    if (m_ins_array[i] == 0)
+    {
+        glGenBuffers(1, &m_ins_array[i]);
+    }
+    else
+    {
+        if (CVS->isARBBufferStorageUsable())
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, m_ins_array[i]);
+            glUnmapBuffer(GL_ARRAY_BUFFER);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+        }
+        glDeleteBuffers(1, &m_ins_array[i]);
+        glGenBuffers(1, &m_ins_array[i]);
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, m_ins_array[i]);
+#ifndef USE_GLES2
+    if (CVS->isARBBufferStorageUsable())
+    {
+        glBufferStorage(GL_ARRAY_BUFFER, m_gl_instance_size[i] * 40, NULL,
+            GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+        m_ins_dat_mapped_ptr[i] = glMapBufferRange(GL_ARRAY_BUFFER, 0,
+            m_gl_instance_size[i] * 40,
+            GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
+    }
+    else
+#endif
+    {
         glBufferData(GL_ARRAY_BUFFER, m_gl_instance_size[i] * 40, NULL,
             GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(m_vao[i]);
-        glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-        // Position
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, pitch,
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(m_vao[i]);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    // Position
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, pitch, (void*)offset);
+    offset += 12;
+    // Normal
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 4,
+        vt_2101010 ? GL_INT_2_10_10_10_REV : GL_HALF_FLOAT,
+        vt_2101010 ? GL_TRUE : GL_FALSE, pitch, (void*)offset);
+    offset += vt_2101010 ? 4 : 8;
+    // Vertex color
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, pitch,
+        (void*)offset);
+    offset += 4;
+    // 1st texture coordinates
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 2, GL_HALF_FLOAT, GL_FALSE, pitch, (void*)offset);
+    offset += 4;
+    if (use_2_uv)
+    {
+        // 2nd texture coordinates
+        glEnableVertexAttribArray(4);
+        glVertexAttribPointer(4, 2, GL_HALF_FLOAT, GL_FALSE, pitch,
             (void*)offset);
-        offset += 12;
-        // Normal
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 4,
+        offset += 4;
+    }
+    if (use_tangents)
+    {
+        // Tangent and bi-tanget sign
+        glEnableVertexAttribArray(5);
+        glVertexAttribPointer(5, 4,
             vt_2101010 ? GL_INT_2_10_10_10_REV : GL_HALF_FLOAT,
             vt_2101010 ? GL_TRUE : GL_FALSE, pitch,
             (void*)offset);
         offset += vt_2101010 ? 4 : 8;
-        // Vertex color
-        glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, pitch,
-            (void*)offset);
-        offset += 4;
-        // 1st texture coordinates
-        glEnableVertexAttribArray(3);
-        glVertexAttribPointer(3, 2, GL_HALF_FLOAT, GL_FALSE, pitch,
-            (void*)offset);
-        offset += 4;
-        if (use_2_uv)
-        {
-            // 2nd texture coordinates
-            glEnableVertexAttribArray(4);
-            glVertexAttribPointer(4, 2, GL_HALF_FLOAT, GL_FALSE, pitch,
-                (void*)offset);
-            offset += 4;
-        }
-        if (use_tangents)
-        {
-            // Tangent and bi-tanget sign
-            glEnableVertexAttribArray(5);
-            glVertexAttribPointer(5, 4,
-                vt_2101010 ? GL_INT_2_10_10_10_REV : GL_HALF_FLOAT,
-                vt_2101010 ? GL_TRUE : GL_FALSE, pitch,
-                (void*)offset);
-            offset += vt_2101010 ? 4 : 8;
-        }
-        if (skinned)
-        {
-            // 4 Joint indices
-            glEnableVertexAttribArray(6);
-            glVertexAttribIPointer(6, 4, GL_SHORT, pitch, (void*)offset);
-            offset += 8;
-            // 4 Joint weights
-            glEnableVertexAttribArray(7);
-            glVertexAttribPointer(7, 4, GL_HALF_FLOAT, GL_FALSE, pitch,
-                (void*)offset);
-        }
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
-        glBindBuffer(GL_ARRAY_BUFFER, m_ins_array[i]);
-        // Origin
-        glEnableVertexAttribArray(8);
-        glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, 40, (void*)0);
-        glVertexAttribDivisorARB(8, 1);
-        // Rotation (quaternion)
-        glEnableVertexAttribArray(9);
-        glVertexAttribPointer(9, 4, GL_HALF_FLOAT, GL_FALSE, 40,
-            (void*)12);
-        glVertexAttribDivisorARB(9, 1);
-        // Scale (3 half floats and .w unused for padding)
-        glEnableVertexAttribArray(10);
-        glVertexAttribPointer(10, 4, GL_HALF_FLOAT, GL_FALSE, 40,
-            (void*)20);
-        glVertexAttribDivisorARB(10, 1);
-        // Misc data (texture translation and colorization info)
-        glEnableVertexAttribArray(11);
-        glVertexAttribPointer(11, 4, GL_HALF_FLOAT, GL_FALSE, 40,
-            (void*)28);
-        glVertexAttribDivisorARB(11, 1);
-        // Skinning offset
-        glEnableVertexAttribArray(12);
-        glVertexAttribIPointer(12, 1, GL_INT, 40, (void*)36);
-        glVertexAttribDivisorARB(12, 1);
     }
+    if (m_skinned)
+    {
+        // 4 Joint indices
+        glEnableVertexAttribArray(6);
+        glVertexAttribIPointer(6, 4, GL_SHORT, pitch, (void*)offset);
+        offset += 8;
+        // 4 Joint weights
+        glEnableVertexAttribArray(7);
+        glVertexAttribPointer(7, 4, GL_HALF_FLOAT, GL_FALSE, pitch,
+            (void*)offset);
+    }
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
+    glBindBuffer(GL_ARRAY_BUFFER, m_ins_array[i]);
+    // Origin
+    glEnableVertexAttribArray(8);
+    glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, 40, (void*)0);
+    glVertexAttribDivisorARB(8, 1);
+    // Rotation (quaternion)
+    glEnableVertexAttribArray(9);
+    glVertexAttribPointer(9, 4, GL_HALF_FLOAT, GL_FALSE, 40, (void*)12);
+    glVertexAttribDivisorARB(9, 1);
+    // Scale (3 half floats and .w unused for padding)
+    glEnableVertexAttribArray(10);
+    glVertexAttribPointer(10, 4, GL_HALF_FLOAT, GL_FALSE, 40, (void*)20);
+    glVertexAttribDivisorARB(10, 1);
+    // Misc data (texture translation and colorization info)
+    glEnableVertexAttribArray(11);
+    glVertexAttribPointer(11, 4, GL_HALF_FLOAT, GL_FALSE, 40, (void*)28);
+    glVertexAttribDivisorARB(11, 1);
+    // Skinning offset
+    glEnableVertexAttribArray(12);
+    glVertexAttribIPointer(12, 1, GL_INT, 40, (void*)36);
+    glVertexAttribDivisorARB(12, 1);
+
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -347,19 +411,32 @@ void SPMeshBuffer::uploadInstanceData()
         {
             continue;
         }
-        glBindBuffer(GL_ARRAY_BUFFER, m_ins_array[i]);
-        if (m_ins_dat[i].size() > m_gl_instance_size[i])
+        unsigned new_size = m_gl_instance_size[i];
+        while (m_ins_dat[i].size() > new_size)
         {
-            m_gl_instance_size[i] = (unsigned)m_ins_dat[i].size() * 2;
-            glBufferData(GL_ARRAY_BUFFER, m_gl_instance_size[i] * 40, NULL,
-                GL_DYNAMIC_DRAW);
+            // Power of 2 allocation strategy, like std::vector in gcc
+            new_size <<= 1;
         }
-        void* ptr = glMapBufferRange(GL_ARRAY_BUFFER, 0,
-            m_ins_dat[i].size() * 40, GL_MAP_WRITE_BIT |
-            GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-        memcpy(ptr, m_ins_dat[i].data(), m_ins_dat[i].size() * 40);
-        glUnmapBuffer(GL_ARRAY_BUFFER);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        if (new_size != m_gl_instance_size[i])
+        {
+            m_gl_instance_size[i] = new_size;
+            recreateVAO(i);
+        }
+        if (CVS->isARBBufferStorageUsable())
+        {
+            memcpy(m_ins_dat_mapped_ptr[i], m_ins_dat[i].data(),
+                m_ins_dat[i].size() * 40);
+        }
+        else
+        {
+            glBindBuffer(GL_ARRAY_BUFFER, m_ins_array[i]);
+            void* ptr = glMapBufferRange(GL_ARRAY_BUFFER, 0,
+                m_ins_dat[i].size() * 40, GL_MAP_WRITE_BIT |
+                GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+            memcpy(ptr, m_ins_dat[i].data(), m_ins_dat[i].size() * 40);
+            glUnmapBuffer(GL_ARRAY_BUFFER);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+        }
     }
 #endif
     m_uploaded = true;

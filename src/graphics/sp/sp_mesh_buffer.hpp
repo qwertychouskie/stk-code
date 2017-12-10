@@ -52,6 +52,8 @@ private:
 
     std::vector<SPInstancedData> m_ins_dat[DCT_FOR_VAO];
 
+    void* m_ins_dat_mapped_ptr[DCT_FOR_VAO];
+
     GLuint m_ibo, m_vbo;
 
     unsigned m_gl_instance_size[DCT_FOR_VAO];
@@ -64,6 +66,8 @@ private:
 
     bool m_uploaded;
 
+    bool m_skinned;
+
 public:
     SPMeshBuffer()
     {
@@ -71,13 +75,15 @@ public:
         setDebugName("SMeshBuffer");
 #endif
         m_stk_material = NULL;
+        m_skinned = false;
 
         for (unsigned i = 0; i < DCT_FOR_VAO; i++)
         {
+            m_ins_dat_mapped_ptr[i] = NULL;
             m_gl_instance_size[i] = 1;
 #ifndef SERVER_ONLY
             glGenVertexArrays(1, &m_vao[i]);
-            glGenBuffers(1, &m_ins_array[i]);
+            m_ins_array[i] = 0;
 #endif
         }
 
@@ -88,18 +94,7 @@ public:
         m_uploaded = false;
     }
     // ------------------------------------------------------------------------
-    ~SPMeshBuffer()
-    {
-#ifndef SERVER_ONLY
-        for (unsigned i = 0; i < DCT_FOR_VAO; i++)
-        {
-            glDeleteVertexArrays(1, &m_vao[i]);
-            glDeleteBuffers(1, &m_ins_array[i]);
-        }
-        glDeleteBuffers(1, &m_ibo);
-        glDeleteBuffers(1, &m_vbo);
-#endif
-    }
+    ~SPMeshBuffer();
     // ------------------------------------------------------------------------
     void bindVAO(DrawCallType dct) const     { glBindVertexArray(m_vao[dct]); }
     // ------------------------------------------------------------------------
@@ -132,6 +127,8 @@ public:
     }
     // ------------------------------------------------------------------------
     void uploadInstanceData();
+    // ------------------------------------------------------------------------
+    void recreateVAO(unsigned i);
     // ------------------------------------------------------------------------
     video::S3DVertexSkinnedMesh* getSPMVertex()
     {
