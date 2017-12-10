@@ -48,6 +48,10 @@ public:
     // ------------------------------------------------------------------------
     FrameBuffer(const std::vector<GLuint> &rtts, unsigned w, unsigned h)
     {
+        m_render_targets = rtts;
+        m_width = w;
+        m_height = h;
+
         glGenFramebuffers(1, &m_fbo);
         glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
         for (unsigned i = 0; i < rtts.size(); i++)
@@ -62,6 +66,11 @@ public:
     FrameBuffer(const std::vector<GLuint> &rtts, GLuint depth_stencil,
                 unsigned w, unsigned h)
     {
+        m_render_targets = rtts;
+        m_depth_texture = depth_stencil;
+        m_width = w;
+        m_height = h;
+
         glGenFramebuffers(1, &m_fbo);
         glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
         for (unsigned i = 0; i < rtts.size(); i++)

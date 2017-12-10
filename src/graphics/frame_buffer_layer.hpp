@@ -62,6 +62,8 @@ public:
         GLenum bufs[] = { GL_NONE, GL_NONE, GL_NONE };
         glDrawBuffers((int)m_render_targets.size(), bufs);
     }
+    // ------------------------------------------------------------------------
+    unsigned getLayerCount() const     { return (unsigned)m_fbo_layer.size(); }
 
 };
 

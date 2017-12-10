@@ -24,6 +24,10 @@ FrameBufferLayer::FrameBufferLayer(const std::vector<GLuint> &rtts, unsigned w,
                                    unsigned h, unsigned layer_count)
                 : FrameBuffer()
 {
+    m_render_targets = rtts;
+    m_width = w;
+    m_height = h;
+
     // When vertex shader gl_layer issupported, only 1 fbo will be created
 #ifndef USE_GLES2
     if (CVS->supportsGLLayerInVertexShader())
@@ -63,6 +67,11 @@ FrameBufferLayer::FrameBufferLayer(const std::vector<GLuint> &rtts,
                                    unsigned h, unsigned layer_count)
                 : FrameBuffer()
 {
+    m_render_targets = rtts;
+    m_depth_texture = depth_stencil;
+    m_width = w;
+    m_height = h;
+
 #ifndef USE_GLES2
     if (CVS->supportsGLLayerInVertexShader())
     {
