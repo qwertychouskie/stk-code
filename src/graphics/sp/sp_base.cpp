@@ -655,7 +655,7 @@ void loadShaders()
         });
     addShader(shader);
 
-    if (CVS->isDefferedEnabled() && 0)
+    if (CVS->isDefferedEnabled())
     {
         // This displace shader will be drawn the last in transparent pass
         shader = new SPShader("displace", 2

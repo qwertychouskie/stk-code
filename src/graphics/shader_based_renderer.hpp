@@ -77,7 +77,9 @@ private:
 
     void renderScene(irr::scene::ICameraSceneNode * const camnode,
                      float dt, bool hasShadows, bool forceRTT);
-                     
+    void renderSceneDeferred(irr::scene::ICameraSceneNode * const camnode,
+                     float dt, bool hasShadows, bool forceRTT);
+
     void renderParticles();
 
     void debugPhysics();

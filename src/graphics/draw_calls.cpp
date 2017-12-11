@@ -320,7 +320,7 @@ void DrawCalls::renderImmediateDrawList() const
 // ----------------------------------------------------------------------------
 void DrawCalls::renderParticlesList() const
 {
-    CPUParticleManager::getInstance()->drawAll();
+
 }
 
 #if !defined(USE_GLES2)
