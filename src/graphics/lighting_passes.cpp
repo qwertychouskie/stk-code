@@ -57,27 +57,6 @@ const unsigned int LightBaseClass::MAXLIGHT;
 // ============================================================================
 LightBaseClass::PointLightInfo m_point_lights_info[LightBaseClass::MAXLIGHT];
 
-
-// ============================================================================
-class FogShader : public TextureShader<FogShader, 1, float, core::vector3df>
-{
-public:
-    FogShader()
-    {
-        loadProgram(OBJECT, GL_VERTEX_SHADER, "screenquad.vert",
-                            GL_FRAGMENT_SHADER, "fog.frag");
-        assignUniforms("density", "col");
-        assignSamplerNames(0, "tex", ST_NEAREST_FILTERED);
-    }   // FogShader
-    // ------------------------------------------------------------------------
-    void render(float start, const core::vector3df &color, GLuint depth_stencil_texture)
-    {
-        setTextureUnits(depth_stencil_texture);
-        drawFullScreenEffect(1.f / (40.f * start), color);
-
-    }   // render
-};   // FogShader
-
 // ============================================================================
 class PointLightShader : public TextureShader < PointLightShader, 2 >
 {
@@ -670,28 +649,6 @@ void LightingPasses::renderLights(  bool has_shadow,
                           depth_stencil_texture);
     }
 }   // renderLights
-
-// ----------------------------------------------------------------------------
-void LightingPasses::renderAmbientScatter(GLuint depth_stencil_texture)
-{
-    const Track * const track = Track::getCurrentTrack();
-
-    // This function is only called once per frame - thus no need for setters.
-    float start = track->getFogStart() + .001f;
-    const video::SColor tmpcol = track->getFogColor();
-
-    core::vector3df col(tmpcol.getRed() / 255.0f,
-        tmpcol.getGreen() / 255.0f,
-        tmpcol.getBlue() / 255.0f);
-
-    glDisable(GL_DEPTH_TEST);
-    glDepthMask(GL_FALSE);
-    glEnable(GL_BLEND);
-    glBlendEquation(GL_FUNC_ADD);
-    glBlendFunc(GL_ONE, GL_ONE);
-
-    FogShader::getInstance()->render(start, col, depth_stencil_texture);
-}   // renderAmbientScatter
 
 // ----------------------------------------------------------------------------
 void LightingPasses::renderLightsScatter(GLuint depth_stencil_texture,

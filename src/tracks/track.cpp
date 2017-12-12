@@ -1796,7 +1796,10 @@ void Track::loadTrackModel(bool reverse_track, unsigned int mode_id)
         glBufferSubData(GL_UNIFORM_BUFFER, 0, 4, &m_fog_start);
         glBufferSubData(GL_UNIFORM_BUFFER, 4, 4, &m_fog_end);
         glBufferSubData(GL_UNIFORM_BUFFER, 8, 4, &m_fog_max);
-        float val = (float)m_fog_color.getRed() / 255.0f;
+        // Fog density
+        float val = -(1.0f / (40.0f * (m_fog_start + 0.001f)));
+        glBufferSubData(GL_UNIFORM_BUFFER, 12, 4, &val);
+        val = (float)m_fog_color.getRed() / 255.0f;
         glBufferSubData(GL_UNIFORM_BUFFER, 16, 4, &val);
         val = (float)m_fog_color.getGreen() / 255.0f;
         glBufferSubData(GL_UNIFORM_BUFFER, 20, 4, &val);

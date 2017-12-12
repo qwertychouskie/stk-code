@@ -275,24 +275,27 @@ void ShaderBasedRenderer::renderShadows()
 }
 
 // ============================================================================
-class CombineDiffuseColor : public TextureShader<CombineDiffuseColor, 5>
+class CombineDiffuseColor : public TextureShader<CombineDiffuseColor, 6, float>
 {
 public:
     CombineDiffuseColor()
     {
         loadProgram(OBJECT, GL_VERTEX_SHADER, "screenquad.vert",
                             GL_FRAGMENT_SHADER, "combine_diffuse_color.frag");
+        assignUniforms("fog_enabled");
         assignSamplerNames(0, "diffuse_map", ST_NEAREST_FILTERED,
                            1, "specular_map", ST_NEAREST_FILTERED,
                            2, "ssao_tex", ST_NEAREST_FILTERED,
                            3, "gloss_map", ST_NEAREST_FILTERED,
-                           4, "diffuse_color", ST_NEAREST_FILTERED);
+                           4, "diffuse_color", ST_NEAREST_FILTERED,
+                           5, "depth_stencil", ST_NEAREST_FILTERED);
     }   // CombineDiffuseColor
     // ------------------------------------------------------------------------
-    void render(GLuint dm, GLuint sm, GLuint st, GLuint gm, GLuint dc)
+    void render(GLuint dm, GLuint sm, GLuint st, GLuint gm, GLuint dc,
+                GLuint ds, bool fog_enabled)
     {
-        setTextureUnits(dm, sm, st, gm, dc);
-        drawFullScreenEffect();
+        setTextureUnits(dm, sm, st, gm, dc, ds);
+        drawFullScreenEffect(fog_enabled ? 1.0f : 0.0f);
     }   // render
 };   // CombineDiffuseColor
 
@@ -307,6 +310,7 @@ void ShaderBasedRenderer::renderSceneDeferred(scene::ICameraSceneNode * const ca
         glBindBufferBase(GL_UNIFORM_BUFFER, 0,
             SP::sp_mat_ubo[SP::sp_cur_player][SP::sp_cur_buf_id[SP::sp_cur_player]]);
         glBindBufferBase(GL_UNIFORM_BUFFER, 1, SharedGPUObjects::getLightingDataUBO());
+        glBindBufferBase(GL_UNIFORM_BUFFER, 2, SP::sp_fog_ubo);
     }
     irr_driver->getSceneManager()->setActiveCamera(camnode);
 
@@ -353,8 +357,9 @@ void ShaderBasedRenderer::renderSceneDeferred(scene::ICameraSceneNode * const ca
 
     {
         m_rtts->getFBO(FBO_SP).bind();
-        glClearColor(0., 0., 0., 0.);
+        glClearColor(1., 1., 1., 0.);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        glClearColor(0., 0., 0., 0.);
         ScopedGPUTimer Timer(irr_driver->getGPUTimer(Q_SOLID_PASS1));
         SP::draw(SP::RP_1ST, SP::DCT_NORMAL);
     }
@@ -417,18 +422,20 @@ void ShaderBasedRenderer::renderSceneDeferred(scene::ICameraSceneNode * const ca
         clearColor.getBlue() / 255.f, clearColor.getAlpha() / 255.f);
     glClear(GL_COLOR_BUFFER_BIT);
 
+    const Track * const track = Track::getCurrentTrack();
     {
         PROFILER_PUSH_CPU_MARKER("- Combine diffuse color", 0x2F, 0x77, 0x33);
         ScopedGPUTimer Timer(irr_driver->getGPUTimer(Q_SOLID_PASS2));
-        glDepthMask(GL_FALSE);
         glDisable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
         glDisable(GL_BLEND);
         CombineDiffuseColor::getInstance()->render(
             m_rtts->getRenderTarget(RTT_DIFFUSE),
             m_rtts->getRenderTarget(RTT_SPECULAR),
             m_rtts->getRenderTarget(RTT_HALF1_R),
             m_rtts->getRenderTarget(RTT_SP_GLOSS),
-            m_rtts->getRenderTarget(RTT_SP_DIFF_COLOR));
+            m_rtts->getRenderTarget(RTT_SP_DIFF_COLOR),
+            m_rtts->getDepthStencilTexture(), track && track->isFogEnabled());
         PROFILER_POP_CPU_MARKER();
     }
 
@@ -439,22 +446,13 @@ void ShaderBasedRenderer::renderSceneDeferred(scene::ICameraSceneNode * const ca
         m_rtts->getFBO(FBO_COLORS).bind();
     }
 
-    // Render ambient scattering
-    const Track * const track = Track::getCurrentTrack();
-    if (track && track->isFogEnabled())
-    {
-        PROFILER_PUSH_CPU_MARKER("- Ambient scatter", 0xFF, 0x00, 0x00);
-        ScopedGPUTimer Timer(irr_driver->getGPUTimer(Q_FOG));
-        m_lighting_passes.renderAmbientScatter(m_rtts->getDepthStencilTexture());
-        PROFILER_POP_CPU_MARKER();
-    }
-
     {
         PROFILER_PUSH_CPU_MARKER("- Skybox", 0xFF, 0x00, 0xFF);
         ScopedGPUTimer Timer(irr_driver->getGPUTimer(Q_SKYBOX));
         renderSkybox(camnode);
         PROFILER_POP_CPU_MARKER();
     }
+
 
     // Render discrete lights scattering
     if (track && track->isFogEnabled())
@@ -620,16 +618,6 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
         SP::draw(SP::RP_1ST, SP::DCT_NORMAL);
     }
 
-    // Render ambient scattering
-    const Track * const track = Track::getCurrentTrack();
-    if (CVS->isDefferedEnabled() && track && track->isFogEnabled())
-    {
-        PROFILER_PUSH_CPU_MARKER("- Ambient scatter", 0xFF, 0x00, 0x00);
-        ScopedGPUTimer Timer(irr_driver->getGPUTimer(Q_FOG));
-        m_lighting_passes.renderAmbientScatter(m_rtts->getDepthStencilTexture());
-        PROFILER_POP_CPU_MARKER();
-    }
-
     {
         PROFILER_PUSH_CPU_MARKER("- Skybox", 0xFF, 0x00, 0xFF);
         ScopedGPUTimer Timer(irr_driver->getGPUTimer(Q_SKYBOX));
@@ -637,6 +625,7 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
         PROFILER_POP_CPU_MARKER();
     }
 
+    const Track * const track = Track::getCurrentTrack();
     // Render discrete lights scattering
     if (CVS->isDefferedEnabled() && track && track->isFogEnabled())
     {

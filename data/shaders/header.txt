@@ -67,7 +67,7 @@ layout (std140) uniform LightingData
 
 layout (std140) uniform SPFogData
 {
-    // x: fog_start, y: fog_end, z: fog_max
+    // x: fog_start, y: fog_end, z: fog_max, w: fog_density
     vec4 u_fog_data;
     vec4 u_fog_color;
 };
