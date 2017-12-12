@@ -275,14 +275,14 @@ void ShaderBasedRenderer::renderShadows()
 }
 
 // ============================================================================
-class CombineDiffuseColor : public TextureShader<CombineDiffuseColor, 6, float>
+class CombineDiffuseColor : public TextureShader<CombineDiffuseColor, 6>
 {
 public:
     CombineDiffuseColor()
     {
         loadProgram(OBJECT, GL_VERTEX_SHADER, "screenquad.vert",
                             GL_FRAGMENT_SHADER, "combine_diffuse_color.frag");
-        assignUniforms("fog_enabled");
+        assignUniforms();
         assignSamplerNames(0, "diffuse_map", ST_NEAREST_FILTERED,
                            1, "specular_map", ST_NEAREST_FILTERED,
                            2, "ssao_tex", ST_NEAREST_FILTERED,
@@ -292,10 +292,10 @@ public:
     }   // CombineDiffuseColor
     // ------------------------------------------------------------------------
     void render(GLuint dm, GLuint sm, GLuint st, GLuint gm, GLuint dc,
-                GLuint ds, bool fog_enabled)
+                GLuint ds)
     {
         setTextureUnits(dm, sm, st, gm, dc, ds);
-        drawFullScreenEffect(fog_enabled ? 1.0f : 0.0f);
+        drawFullScreenEffect();
     }   // render
 };   // CombineDiffuseColor
 
@@ -422,7 +422,6 @@ void ShaderBasedRenderer::renderSceneDeferred(scene::ICameraSceneNode * const ca
         clearColor.getBlue() / 255.f, clearColor.getAlpha() / 255.f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    const Track * const track = Track::getCurrentTrack();
     {
         PROFILER_PUSH_CPU_MARKER("- Combine diffuse color", 0x2F, 0x77, 0x33);
         ScopedGPUTimer Timer(irr_driver->getGPUTimer(Q_SOLID_PASS2));
@@ -435,7 +434,7 @@ void ShaderBasedRenderer::renderSceneDeferred(scene::ICameraSceneNode * const ca
             m_rtts->getRenderTarget(RTT_HALF1_R),
             m_rtts->getRenderTarget(RTT_SP_GLOSS),
             m_rtts->getRenderTarget(RTT_SP_DIFF_COLOR),
-            m_rtts->getDepthStencilTexture(), track && track->isFogEnabled());
+            m_rtts->getDepthStencilTexture());
         PROFILER_POP_CPU_MARKER();
     }
 
@@ -453,7 +452,7 @@ void ShaderBasedRenderer::renderSceneDeferred(scene::ICameraSceneNode * const ca
         PROFILER_POP_CPU_MARKER();
     }
 
-
+    const Track * const track = Track::getCurrentTrack();
     // Render discrete lights scattering
     if (track && track->isFogEnabled())
     {

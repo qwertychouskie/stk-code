@@ -165,6 +165,8 @@ void removeDynamicDrawCall(SPDynamicDrawCall*);
 void updateModelMatrix();
 // ----------------------------------------------------------------------------
 void uploadAll();
+// ----------------------------------------------------------------------------
+void resetEmptyFogColor();
 }
 
 

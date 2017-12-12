@@ -489,7 +489,6 @@ bool CentralVideoSettings::supportsShadows() const
 bool CentralVideoSettings::supportsGlobalIllumination() const
 {
     return false;
-    return isARBGeometryShadersUsable() && isARBUniformBufferObjectUsable() && isARBExplicitAttribLocationUsable() && !m_GI_has_artifact;
 }
 
 bool CentralVideoSettings::supportsIndirectInstancingRendering() const
@@ -519,7 +518,7 @@ bool CentralVideoSettings::isShadowEnabled() const
 
 bool CentralVideoSettings::isGlobalIlluminationEnabled() const
 {
-    return supportsGlobalIllumination() && UserConfigParams::m_gi;
+    return false;
 }
 
 bool CentralVideoSettings::isTextureCompressionEnabled() const

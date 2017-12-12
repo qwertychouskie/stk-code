@@ -5,8 +5,6 @@ uniform sampler2D gloss_map;
 uniform sampler2D diffuse_color;
 uniform sampler2D depth_stencil;
 
-uniform float fog_enabled;
-
 out vec4 o_final_color;
 
 #stk_include "utils/getPosFromUVDepth.frag"
@@ -37,5 +35,5 @@ void main()
     vec3 fog = u_fog_color.xyz * factor;
 
     // Additively blend the color by fog
-    o_final_color = color_1 + mix(vec4(0.0), vec4(fog, factor), fog_enabled);
+    o_final_color = color_1 + vec4(fog, factor);
 }

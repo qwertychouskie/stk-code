@@ -742,6 +742,17 @@ void loadShaders()
 
 }   // loadShaders
 
+
+// ----------------------------------------------------------------------------
+void resetEmptyFogColor()
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, sp_fog_ubo);
+    std::vector<float> fog_empty;
+    fog_empty.resize(8, 0.0f);
+    glBufferData(GL_UNIFORM_BUFFER, 8 * sizeof(float), fog_empty.data(),
+        GL_DYNAMIC_DRAW);
+}   // resetEmptyFogColor
+
 // ----------------------------------------------------------------------------
 void init()
 {
@@ -764,8 +775,7 @@ void init()
     }
 
     glGenBuffers(1, &sp_fog_ubo);
-    glBindBuffer(GL_UNIFORM_BUFFER, sp_fog_ubo);
-    glBufferData(GL_UNIFORM_BUFFER, 8 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
+    resetEmptyFogColor();
     glBindBufferBase(GL_UNIFORM_BUFFER, 2, sp_fog_ubo);
 
     glBindBuffer(GL_UNIFORM_BUFFER, 0);

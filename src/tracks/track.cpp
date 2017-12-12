@@ -298,6 +298,7 @@ void Track::cleanup()
 #ifndef SERVER_ONLY
     VAOManager::kill();
     CPUParticleManager::getInstance()->cleanMaterialMap();
+    SP::resetEmptyFogColor();
     ParticleKindManager::get()->cleanUpTrackSpecificGfx();
 #endif
 
@@ -1790,7 +1791,7 @@ void Track::loadTrackModel(bool reverse_track, unsigned int mode_id)
     }
 
 #ifndef SERVER_ONLY
-    if (!ProfileWorld::isNoGraphics() && CVS->isGLSL())
+    if (!ProfileWorld::isNoGraphics() && CVS->isGLSL() && m_use_fog)
     {
         glBindBuffer(GL_UNIFORM_BUFFER, SP::sp_fog_ubo);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, 4, &m_fog_start);
@@ -1808,6 +1809,10 @@ void Track::loadTrackModel(bool reverse_track, unsigned int mode_id)
         val = 0.0f;
         glBufferSubData(GL_UNIFORM_BUFFER, 28, 4, &val);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+    else
+    {
+        SP::resetEmptyFogColor();
     }
 #endif
 
