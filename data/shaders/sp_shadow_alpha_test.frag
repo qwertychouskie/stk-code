@@ -11,5 +11,5 @@ void main(void)
     {
         discard;
     }
-    o_frag_color = vec4(exp(32. * (2. * gl_FragCoord.z - 1.) / gl_FragCoord.w));
+    o_frag_color = vec4(1.0);
 }

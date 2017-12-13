@@ -135,8 +135,6 @@ RTT::RTT(unsigned int width, unsigned int height, float rtt_scale)
 
     RenderTargetTextures[RTT_BLOOM_1024] = generateRTT(shadowsize0, rgba_internal_format, rgb_format, type);
 
-    RenderTargetTextures[RTT_SCALAR_1024] = generateRTT(shadowsize0, red32_internal_format, red_format, type);
-
     RenderTargetTextures[RTT_BLOOM_512] = generateRTT(shadowsize1, rgba_internal_format, rgb_format, type);
     RenderTargetTextures[RTT_TMP_512] = generateRTT(shadowsize1, rgba_internal_format, rgb_format, type);
     RenderTargetTextures[RTT_LENS_512] = generateRTT(shadowsize1, rgba_internal_format, rgb_format, type);
@@ -225,9 +223,6 @@ RTT::RTT(unsigned int width, unsigned int height, float rtt_scale)
     somevector.push_back(RenderTargetTextures[RTT_BLOOM_1024]);
     FrameBuffers.push_back(new FrameBuffer(somevector, shadowsize0.Width, shadowsize0.Height));
     somevector.clear();
-    somevector.push_back(RenderTargetTextures[RTT_SCALAR_1024]);
-    FrameBuffers.push_back(new FrameBuffer(somevector, shadowsize0.Width, shadowsize0.Height));
-    somevector.clear();
 
     somevector.push_back(RenderTargetTextures[RTT_BLOOM_512]);
     FrameBuffers.push_back(new FrameBuffer(somevector, shadowsize1.Width, shadowsize1.Height));
@@ -266,18 +261,15 @@ RTT::RTT(unsigned int width, unsigned int height, float rtt_scale)
 
     if (CVS->isShadowEnabled())
     {
-        shadowColorTex = generateRTT3D(GL_TEXTURE_2D_ARRAY, UserConfigParams::m_shadows_resolution, UserConfigParams::m_shadows_resolution, 4, GL_R32F, GL_RED, GL_FLOAT, 10);
         shadowDepthTex = generateRTT3D(GL_TEXTURE_2D_ARRAY, UserConfigParams::m_shadows_resolution, UserConfigParams::m_shadows_resolution, 4, GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, 1);
-
         somevector.clear();
-        somevector.push_back(shadowColorTex);
         m_shadow_FBO = new FrameBufferLayer(somevector, shadowDepthTex, UserConfigParams::m_shadows_resolution, UserConfigParams::m_shadows_resolution, 4);
     }
 
-    if (CVS->isGlobalIlluminationEnabled())
+/*    if (CVS->isGlobalIlluminationEnabled())
     {
         //Todo : use "normal" shadowtex
-/*        RSM_Color = generateRTT(shadowsize0, GL_RGB8, GL_RGB, GL_UNSIGNED_BYTE);
+        RSM_Color = generateRTT(shadowsize0, GL_RGB8, GL_RGB, GL_UNSIGNED_BYTE);
         RSM_Normal = generateRTT(shadowsize0, GL_RGB16F, GL_RGB, GL_FLOAT);
         RSM_Depth = generateRTT(shadowsize0, GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8);
 
@@ -294,8 +286,8 @@ RTT::RTT(unsigned int width, unsigned int height, float rtt_scale)
         somevector.push_back(RH_Red);
         somevector.push_back(RH_Green);
         somevector.push_back(RH_Blue);
-        m_RH_FBO = new FrameBuffer(somevector, 32, 16, true);*/
-    }
+        m_RH_FBO = new FrameBuffer(somevector, 32, 16, true);
+    }*/
 
     // Clear this FBO to 1s so that if no SSAO is computed we can still use it.
     getFBO(FBO_HALF1_R).bind();

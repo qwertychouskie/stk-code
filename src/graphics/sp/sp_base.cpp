@@ -336,7 +336,7 @@ void loadShaders()
     shader->addAllTextures(RP_2ND); */
 
     shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -364,7 +364,7 @@ void loadShaders()
     shader->addAllTextures(RP_2ND); */
 
     shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -386,7 +386,7 @@ void loadShaders()
     shader->addAllTextures(RP_1ST);
 
     shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -407,7 +407,7 @@ void loadShaders()
     shader->addAllTextures(RP_1ST);
 
     shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -515,7 +515,7 @@ void loadShaders()
     shader->addAllTextures(RP_1ST);
 
     shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -536,7 +536,7 @@ void loadShaders()
     shader->addAllTextures(RP_1ST);
 
     shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("sp_shadow.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);

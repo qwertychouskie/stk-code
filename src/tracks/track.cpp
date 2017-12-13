@@ -1176,8 +1176,7 @@ bool Track::loadMainTrack(const XMLNode &root)
     {
         // SPM does the combine for you
 #ifndef SERVER_ONLY
-        tangent_mesh = MeshTools::createMeshWithTangents(mesh, &MeshTools::isNormalMap);
-        adjustForFog(tangent_mesh, NULL);
+        tangent_mesh = mesh;
         tangent_mesh->grab();
 #else
         tangent_mesh = mesh;
