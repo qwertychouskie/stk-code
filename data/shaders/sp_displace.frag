@@ -35,7 +35,7 @@ void main()
     vec2 shift;
     shift.x = -shiftval.x + shiftval.y;
     shift.y = -shiftval.z + shiftval.w;
-    shift /= 50.;
+    shift *= 0.02;
 
     vec2 tc = gl_FragCoord.xy / u_screen;
     float mask = texture(mask_tex, tc + shift).x;

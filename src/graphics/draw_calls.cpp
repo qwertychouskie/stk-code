@@ -426,13 +426,13 @@ void DrawCalls::multidrawSolidSecondPass(const std::vector<uint64_t> &handles) c
  */ 
 void DrawCalls::drawIndirectNormals() const
 {
-    m_solid_cmd_buffer->bind();
+/*    m_solid_cmd_buffer->bind();
     m_solid_cmd_buffer->drawIndirectNormals<DefaultMaterial>();
     m_solid_cmd_buffer->drawIndirectNormals<AlphaRef>();
     m_solid_cmd_buffer->drawIndirectNormals<UnlitMat>();
     m_solid_cmd_buffer->drawIndirectNormals<SphereMap>();
     m_solid_cmd_buffer->drawIndirectNormals<DetailMat>();
-    m_solid_cmd_buffer->drawIndirectNormals<NormalMat>();
+    m_solid_cmd_buffer->drawIndirectNormals<NormalMat>();*/
 }
 
 // ----------------------------------------------------------------------------

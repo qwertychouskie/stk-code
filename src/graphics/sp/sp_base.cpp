@@ -189,7 +189,7 @@ void ghostKartUse()
 // ----------------------------------------------------------------------------
 void displaceUniformAssigner(SP::SPUniformAssigner* ua)
 {
-    static std::array<float,4> g_direction = {{ 0, 0, 0, 0 }};
+    static std::array<float, 4> g_direction = {{ 0, 0, 0, 0 }};
     if (!Track::getCurrentTrack())
     {
         ua->setValue(g_direction);
@@ -579,7 +579,7 @@ void loadShaders()
     // ========================================================================
     // Transparent shader
     // ========================================================================
-    shader = new SPShader("alphablend_skinned", 1, true, 899);
+    shader = new SPShader("alphablend_skinned", 1, true);
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
@@ -617,7 +617,7 @@ void loadShaders()
         });
     addShader(shader);
 
-    shader = new SPShader("additive_skinned", 1, true, 899);
+    shader = new SPShader("additive_skinned", 1, true);
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
     shader->linkShaderFiles(RP_1ST);
@@ -674,18 +674,12 @@ void loadShaders()
                 glDepthMask(GL_FALSE);
                 glDisable(GL_CULL_FACE);
                 glDisable(GL_BLEND);
+                glClear(GL_STENCIL_BUFFER_BIT);
                 glEnable(GL_STENCIL_TEST);
                 glStencilFunc(GL_ALWAYS, 1, 0xFF);
                 glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-                g_stk_sbr->getRTTs()->getFBO(FBO_COLORS).bind(),
-                glClear(GL_STENCIL_BUFFER_BIT);
                 g_stk_sbr->getRTTs()->getFBO(FBO_TMP1_WITH_DS).bind(),
                 glClear(GL_COLOR_BUFFER_BIT);
-            }, RP_1ST);
-        shader->setUnuseFunction([]()->void
-            {
-                glDisable(GL_STENCIL_TEST);
-                g_stk_sbr->getRTTs()->getFBO(FBO_COLORS).bind();
             }, RP_1ST);
         shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER,
             RP_2ND);
