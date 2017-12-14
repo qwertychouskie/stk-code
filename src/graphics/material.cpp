@@ -70,21 +70,17 @@ Material::Material(const XMLNode *node, bool deprecated)
                                  "in file\n");
     }
 
-    std::string relativePath = file_manager->searchTexture(m_texname);
-    if (relativePath.size() == 0)
+    const std::string& relative_path = file_manager->searchTexture(m_texname);
+    if (relative_path.empty())
     {
-        Log::warn("Material", "Cannot determine texture full path : <%s>",
+        Log::warn("Material", "Cannot determine texture full path: %s",
             m_texname.c_str());
     }
     else
     {
-        m_full_path = m_original_full_path =
+        m_full_path = m_sampler_path[0] =
             file_manager->getFileSystem()->getAbsolutePath
-            (relativePath.c_str()).c_str();
-        if (file_manager->fileExists(m_original_full_path))
-        {
-            m_sampler_path[0] = m_original_full_path;
-        }
+            (relative_path.c_str()).c_str();
     }
 
     core::stringc texfname(m_texname.c_str());
@@ -421,16 +417,17 @@ Material::Material(const XMLNode *node, bool deprecated)
         {
             continue;
         }
-        std::string tmp_name =
-            file_manager->getFileSystem()->getAbsolutePath(
-            file_manager->searchTexture(m_sampler_path[i]).c_str()).c_str();
-        if (file_manager->fileExists(m_original_full_path))
+        const std::string& relative_path =
+            file_manager->searchTexture(m_sampler_path[i]);
+        if (!relative_path.empty())
         {
-            m_sampler_path[i] = tmp_name;
+            m_sampler_path[i] =
+                file_manager->getFileSystem()->getAbsolutePath(
+                relative_path.c_str()).c_str();
         }
         else
         {
-            Log::warn("Material", "Cannot determine texture full path : <%s>",
+            Log::warn("Material", "Cannot determine texture full path: %s",
                 m_sampler_path[i].c_str());
             m_sampler_path[i] = "";
         }
@@ -513,19 +510,25 @@ Material::Material(const std::string& fname, bool is_full_path,
     if (is_full_path)
     {
         m_texname = StringUtils::getBasename(fname);
-        m_full_path = m_original_full_path = fname;
+        m_full_path = m_sampler_path[0] = fname;
     }
     else
     {
         m_texname = fname;
         if (m_texname != "unicolor_white")
         {
-            m_full_path = m_original_full_path =
-                file_manager->getFileSystem()->getAbsolutePath(
-                file_manager->searchTexture(m_texname).c_str()).c_str();
-            if (file_manager->fileExists(m_original_full_path))
+            const std::string& relative_path =
+                file_manager->searchTexture(m_texname);
+            if (!relative_path.empty())
             {
-                m_sampler_path[0] = m_original_full_path;
+                m_full_path = m_sampler_path[0] =
+                    file_manager->getFileSystem()->getAbsolutePath(
+                    relative_path.c_str()).c_str();
+            }
+            else
+            {
+                Log::warn("Material", "Cannot determine texture full path: %s",
+                    m_sampler_path[0].c_str());
             }
         }
     }
@@ -614,7 +617,7 @@ void Material::install(bool srgb, bool premul_alpha)
     {
         TexConfig tc(srgb, premul_alpha, srgb/*mesh_tex*/);
         m_texture = STKTexManager::getInstance()
-            ->getTexture(m_original_full_path, &tc);
+            ->getTexture(m_sampler_path[0], &tc);
     }
 
     if (m_texture == NULL) return;

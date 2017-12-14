@@ -92,8 +92,6 @@ private:
     std::string      m_texname;
 
     std::string      m_full_path;
-    
-    std::string      m_original_full_path;
 
     /** Name of a special sfx to play when a kart is on this terrain, or
      *  "" if no special sfx exists. */
@@ -245,18 +243,6 @@ private:
     std::string      m_mask;
 
     std::string      m_colorization_mask;
-
-    /** If m_splatting is true, indicates the first splatting texture */
-    std::string      m_splatting_texture_1;
-
-    /** If m_splatting is true, indicates the second splatting texture */
-    std::string      m_splatting_texture_2;
-
-    /** If m_splatting is true, indicates the third splatting texture */
-    std::string      m_splatting_texture_3;
-
-    /** If m_splatting is true, indicates the fourth splatting texture */
-    std::string      m_splatting_texture_4;
 
     bool  m_complain_if_not_found;
 
@@ -430,14 +416,6 @@ public:
                                                { return m_colorization_mask; }
     // ------------------------------------------------------------------------
     const std::string& getShaderName() const         { return m_shader_name; }
-    // ------------------------------------------------------------------------
-    const std::string& getSplatting1() const { return m_splatting_texture_1; }
-    // ------------------------------------------------------------------------
-    const std::string& getSplatting2() const { return m_splatting_texture_2; }
-    // ------------------------------------------------------------------------
-    const std::string& getSplatting3() const { return m_splatting_texture_3; }
-    // ------------------------------------------------------------------------
-    const std::string& getSplatting4() const { return m_splatting_texture_4; }
     // ------------------------------------------------------------------------
     /* This is used for finding correct material for spm*/
     const std::string& getUVTwoTexture() const
