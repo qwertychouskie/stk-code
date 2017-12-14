@@ -20,6 +20,8 @@
 #include "graphics/sp/sp_mesh.hpp"
 #include "graphics/sp/sp_mesh_buffer.hpp"
 #include "graphics/central_settings.hpp"
+#include "graphics/material.hpp"
+#include "graphics/material_manager.hpp"
 #include "graphics/stk_tex_manager.hpp"
 #include "utils/constants.hpp"
 #include "utils/mini_glm.hpp"
@@ -98,6 +100,8 @@ scene::IAnimatedMesh* SPMeshLoader::createMesh(io::IReadFile* f)
     unsigned id = 0;
     std::unordered_map<unsigned, std::tuple<video::SMaterial, bool,
         bool> > mat_map;
+    std::unordered_map<unsigned, std::tuple<Material*, bool,
+        bool> > sp_mat_map;
     while (size_num != 0)
     {
         uint8_t tex_size;
@@ -114,45 +118,62 @@ scene::IAnimatedMesh* SPMeshLoader::createMesh(io::IReadFile* f)
             tex_name_2.resize(tex_size);
             f->read(&tex_name_2.front(), tex_size);
         }
-        TexConfig mtc(true/*srgb*/, false/*premul_alpha*/, true/*mesh_tex*/,
-            true/*set_material*/);
-        video::ITexture* textures[2] = { NULL, NULL };
-        if (!tex_name_1.empty())
+        if (real_spm)
         {
-            std::string full_path = base_path + "/" + tex_name_1;
-            if (fs->existFile(full_path.c_str()))
+            if (!tex_name_1.empty())
             {
-                tex_name_1 = full_path;
+                std::string full_path = base_path + "/" + tex_name_1;
+                if (fs->existFile(full_path.c_str()))
+                {
+                    tex_name_1 = full_path;
+                }
             }
-            video::ITexture* tex = STKTexManager::getInstance()
-                ->getTexture(tex_name_1, &mtc);
-            if (tex != NULL)
+            sp_mat_map[id] =
+                std::make_tuple(
+                material_manager->getMaterialSPM(tex_name_1, tex_name_2),
+                !tex_name_1.empty(), !tex_name_2.empty());
+        }
+        else
+        {
+            video::ITexture* textures[2] = { NULL, NULL };
+            if (!tex_name_1.empty())
             {
-                textures[0] = tex;
+                std::string full_path = base_path + "/" + tex_name_1;
+                if (fs->existFile(full_path.c_str()))
+                {
+                    tex_name_1 = full_path;
+                }
+                video::ITexture* tex = STKTexManager::getInstance()
+                    ->getTexture(tex_name_1);
+                if (tex != NULL)
+                {
+                    textures[0] = tex;
+                }
             }
-        }
-        if (!tex_name_2.empty())
-        {
-            std::string full_path = base_path + "/" + tex_name_2;
-            if (fs->existFile(full_path.c_str()))
+            if (!tex_name_2.empty())
             {
-                tex_name_2 = full_path;
+                std::string full_path = base_path + "/" + tex_name_2;
+                if (fs->existFile(full_path.c_str()))
+                {
+                    tex_name_2 = full_path;
+                }
+                textures[1] = STKTexManager::getInstance()->getTexture
+                    (tex_name_2);
             }
-            textures[1] = STKTexManager::getInstance()->getTexture(tex_name_2,
-                &mtc);
+
+            video::SMaterial m;
+            m.MaterialType = video::EMT_SOLID;
+            if (textures[0] != NULL)
+            {
+                m.setTexture(0, textures[0]);
+            }
+            if (textures[1] != NULL)
+            {
+                m.setTexture(1, textures[1]);
+            }
+            mat_map[id] =
+                std::make_tuple(m, !tex_name_1.empty(), !tex_name_2.empty());
         }
-        video::SMaterial m;
-        m.MaterialType = video::EMT_SOLID;
-        if (textures[0] != NULL)
-        {
-            m.setTexture(0, textures[0]);
-        }
-        if (textures[1] != NULL)
-        {
-            m.setTexture(1, textures[1]);
-        }
-        mat_map[id] =
-            std::make_tuple(m, !tex_name_1.empty(), !tex_name_2.empty());
         size_num--;
         id++;
     }
@@ -174,16 +195,17 @@ scene::IAnimatedMesh* SPMeshLoader::createMesh(io::IReadFile* f)
             }
             f->read(&indices_count, 4);
             f->read(&mat_id, 2);
-            assert(mat_id < mat_map.size());
             if (real_spm)
             {
+                assert(mat_id < sp_mat_map.size());
                 decompressSPM(f, vertices_count, indices_count, read_normal,
-                    read_vcolor, read_tangent, std::get<1>(mat_map[mat_id]),
-                    std::get<2>(mat_map[mat_id]), vt,
-                    std::get<0>(mat_map[mat_id]));
+                    read_vcolor, read_tangent, std::get<1>(sp_mat_map[mat_id]),
+                    std::get<2>(sp_mat_map[mat_id]), vt,
+                    std::get<0>(sp_mat_map[mat_id]));
             }
             else
             {
+                assert(mat_id < mat_map.size());
                 decompress(f, vertices_count, indices_count, read_normal,
                     read_vcolor, read_tangent, std::get<1>(mat_map[mat_id]),
                     std::get<2>(mat_map[mat_id]), vt,
@@ -245,7 +267,7 @@ void SPMeshLoader::decompressSPM(irr::io::IReadFile* spm,
                                  unsigned indices_count, bool read_normal,
                                  bool read_vcolor, bool read_tangent,
                                  bool uv_one, bool uv_two, SPVertexType vt,
-                                 const video::SMaterial& m)
+                                 Material* m)
 {
     assert(vertices_count != 0);
     assert(indices_count != 0);
@@ -324,10 +346,9 @@ void SPMeshLoader::decompressSPM(irr::io::IReadFile* spm,
         }
         mb->addSPMVertex(vertex);
     }
-    if (m.TextureLayer[0].Texture != NULL)
-    {
-        mb->setMaterial(m);
-    }
+
+    mb->setSTKMaterial(m);
+
     std::vector<uint16_t> indices;
     indices.resize(indices_count);
     if (idx_size == 2)

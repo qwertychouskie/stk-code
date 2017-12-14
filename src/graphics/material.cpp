@@ -62,6 +62,7 @@ Material::Material(const XMLNode *node, bool deprecated)
     m_deprecated = deprecated;
     m_installed = false;
 
+    m_sampler_path[0] = "unicolor_white";
     node->get("name",      &m_texname);
     if (m_texname=="")
     {
@@ -71,9 +72,20 @@ Material::Material(const XMLNode *node, bool deprecated)
 
     std::string relativePath = file_manager->searchTexture(m_texname);
     if (relativePath.size() == 0)
-        Log::warn("Material", "Cannot determine texture full path : <%s>", m_texname.c_str());
+    {
+        Log::warn("Material", "Cannot determine texture full path : <%s>",
+            m_texname.c_str());
+    }
     else
-        m_full_path = m_original_full_path = file_manager->getFileSystem()->getAbsolutePath(relativePath.c_str()).c_str();
+    {
+        m_full_path = m_original_full_path =
+            file_manager->getFileSystem()->getAbsolutePath
+            (relativePath.c_str()).c_str();
+        if (file_manager->fileExists(m_original_full_path))
+        {
+            m_sampler_path[0] = m_original_full_path;
+        }
+    }
 
     core::stringc texfname(m_texname.c_str());
     texfname.make_lower();
@@ -161,15 +173,20 @@ Material::Material(const XMLNode *node, bool deprecated)
 
     node->get("mask",                &m_mask               );
     node->get("colorization-mask",   &m_colorization_mask  );
-    node->get("gloss-map",           &m_gloss_map          );
+    std::string gloss_map;
+    node->get("gloss-map",           &gloss_map            );
     node->get("water-splash",        &m_water_splash       );
     node->get("jump",                &m_is_jump_texture    );
     node->get("has-gravity",         &m_has_gravity        );
-    node->get("layer-two-tex",       &m_layer_two_tex      );
+    node->get("uv-two-tex",          &m_uv_two_tex         );
 
-    core::stringc layer_two_tex(m_layer_two_tex.c_str());
-    layer_two_tex.make_lower();
-    m_layer_two_tex = layer_two_tex.c_str();
+    if (!m_uv_two_tex.empty())
+    {
+        m_sampler_path[1] = m_uv_two_tex;
+        core::stringc layer_two_tex(m_uv_two_tex.c_str());
+        layer_two_tex.make_lower();
+        m_uv_two_tex = layer_two_tex.c_str();
+    }
 
     if (m_collision_reaction != NORMAL)
     {
@@ -187,7 +204,8 @@ Material::Material(const XMLNode *node, bool deprecated)
     }
 
     s = "solid";
-    node->get("normal-map", &m_normal_map_tex);
+    std::string normal_map_tex;
+    node->get("normal-map", &normal_map_tex);
     if (node->get("shader", &s))
     {
         if (s == "solid")
@@ -231,10 +249,10 @@ Material::Material(const XMLNode *node, bool deprecated)
         else if (s == "splatting")
         {
             m_shader_type = SHADERTYPE_SPLATTING;
-            node->get("splatting-texture-1", &m_splatting_texture_1);
-            node->get("splatting-texture-2", &m_splatting_texture_2);
-            node->get("splatting-texture-3", &m_splatting_texture_3);
-            node->get("splatting-texture-4", &m_splatting_texture_4);
+            node->get("splatting-texture-1", &m_sampler_path[2]);
+            node->get("splatting-texture-2", &m_sampler_path[3]);
+            node->get("splatting-texture-3", &m_sampler_path[4]);
+            node->get("splatting-texture-4", &m_sampler_path[5]);
         }
         //else
         //{
@@ -307,7 +325,7 @@ Material::Material(const XMLNode *node, bool deprecated)
         else if (s == "normal_map")
         {
             m_shader_type = SHADERTYPE_SOLID;
-            node->get("normal-map", &m_normal_map_tex);
+            node->get("normal-map", &normal_map_tex);
         }
         else if (s == "spheremap")
         {
@@ -316,10 +334,10 @@ Material::Material(const XMLNode *node, bool deprecated)
         else if (s == "splatting")
         {
             m_shader_type = SHADERTYPE_SPLATTING;
-            node->get("splatting-texture-1", &m_splatting_texture_1);
-            node->get("splatting-texture-2", &m_splatting_texture_2);
-            node->get("splatting-texture-3", &m_splatting_texture_3);
-            node->get("splatting-texture-4", &m_splatting_texture_4);
+            node->get("splatting-texture-1", &m_sampler_path[2]);
+            node->get("splatting-texture-2", &m_sampler_path[3]);
+            node->get("splatting-texture-3", &m_sampler_path[4]);
+            node->get("splatting-texture-4", &m_sampler_path[5]);
         }
         else if (s == "none")
         {
@@ -336,7 +354,7 @@ Material::Material(const XMLNode *node, bool deprecated)
 
         if (use_normal_map)
         {
-            if (node->get("normal-map", &m_normal_map_tex))
+            if (node->get("normal-map", &normal_map_tex))
             {
                 //m_graphical_effect = GE_NORMAL_MAP;
             }
@@ -369,7 +387,7 @@ Material::Material(const XMLNode *node, bool deprecated)
     m_shader_name = s.empty() ? "solid" : s;
     if (m_shader_name == "solid")
     {
-        if (!m_normal_map_tex.empty())
+        if (!normal_map_tex.empty())
         {
             m_shader_name = "normalmap";
         }
@@ -377,6 +395,45 @@ Material::Material(const XMLNode *node, bool deprecated)
     else if (m_shader_name == "normal_map")
     {
         m_shader_name = "normalmap";
+    }
+
+    // SP specific, now for backwards compatibility assign gloss map and
+    // normal map to layer 2 and 3 (current all sp shaders use tex_layer_2 and
+    // 3), and overwrite with tex-layer-(2-5) from xml
+    if (!gloss_map.empty())
+    {
+        m_sampler_path[2] = gloss_map;
+    }
+    if (!normal_map_tex.empty())
+    {
+        m_sampler_path[3] = normal_map_tex;
+    }
+    for (int i = 2; i < 6; i++)
+    {
+        const std::string key =
+            std::string("tex-layer-") + StringUtils::toString(i);
+        node->get(key, &m_sampler_path[i]);
+    }
+    // Convert to full path
+    for (int i = 1; i < 6; i++)
+    {
+        if (m_sampler_path[i].empty())
+        {
+            continue;
+        }
+        std::string tmp_name =
+            file_manager->getFileSystem()->getAbsolutePath(
+            file_manager->searchTexture(m_sampler_path[i]).c_str()).c_str();
+        if (file_manager->fileExists(m_original_full_path))
+        {
+            m_sampler_path[i] = tmp_name;
+        }
+        else
+        {
+            Log::warn("Material", "Cannot determine texture full path : <%s>",
+                m_sampler_path[i].c_str());
+            m_sampler_path[i] = "";
+        }
     }
 
     if (m_disable_z_write && m_shader_type != SHADERTYPE_ALPHA_BLEND && m_shader_type != SHADERTYPE_ADDITIVE)
@@ -452,6 +509,7 @@ Material::Material(const std::string& fname, bool is_full_path,
     m_installed = false;
     init();
 
+    m_sampler_path[0] = "unicolor_white";
     if (is_full_path)
     {
         m_texname = StringUtils::getBasename(fname);
@@ -460,8 +518,16 @@ Material::Material(const std::string& fname, bool is_full_path,
     else
     {
         m_texname = fname;
-        m_full_path = m_original_full_path = file_manager->getFileSystem()->getAbsolutePath(
-            file_manager->searchTexture(m_texname).c_str()).c_str();
+        if (m_texname != "unicolor_white")
+        {
+            m_full_path = m_original_full_path =
+                file_manager->getFileSystem()->getAbsolutePath(
+                file_manager->searchTexture(m_texname).c_str()).c_str();
+            if (file_manager->fileExists(m_original_full_path))
+            {
+                m_sampler_path[0] = m_original_full_path;
+            }
+        }
     }
 
     core::stringc texfname(m_texname.c_str());
@@ -843,12 +909,6 @@ void  Material::setMaterialProperties(video::SMaterial *m, scene::IMeshBuffer* m
     if (m_shader_type == SHADERTYPE_SPHERE_MAP)
     {
         m->MaterialType = video::EMT_SPHERE_MAP;
-    }
-
-    if (m_shader_type == SHADERTYPE_SOLID && m_normal_map_tex.size() > 0)
-    {
-        // remove normal map texture so that it's not blended with the rest
-        m->setTexture(1, NULL);
     }
 
     if (m_shader_type == SHADERTYPE_SPLATTING)

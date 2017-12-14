@@ -23,6 +23,7 @@
 #include "utils/no_copy.hpp"
 #include "utils/random_generator.hpp"
 
+#include <array>
 #include <assert.h>
 #include <map>
 #include <string>
@@ -170,9 +171,6 @@ private:
 
     ParticleKind*    m_particles_effects[EMIT_KINDS_COUNT];
 
-    /** For normal maps */
-    std::string      m_normal_map_tex;
-
     /** Texture clamp bitmask */
     unsigned int     m_clamp_tex;
 
@@ -260,8 +258,6 @@ private:
     /** If m_splatting is true, indicates the fourth splatting texture */
     std::string      m_splatting_texture_4;
 
-    std::string      m_gloss_map;
-
     bool  m_complain_if_not_found;
 
     bool  m_deprecated;
@@ -275,7 +271,9 @@ private:
 
     // SP usage
     std::string      m_shader_name;
-    std::string      m_layer_two_tex;
+    std::string      m_uv_two_tex;
+    // Full path for textures in sp shader
+    std::string      m_sampler_path[6];
 
 public:
           Material(const XMLNode *node, bool deprecated);
@@ -428,10 +426,6 @@ public:
     // ------------------------------------------------------------------------
     const std::string& getAlphaMask() const                 { return m_mask; }
     // ------------------------------------------------------------------------
-    const std::string& getGlossMap() const             { return m_gloss_map; }
-    // ------------------------------------------------------------------------
-    const std::string& getNormalMap() const       { return m_normal_map_tex; }
-    // ------------------------------------------------------------------------
     const std::string& getColorizationMask() const
                                                { return m_colorization_mask; }
     // ------------------------------------------------------------------------
@@ -445,12 +439,19 @@ public:
     // ------------------------------------------------------------------------
     const std::string& getSplatting4() const { return m_splatting_texture_4; }
     // ------------------------------------------------------------------------
-    const std::string& getLayerTwoTexture() const
-                                                   { return m_layer_two_tex; }
+    /* This is used for finding correct material for spm*/
+    const std::string& getUVTwoTexture() const
+                                                      { return m_uv_two_tex; }
     // ------------------------------------------------------------------------
     bool backFaceCulling() const                { return m_backface_culling; }
     // ------------------------------------------------------------------------
-    bool use2UV() const                   { return !m_layer_two_tex.empty(); }
+    bool use2UV() const                      { return !m_uv_two_tex.empty(); }
+    // ------------------------------------------------------------------------
+    const std::string& getSamplerPath(unsigned layer)
+    {
+        assert(layer < 6);
+        return m_sampler_path[layer];
+    }
 };
 
 

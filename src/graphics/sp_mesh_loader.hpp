@@ -29,6 +29,8 @@
 
 using namespace irr;
 
+class Material;
+
 class SPMeshLoader : public scene::IMeshLoader
 {
 private:
@@ -55,7 +57,7 @@ private:
                        unsigned indices_count, bool read_normal,
                        bool read_vcolor, bool read_tangent, bool uv_one,
                        bool uv_two, SPVertexType vt,
-                       const video::SMaterial& m);
+                       Material* m);
     // ------------------------------------------------------------------------
     void createAnimationData(irr::io::IReadFile* spm);
     // ------------------------------------------------------------------------

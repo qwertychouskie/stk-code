@@ -64,6 +64,8 @@ public:
                              video::E_MATERIAL_TYPE material_type);
     Material* getMaterialFor(video::ITexture* t,
                              const std::string& lay_two_tex_lc = "");
+    Material* getMaterialSPM(std::string lay_one_tex_lc,
+                             std::string lay_two_tex_lc);
     void      setAllMaterialFlags(video::ITexture* t,
                                   scene::IMeshBuffer *mb);
     void      adjustForFog(video::ITexture* t,
@@ -88,7 +90,7 @@ public:
 
     void      unloadAllTextures();
 
-    Material* getSPMaterial(const std::string& shader_name);
+    Material* getSPMaterial(const std::string& shader_name, const std::string& layer_one_lc = "");
     Material* getLatestMaterial() { return m_materials[m_materials.size()-1]; }
 };   // MaterialManager
 

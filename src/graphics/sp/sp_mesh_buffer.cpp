@@ -55,7 +55,7 @@ void SPMeshBuffer::initDrawMaterial()
 #ifndef SERVER_ONLY
     // layer 1, uv 1 texture (white default if none), reported by .spm
     // layer 2, uv 2 texture (white default if none), reported by .spm
-    core::stringc layer_two = m_material.getTexture(1) ?
+/*    core::stringc layer_two = m_material.getTexture(1) ?
         m_material.getTexture(1)->getName().getPtr() : "";
     layer_two.make_lower();
     const std::string lt_cmp = StringUtils::getBasename(layer_two.c_str());
@@ -95,8 +95,7 @@ void SPMeshBuffer::initDrawMaterial()
     // Splatting different case, 3 4 5 6 are 1 2 3 4 splatting detail
     if (m_stk_material->getShaderName() == "splatting")
     {
-        TexConfig stc(true/*srgb*/, false/*premul_alpha*/, true/*mesh_tex*/,
-            false/*set_material*/);
+
         m_material.setTexture(2, stktm->getTexture(m_stk_material
             ->getSplatting1(), &stc));
         m_material.setTexture(3, stktm->getTexture(m_stk_material
@@ -121,17 +120,12 @@ void SPMeshBuffer::initDrawMaterial()
             }
             if (!m_stk_material->getNormalMap().empty())
             {
-                TexConfig nmtc(false/*srgb*/, false/*premul_alpha*/,
-                    true/*mesh_tex*/, false/*set_material*/,
-                    false/*color_mask*/, true/*normal_map*/);
                 m_material.setTexture(3, stktm
                     ->getTexture(m_stk_material->getNormalMap(), &nmtc));
             }
         }
         if (m_stk_material->isColorizable())
         {
-            TexConfig cmtc(false/*srgb*/, false/*premul_alpha*/,
-                true/*mesh_tex*/, false/*set_material*/, true/*color_mask*/);
             if (!m_stk_material->getColorizationMask().empty())
             {
                 m_material.setTexture(4, stktm->getTexture(m_stk_material
@@ -143,7 +137,7 @@ void SPMeshBuffer::initDrawMaterial()
             m_material.setTexture(4, stktm->getUnicolorTexture
                 (irr::video::SColor(255, 255, 255, 255)));
         }
-    }
+    }*/
     if (!m_stk_material->backFaceCulling())
     {
         m_material.setFlag(video::EMF_BACK_FACE_CULLING, false);
@@ -191,7 +185,7 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
     m_skinned = skinned;
 #ifndef SERVER_ONLY
     bool use_2_uv = m_stk_material->use2UV();
-    bool use_tangents = !m_stk_material->getNormalMap().empty() &&
+    bool use_tangents = m_stk_material->getShaderName() == "normalmap" &&
         CVS->isGLSL();
     const bool vt_2101010 = CVS->isARBVertexType2101010RevUsable();
     const unsigned pitch = 48 - (use_tangents ? 0 : 4) - (use_2_uv ? 0 : 4) -
@@ -281,7 +275,7 @@ void SPMeshBuffer::recreateVAO(unsigned i)
 {
 #ifndef SERVER_ONLY
     bool use_2_uv = m_stk_material->use2UV();
-    bool use_tangents = !m_stk_material->getNormalMap().empty() &&
+    bool use_tangents = m_stk_material->getShaderName() == "normalmap" &&
         CVS->isGLSL();
     const bool vt_2101010 = CVS->isARBVertexType2101010RevUsable();
     const unsigned pitch = 48 - (use_tangents ? 0 : 4) - (use_2_uv ? 0 : 4) -

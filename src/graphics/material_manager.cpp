@@ -85,6 +85,64 @@ Material* MaterialManager::getMaterialFor(video::ITexture* t,
 }
 
 //-----------------------------------------------------------------------------
+Material* MaterialManager::getMaterialSPM(std::string lay_one_tex_lc,
+                                          std::string lay_two_tex_lc)
+{
+    core::stringc lc(lay_one_tex_lc.c_str());
+    lc.make_lower();
+    lay_one_tex_lc = lc.c_str();
+    lc = lay_two_tex_lc.c_str();
+    lc.make_lower();
+    lay_two_tex_lc = lc.c_str();
+    if (!lay_one_tex_lc.empty() &&
+        (lay_one_tex_lc.find('/') != std::string::npos ||
+        lay_one_tex_lc.find('\\') != std::string::npos))
+    {
+        // Search backward so that temporary (track) textures are found first
+        for (int i = (int)m_materials.size() - 1; i >= 0; i--)
+        {
+            if (m_materials[i]->getTexFullPath() == lay_one_tex_lc)
+            {
+                const std::string& mat_lay_two = m_materials[i]->getUVTwoTexture();
+                if (mat_lay_two.empty() && lay_two_tex_lc.empty())
+                {
+                    return m_materials[i];
+                }
+                else if (!mat_lay_two.empty() && !lay_two_tex_lc.empty())
+                {
+                    if (mat_lay_two == lay_two_tex_lc)
+                    {
+                        return m_materials[i];
+                    }
+                }
+            }
+        }
+    }
+    else if (!lay_one_tex_lc.empty())
+    {
+        for (int i = (int)m_materials.size() - 1; i >= 0; i--)
+        {
+            if (m_materials[i]->getTexFname() == lay_one_tex_lc)
+            {
+                const std::string& mat_lay_two = m_materials[i]->getUVTwoTexture();
+                if (mat_lay_two.empty() && lay_two_tex_lc.empty())
+                {
+                    return m_materials[i];
+                }
+                else if (!mat_lay_two.empty() && !lay_two_tex_lc.empty())
+                {
+                    if (mat_lay_two == lay_two_tex_lc)
+                    {
+                        return m_materials[i];
+                    }
+                }
+            }
+        }   // for i
+    }
+    return getSPMaterial("solid", StringUtils::getBasename(lay_one_tex_lc));
+}
+
+//-----------------------------------------------------------------------------
 Material* MaterialManager::getMaterialFor(video::ITexture* t,
                                           const std::string& lay_two_tex_lc)
 {
@@ -97,7 +155,7 @@ Material* MaterialManager::getMaterialFor(video::ITexture* t,
         {
             if (m_materials[i]->getTexFullPath() == img_path.c_str())
             {
-                const std::string& mat_lay_two = m_materials[i]->getLayerTwoTexture();
+                const std::string& mat_lay_two = m_materials[i]->getUVTwoTexture();
                 if (mat_lay_two.empty() && lay_two_tex_lc.empty())
                 {
                     return m_materials[i];
@@ -121,7 +179,7 @@ Material* MaterialManager::getMaterialFor(video::ITexture* t,
         {
             if (m_materials[i]->getTexFname() == image.c_str())
             {
-                const std::string& mat_lay_two = m_materials[i]->getLayerTwoTexture();
+                const std::string& mat_lay_two = m_materials[i]->getUVTwoTexture();
                 if (mat_lay_two.empty() && lay_two_tex_lc.empty())
                 {
                     return m_materials[i];
@@ -174,15 +232,20 @@ void MaterialManager::setAllMaterialFlags(video::ITexture* t,
 }   // setAllMaterialFlags
 
 //-----------------------------------------------------------------------------
-Material* MaterialManager::getSPMaterial(const std::string& shader_name)
+Material* MaterialManager::getSPMaterial(const std::string& shader_name,
+                                         const std::string& layer_one_lc)
 {
-    auto ret = m_sp_materials.find(shader_name);
+    core::stringc lc(layer_one_lc.c_str());
+    lc.make_lower();
+    const std::string key = shader_name + lc.c_str();
+    auto ret = m_sp_materials.find(key);
     if (ret != m_sp_materials.end())
     {
         return ret->second;
     }
-    Material* m = new Material("Default", false, false, false, shader_name);
-    m_sp_materials[shader_name] = m;
+    Material* m = new Material(layer_one_lc.empty() ? "unicolor_white" :
+        layer_one_lc, false, false, false, shader_name);
+    m_sp_materials[key] = m;
     return m;
 }   // getSPMaterial
 

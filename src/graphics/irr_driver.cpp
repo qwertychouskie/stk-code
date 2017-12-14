@@ -1554,6 +1554,13 @@ video::ITexture *IrrDriver::getTexture(const std::string &filename,
  */
 void IrrDriver::grabAllTextures(const scene::IMesh *mesh)
 {
+#ifndef SERVER_ONLY
+    if (CVS->isGLSL())
+    {
+        // SPM files has shared_ptr auto-delete texture 
+        return;
+    }
+#endif
     const unsigned int n = mesh->getMeshBufferCount();
 
     for(unsigned int i=0; i<n; i++)
@@ -1576,6 +1583,13 @@ void IrrDriver::grabAllTextures(const scene::IMesh *mesh)
  */
 void IrrDriver::dropAllTextures(const scene::IMesh *mesh)
 {
+#ifndef SERVER_ONLY
+    if (CVS->isGLSL())
+    {
+        // SPM files has shared_ptr auto-delete texture 
+        return;
+    }
+#endif
     const unsigned int n = mesh->getMeshBufferCount();
 
     for(unsigned int i=0; i<n; i++)

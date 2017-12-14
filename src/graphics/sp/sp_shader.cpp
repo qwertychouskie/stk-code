@@ -122,9 +122,9 @@ void SPShader::addAllTextures(RenderPass rp)
 #endif
     }
 
-    // Add tex_layer_0-7 if exists in shader, sampler is always ST_TRILINEAR,
+    // Add tex_layer_0-5 if exists in shader, sampler is always ST_TRILINEAR,
     // texture type is always GL_TEXTURE_2D
-    for (unsigned i = 0; i < irr::video::MATERIAL_MAX_TEXTURES; i++)
+    for (unsigned i = 0; i < 6; i++)
     {
         std::string texture_name = "tex_layer_";
         texture_name += StringUtils::toString(i);

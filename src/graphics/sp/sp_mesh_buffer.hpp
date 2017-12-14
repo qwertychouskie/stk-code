@@ -145,19 +145,21 @@ public:
         m_indices = std::move(indices);
     }
     // ------------------------------------------------------------------------
-    void setMaterial(const video::SMaterial& m)
+    void setSTKMaterial(Material* m)
     {
-        m_material = m;
+        m_stk_material = m;
     }
     // ------------------------------------------------------------------------
     virtual const video::SMaterial& getMaterial() const
     {
-        return m_material;
+        static video::SMaterial unused;
+        return unused;
     }
     // ------------------------------------------------------------------------
     virtual video::SMaterial& getMaterial()
     {
-        return m_material;
+        static video::SMaterial unused;
+        return unused;
     }
     // ------------------------------------------------------------------------
     virtual const void* getVertices() const
