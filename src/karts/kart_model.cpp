@@ -34,6 +34,7 @@
 #include "graphics/stk_animated_mesh.hpp"
 #include "graphics/sp/sp_animation.hpp"
 #include "graphics/sp/sp_mesh.hpp"
+#include "graphics/sp/sp_mesh_buffer.hpp"
 #include "io/file_manager.hpp"
 #include "io/xml_node.hpp"
 #include "karts/abstract_kart.hpp"
@@ -571,11 +572,6 @@ bool KartModel::loadModels(const KartProperties &kart_properties)
     }
 
 #ifndef SERVER_ONLY
-    scene::ISkinnedMesh* sm = dynamic_cast<scene::ISkinnedMesh*>(m_mesh);
-    if (sm)
-    {
-        MeshTools::createSkinnedMeshWithTangents(sm, &MeshTools::isNormalMap);
-    }
 #endif
     m_mesh->grab();
     irr_driver->grabAllTextures(m_mesh);
@@ -584,15 +580,23 @@ bool KartModel::loadModels(const KartProperties &kart_properties)
     MeshTools::minMax3D(m_mesh->getMesh(m_animation_frame[AF_STRAIGHT]),
                         &kart_min, &kart_max);
 
+#ifndef SERVER_ONLY
     // Test if kart model support colorization
-    for (u32 i = 0; i < m_mesh->getMeshBufferCount(); i++)
+    if (CVS->isGLSL())
     {
-        scene::IMeshBuffer* mb = m_mesh->getMeshBuffer(i);
-        Material* material = material_manager->getMaterialFor(mb
-            ->getMaterial().getTexture(0), mb);
-        m_support_colorization =
-            m_support_colorization || material->isColorizable();
+        for (u32 i = 0; i < m_mesh->getMeshBufferCount(); i++)
+        {
+            SP::SPMeshBuffer* mb =
+                static_cast<SP::SPMeshBuffer*>(m_mesh->getMeshBuffer(i));
+            std::vector<Material*> mbs = mb->getAllSTKMaterials();
+            for (Material* m : mbs)
+            {
+                m_support_colorization =
+                    m_support_colorization || m->isColorizable();
+            }
+        }
     }
+#endif
 
 #undef MOVE_KART_MESHES
 #ifdef MOVE_KART_MESHES

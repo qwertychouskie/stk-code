@@ -53,102 +53,13 @@ SPMeshBuffer::~SPMeshBuffer()
 void SPMeshBuffer::initDrawMaterial()
 {
 #ifndef SERVER_ONLY
-    // layer 1, uv 1 texture (white default if none), reported by .spm
-    // layer 2, uv 2 texture (white default if none), reported by .spm
-/*    core::stringc layer_two = m_material.getTexture(1) ?
-        m_material.getTexture(1)->getName().getPtr() : "";
-    layer_two.make_lower();
-    const std::string lt_cmp = StringUtils::getBasename(layer_two.c_str());
-    STKTexManager* stktm = STKTexManager::getInstance();
-    if (m_material.getTexture(0) == NULL)
-    {
-        m_material.setTexture(0, stktm->getUnicolorTexture
-            (irr::video::SColor(255, 255, 255, 255)));
-    }
-    if (m_material.getTexture(1) == NULL)
-    {
-        m_material.setTexture(1, stktm->getUnicolorTexture
-            (irr::video::SColor(255, 255, 255, 255)));
-    }
-    m_stk_material = material_manager->getMaterialFor(m_material.getTexture(0),
-        lt_cmp);
-    if (m_stk_material == NULL)
-    {
-        m_stk_material = material_manager->getSPMaterial("solid");
-    }
-    else
-    {
-        // install
-        m_stk_material->getTexture();
-    }
-    m_tex_cmp = m_material.getTexture(0)->getName().getPtr();
-    m_tex_cmp += m_material.getTexture(1)->getName().getPtr();
-
-    // Default all transparent first
-    for (unsigned i = 2; i < video::MATERIAL_MAX_TEXTURES; i++)
-    {
-        m_material.setTexture(i, stktm->getUnicolorTexture
-            (irr::video::SColor(0, 0, 0, 0)));
-    }
-
-    // Below all textures are reported by material_manager
-    // Splatting different case, 3 4 5 6 are 1 2 3 4 splatting detail
-    if (m_stk_material->getShaderName() == "splatting")
-    {
-
-        m_material.setTexture(2, stktm->getTexture(m_stk_material
-            ->getSplatting1(), &stc));
-        m_material.setTexture(3, stktm->getTexture(m_stk_material
-            ->getSplatting2(), &stc));
-        m_material.setTexture(4, stktm->getTexture(m_stk_material
-            ->getSplatting3(), &stc));
-        m_material.setTexture(5, stktm->getTexture(m_stk_material
-            ->getSplatting4(), &stc));
-    }
-    else
-    {
-        // layer 3, gloss texture (transparent default if none)
-        // layer 4, normal map texture (transparent default if none)
-        // layer 5, colorization mask texture (white default if non-colorizable,
-        // transparent otherwise)
-        if (CVS->isDefferedEnabled())
-        {
-            if (!m_stk_material->getGlossMap().empty())
-            {
-                m_material.setTexture(2, stktm
-                    ->getTexture(m_stk_material->getGlossMap()));
-            }
-            if (!m_stk_material->getNormalMap().empty())
-            {
-                m_material.setTexture(3, stktm
-                    ->getTexture(m_stk_material->getNormalMap(), &nmtc));
-            }
-        }
-        if (m_stk_material->isColorizable())
-        {
-            if (!m_stk_material->getColorizationMask().empty())
-            {
-                m_material.setTexture(4, stktm->getTexture(m_stk_material
-                    ->getColorizationMask(), &cmtc));
-            }
-        }
-        else
-        {
-            m_material.setTexture(4, stktm->getUnicolorTexture
-                (irr::video::SColor(255, 255, 255, 255)));
-        }
-    }*/
-    if (!m_stk_material->backFaceCulling())
-    {
-        m_material.setFlag(video::EMF_BACK_FACE_CULLING, false);
-    }
-    if (race_manager->getReverseTrack() &&
-        m_stk_material->getMirrorAxisInReverse() != ' ')
+    Material* m = std::get<2>(m_stk_material[0]);
+    if (race_manager->getReverseTrack() && m->getMirrorAxisInReverse() != ' ')
     {
         for (unsigned i = 0; i < getVertexCount(); i++)
         {
             using namespace MiniGLM;
-            if (m_stk_material->getMirrorAxisInReverse() == 'V')
+            if (m->getMirrorAxisInReverse() == 'V')
             {
                 m_vertices[i].m_all_uvs[1] =
                     toFloat16(1.0f - toFloat32(m_vertices[i].m_all_uvs[1]));
@@ -184,8 +95,9 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
 {
     m_skinned = skinned;
 #ifndef SERVER_ONLY
-    bool use_2_uv = m_stk_material->use2UV();
-    bool use_tangents = m_stk_material->getShaderName() == "normalmap" &&
+    bool use_2_uv = std::get<2>(m_stk_material[0])->use2UV();
+    bool use_tangents =
+        std::get<2>(m_stk_material[0])->getShaderName() == "normalmap" &&
         CVS->isGLSL();
     const bool vt_2101010 = CVS->isARBVertexType2101010RevUsable();
     const unsigned pitch = 48 - (use_tangents ? 0 : 4) - (use_2_uv ? 0 : 4) -
@@ -274,8 +186,9 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
 void SPMeshBuffer::recreateVAO(unsigned i)
 {
 #ifndef SERVER_ONLY
-    bool use_2_uv = m_stk_material->use2UV();
-    bool use_tangents = m_stk_material->getShaderName() == "normalmap" &&
+    bool use_2_uv = std::get<2>(m_stk_material[0])->use2UV();
+    bool use_tangents =
+        std::get<2>(m_stk_material[0])->getShaderName() == "normalmap" &&
         CVS->isGLSL();
     const bool vt_2101010 = CVS->isARBVertexType2101010RevUsable();
     const unsigned pitch = 48 - (use_tangents ? 0 : 4) - (use_2_uv ? 0 : 4) -

@@ -26,7 +26,9 @@
 #include <IMeshBuffer.h>
 #include <S3DVertex.h>
 
+#include <cassert>
 #include <string>
+#include <tuple>
 #include <vector>
 
 using namespace irr;
@@ -40,9 +42,8 @@ namespace SP
 class SPMeshBuffer : public IMeshBuffer
 {
 private:
-    video::SMaterial m_material;
-
-    Material* m_stk_material;
+    std::vector<std::tuple<unsigned/*first_index_id*/,
+        unsigned/*indices_count*/, Material*> > m_stk_material;
 
     std::vector<video::S3DVertexSkinnedMesh> m_vertices;
 
@@ -74,7 +75,7 @@ public:
 #ifdef _DEBUG
         setDebugName("SMeshBuffer");
 #endif
-        m_stk_material = NULL;
+        m_stk_material.resize(1, std::make_tuple(0u, 0u, nullptr));
         m_skinned = false;
 
         for (unsigned i = 0; i < DCT_FOR_VAO; i++)
@@ -96,6 +97,8 @@ public:
     // ------------------------------------------------------------------------
     ~SPMeshBuffer();
     // ------------------------------------------------------------------------
+    void combineMeshBuffer(SPMeshBuffer* spmb);
+    // ------------------------------------------------------------------------
     void bindVAO(DrawCallType dct) const     { glBindVertexArray(m_vao[dct]); }
     // ------------------------------------------------------------------------
     void draw(DrawCallType dct) const
@@ -109,7 +112,30 @@ public:
     // ------------------------------------------------------------------------
     void uploadGLMesh(bool skinned);
     // ------------------------------------------------------------------------
-    Material* getSTKMaterial() const                 { return m_stk_material; }
+    Material* getSTKMaterial(unsigned first_index = 0) const
+    {
+        for (unsigned i = 0; i < m_stk_material.size(); i++)
+        {
+            if (i == unsigned(m_stk_material.size() - 1) ||
+                (first_index >= std::get<0>(m_stk_material[i]) &&
+                first_index < std::get<0>(m_stk_material[i + 1])))
+            {
+                return std::get<2>(m_stk_material[i]);
+            }
+        }
+        assert(false);
+        return NULL;
+    }
+    // ------------------------------------------------------------------------
+    std::vector<Material*> getAllSTKMaterials() const
+    {
+        std::vector<Material*> ret;
+        for (unsigned i = 0; i < m_stk_material.size(); i++)
+        {
+            ret.push_back(std::get<2>(m_stk_material[i]));
+        }
+        return ret;
+    }
     // ------------------------------------------------------------------------
     const std::string& getTextureCompare() const          { return m_tex_cmp; }
     // ------------------------------------------------------------------------
@@ -147,7 +173,7 @@ public:
     // ------------------------------------------------------------------------
     void setSTKMaterial(Material* m)
     {
-        m_stk_material = m;
+        m_stk_material[0] = std::make_tuple(0u, 0u, m);
     }
     // ------------------------------------------------------------------------
     virtual const video::SMaterial& getMaterial() const
