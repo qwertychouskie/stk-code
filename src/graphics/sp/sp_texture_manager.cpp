@@ -114,6 +114,10 @@ void SPTextureManager::checkForGLCommand(bool before_scene)
         {
             std::lock_guard<std::mutex> lock(m_gl_cmd_mutex);
             m_gl_cmd_functions.push_back(gl_cmd);
+            if (!before_scene)
+            {
+                return;
+            }
         }
         else
         {
@@ -132,7 +136,7 @@ std::shared_ptr<SPTexture> SPTextureManager::getTexture(const std::string& p)
         return ret->second;
     }
     std::shared_ptr<SPTexture> t = std::make_shared<SPTexture>(p);
-    t.get()->threadLoaded();
+    addThreadedFunction(std::bind(&SPTexture::threadLoaded, t));
     m_textures[p] = t;
     return t;
 }   // getTexture

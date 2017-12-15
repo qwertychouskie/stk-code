@@ -75,9 +75,10 @@ private:
 
     bool m_skinned;
 
-    bool m_init_texture;
-
     std::string m_tex_cmp;
+
+    // ------------------------------------------------------------------------
+    bool initBindlessTexture();
 
 public:
     SPMeshBuffer()
@@ -101,7 +102,6 @@ public:
         m_uploaded_gl = false;
         m_uploaded_instance = false;
         m_skinned = false;
-        m_init_texture = false;
     }
     // ------------------------------------------------------------------------
     ~SPMeshBuffer();

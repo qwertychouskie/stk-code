@@ -16,6 +16,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "graphics/sp/sp_mesh_buffer.hpp"
+#include "graphics/sp/sp_texture.hpp"
 #include "graphics/central_settings.hpp"
 #include "graphics/material.hpp"
 #include "graphics/material_manager.hpp"
@@ -99,6 +100,24 @@ inline int srgbToLinear(float color_srgb)
 }
 
 // ----------------------------------------------------------------------------
+bool SPMeshBuffer::initBindlessTexture()
+{
+#ifndef SERVER_ONLY
+    for (unsigned i = 0; i < m_stk_material.size(); i++)
+    {
+        for (unsigned j = 0; j < 6; j++)
+        {
+            if (m_textures[i][j]->getTextureHandle() == 0)
+            {
+                return false;
+            }
+        }
+    }
+#endif
+    return true;
+}
+
+// ----------------------------------------------------------------------------
 void SPMeshBuffer::uploadGLMesh()
 {
     if (m_uploaded_gl)
@@ -115,6 +134,12 @@ void SPMeshBuffer::uploadGLMesh()
             m_textures[i][j] = SPTextureManager::get()->getTexture
                 (std::get<2>(m_stk_material[i])->getSamplerPath(j));
         }
+    }
+    if (CVS->isARBBindlessTextureUsable())
+    {
+        SPTextureManager::get()->increaseGLCommandFunctionCount(1);
+        SPTextureManager::get()->addGLCommandFunction
+            (std::bind(&SPMeshBuffer::initBindlessTexture, this));
     }
 
     bool use_2_uv = std::get<2>(m_stk_material[0])->use2UV();
@@ -366,14 +391,6 @@ void SPMeshBuffer::recreateVAO(unsigned i)
 void SPMeshBuffer::uploadInstanceData()
 {
 #ifndef SERVER_ONLY
-    if (!m_init_texture)
-    {
-        if (CVS->isARBBindlessTextureUsable())
-        {
-        }
-        m_init_texture = true;
-    }
-
     for (unsigned i = 0; i < DCT_FOR_VAO; i++)
     {
         if (m_ins_dat[i].empty())

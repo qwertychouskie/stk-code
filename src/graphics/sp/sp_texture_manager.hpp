@@ -109,7 +109,7 @@ public:
     }
     // ------------------------------------------------------------------------
     void increaseGLCommandFunctionCount(int count)
-                                { m_gl_cmd_function_count.fetch_add(count); }
+                                  { m_gl_cmd_function_count.fetch_add(count); }
     // ------------------------------------------------------------------------
     void checkForGLCommand(bool before_scene = false);
     // ------------------------------------------------------------------------

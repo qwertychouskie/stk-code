@@ -35,7 +35,8 @@ SPTexture::SPTexture(const std::string& path)
 #ifndef SERVER_ONLY
     glGenTextures(1, &m_texture_name);
 #endif
-    createWhite();
+    createWhite(false/*private_init*/);
+
     m_img_loader = irr_driver->getVideoDriver()->getImageLoaderForFile
         (path.c_str());
     if (m_img_loader == NULL)
@@ -58,14 +59,7 @@ SPTexture::SPTexture(bool white)
     {
         createTransparent();
     }
-#ifndef USE_GLES2
-    if (CVS->isARBBindlessTextureUsable())
-    {
-        m_texture_handle = glGetTextureSamplerHandleARB(m_texture_name,
-            getSampler(ST_TRILINEAR));
-        glMakeTextureHandleResidentARB(m_texture_handle);
-    }
-#endif
+    addTextureHandle();
 #endif
 }   // SPTexture
 
@@ -87,17 +81,17 @@ SPTexture::~SPTexture()
 }   // ~SPTexture
 
 // ----------------------------------------------------------------------------
-/*uint64_t SPTexture::getTextureHandle()
+void SPTexture::addTextureHandle()
 {
 #ifndef USE_GLES2
-    if (m_texture_handle == 0)
+    if (CVS->isARBBindlessTextureUsable())
     {
         m_texture_handle = glGetTextureSamplerHandleARB(m_texture_name,
             getSampler(ST_TRILINEAR));
+        glMakeTextureHandleResidentARB(m_texture_handle);
     }
 #endif
-    return m_texture_handle;
-}   // getTextureHandle*/
+}   // addTextureHandle
 
 // ----------------------------------------------------------------------------
 std::shared_ptr<video::IImage> SPTexture::getImageBuffer() const
@@ -161,6 +155,32 @@ void SPTexture::initMaterial(Material* m)
 // ----------------------------------------------------------------------------
 void SPTexture::threadLoaded()
 {
-}
+    std::shared_ptr<video::IImage> image = getImageBuffer();
+    SPTextureManager::get()->increaseGLCommandFunctionCount(1);
+    SPTextureManager::get()->addGLCommandFunction([this, image]()->bool
+        {
+            if (image)
+            {
+                glBindTexture(GL_TEXTURE_2D, m_texture_name);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                    image->getDimension().Width, image->getDimension().Height,
+                    0, GL_BGRA, GL_UNSIGNED_BYTE, image->lock());
+                glGenerateMipmap(GL_TEXTURE_2D);
+                glBindTexture(GL_TEXTURE_2D, 0);
+            }
+            addTextureHandle();
+            if (image)
+            {
+                m_width.store(image->getDimension().Width);
+                m_height.store(image->getDimension().Height);
+            }
+            else
+            {
+                m_width.store(2);
+                m_height.store(2);
+            }
+            return true;
+        });
+}   // threadLoaded
 
 }

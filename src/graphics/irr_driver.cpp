@@ -40,6 +40,7 @@
 #include "graphics/sp/sp_base.hpp"
 #include "graphics/sp/sp_mesh.hpp"
 #include "graphics/sp/sp_mesh_node.hpp"
+#include "graphics/sp/sp_texture_manager.hpp"
 #include "graphics/stk_mesh_scene_node.hpp"
 #include "graphics/stk_tex_manager.hpp"
 #include "graphics/stk_texture.hpp"
@@ -1820,6 +1821,7 @@ void IrrDriver::update(float dt)
     m_wind->update();
 
     PropertyAnimator::get()->update(dt);
+    SP::SPTextureManager::get()->checkForGLCommand();
 
     World *world = World::getWorld();
 

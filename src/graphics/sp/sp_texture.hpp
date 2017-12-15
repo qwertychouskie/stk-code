@@ -23,6 +23,7 @@
 #include "utils/no_copy.hpp"
 
 #include <atomic>
+#include <cassert>
 #include <memory>
 #include <string>
 
@@ -58,6 +59,8 @@ private:
     bool m_alpha_mask_applied = false;
 
     // ------------------------------------------------------------------------
+    void addTextureHandle();
+    // ------------------------------------------------------------------------
     void createTransparent()
     {
 #ifndef SERVER_ONLY
@@ -73,7 +76,7 @@ private:
 #endif
     }
     // ------------------------------------------------------------------------
-    void createWhite()
+    void createWhite(bool private_init = true)
     {
 #ifndef SERVER_ONLY
         glBindTexture(GL_TEXTURE_2D, m_texture_name);
@@ -83,9 +86,17 @@ private:
         glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, 1, 1, 0, GL_BGRA,
             GL_UNSIGNED_BYTE, data);
         glBindTexture(GL_TEXTURE_2D, 0);
-        m_width.store(2);
-        m_height.store(2);
-#endif 
+        if (private_init)
+        {
+            m_width.store(2);
+            m_height.store(2);
+        }
+        else
+        {
+            m_width.store(0);
+            m_height.store(0);
+        }
+#endif
     }
     // ------------------------------------------------------------------------
     SPTexture(bool white);
@@ -117,6 +128,12 @@ public:
     GLuint getOpenGLTextureName() const              { return m_texture_name; }
     // ------------------------------------------------------------------------
     uint64_t getTextureHandle() const              { return m_texture_handle; }
+    // ------------------------------------------------------------------------
+    const uint64_t* getTextureHandlePointer() const
+    {
+        assert(m_texture_handle != 0);
+        return &m_texture_handle;
+    }
     // ------------------------------------------------------------------------
     void initMaterial(Material* m);
     // ------------------------------------------------------------------------
