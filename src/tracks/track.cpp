@@ -43,6 +43,7 @@
 #include "graphics/stk_tex_manager.hpp"
 #include "graphics/vao_manager.hpp"
 #include "graphics/sp/sp_base.hpp"
+#include "graphics/sp/sp_mesh_buffer.hpp"
 #include "io/file_manager.hpp"
 #include "io/xml_node.hpp"
 #include "items/item.hpp"
@@ -938,129 +939,29 @@ void Track::convertTrackToBullet(scene::ISceneNode *node)
                 mb->getVertexType());
             continue;
         }
-
-        // Handle readonly materials correctly: mb->getMaterial can return
-        // NULL if the node is not using readonly materials. E.g. in case
-        // of a water scene node, the mesh (which is the animated copy of
-        // the original mesh) does not contain any material information,
-        // the material is only available in the node.
-        const video::SMaterial &irrMaterial =
-            is_readonly_material ? mb->getMaterial()
-                                 : node->getMaterial(i);
-        video::ITexture* t=irrMaterial.getTexture(0);
-
-        const Material* material=0;
-        TriangleMesh *tmesh = m_track_mesh;
-        if(t)
-        {
-            std::string image = t->getName().getPtr();
-
-            // the third boolean argument is false because at this point we're
-            // dealing physics, so it's useless to warn about missing textures,
-            // we'd just get duplicate/useless warnings
-            material=material_manager->getMaterial(StringUtils::getBasename(image),
-                                                   false, false, false);
-            // Special gfx meshes will not be stored as a normal physics body,
-            // but converted to a collision body only, so that ray tests
-            // against them can be done.
-            if(material->isSurface())
-                tmesh = m_gfx_effect_mesh;
-            // A material which is a surface must be converted,
-            // even if it's marked as ignore. So only ignore
-            // non-surface materials.
-            else if(material->isIgnore())
-                continue;
-        }
-
         u16 *mbIndices = mb->getIndices();
         Vec3 vertices[3];
         Vec3 normals[3];
 
-        if (mb->getVertexType() == video::EVT_STANDARD)
+#ifndef SERVER_ONLY
+        if (CVS->isGLSL())
         {
-            irr::video::S3DVertex* mbVertices=(video::S3DVertex*)mb->getVertices();
-            for (unsigned int matrix_index = 0; matrix_index < matrices.size(); matrix_index++)
-            {
-                for (unsigned int j = 0; j < mb->getIndexCount(); j += 3)
-                {
-                    for (unsigned int k = 0; k < 3; k++)
-                    {
-                        int indx = mbIndices[j + k];
-                        core::vector3df v = mbVertices[indx].Pos;
-                        matrices[matrix_index].transformVect(v);
-                        vertices[k] = v;
-                        normals[k] = mbVertices[indx].Normal;
-                    }   // for k
-
-                    if (tmesh)
-                    {
-                        tmesh->addTriangle(vertices[0], vertices[1],
-                            vertices[2], normals[0],
-                            normals[1], normals[2],
-                            material);
-                    }
-                }   // for j
-            } // for matrix_index
-        }
-        else if (mb->getVertexType() == video::EVT_2TCOORDS)
-        {
-            irr::video::S3DVertex2TCoords* mbVertices = (video::S3DVertex2TCoords*)mb->getVertices();
-            for (unsigned int matrix_index = 0; matrix_index < matrices.size(); matrix_index++)
-            {
-                for (unsigned int j = 0; j < mb->getIndexCount(); j += 3)
-                {
-                    for (unsigned int k = 0; k < 3; k++)
-                    {
-                        int indx = mbIndices[j + k];
-                        core::vector3df v = mbVertices[indx].Pos;
-                        matrices[matrix_index].transformVect(v);
-                        vertices[k] = v;
-                        normals[k] = mbVertices[indx].Normal;
-                    }   // for k
-
-                    if (tmesh)
-                    {
-                        tmesh->addTriangle(vertices[0], vertices[1],
-                            vertices[2], normals[0],
-                            normals[1], normals[2],
-                            material);
-                    }
-                }   // for j
-            } // for matrix_index
-        }
-        else if (mb->getVertexType() == video::EVT_TANGENTS)
-        {
-            irr::video::S3DVertexTangents* mbVertices = (video::S3DVertexTangents*)mb->getVertices();
-            for (unsigned int matrix_index = 0; matrix_index < matrices.size(); matrix_index++)
-            {
-                for (unsigned int j = 0; j < mb->getIndexCount(); j += 3)
-                {
-                    for (unsigned int k = 0; k < 3; k++)
-                    {
-                        int indx = mbIndices[j + k];
-                        core::vector3df v = mbVertices[indx].Pos;
-                        matrices[matrix_index].transformVect(v);
-                        vertices[k] = v;
-                        normals[k] = mbVertices[indx].Normal;
-                    }   // for k
-
-                    if (tmesh)
-                    {
-                        tmesh->addTriangle(vertices[0], vertices[1],
-                            vertices[2], normals[0],
-                            normals[1], normals[2],
-                            material);
-                    }
-                }   // for j
-            } // for matrix_index
-        }
-        else if (mb->getVertexType() == video::EVT_SKINNED_MESH)
-        {
+            SP::SPMeshBuffer* spmb = static_cast<SP::SPMeshBuffer*>(mb);
             video::S3DVertexSkinnedMesh* mbVertices = (video::S3DVertexSkinnedMesh*)mb->getVertices();
             for (unsigned int matrix_index = 0; matrix_index < matrices.size(); matrix_index++)
             {
                 for (unsigned int j = 0; j < mb->getIndexCount(); j += 3)
                 {
+                    TriangleMesh* tmesh = m_track_mesh;
+                    Material* material = spmb->getSTKMaterial(mbIndices[j]);
+                    if (material->isSurface())
+                    {
+                        tmesh = m_gfx_effect_mesh;
+                    }
+                    else if (material->isIgnore())
+                    {
+                        continue;
+                    }
                     for (unsigned int k = 0; k < 3; k++)
                     {
                         int indx = mbIndices[j + k];
@@ -1069,7 +970,6 @@ void Track::convertTrackToBullet(scene::ISceneNode *node)
                         vertices[k] = v;
                         normals[k] = MiniGLM::decompressVector3(mbVertices[indx].m_normal);
                     }   // for k
-
                     if (tmesh)
                     {
                         tmesh->addTriangle(vertices[0], vertices[1],
@@ -1079,6 +979,121 @@ void Track::convertTrackToBullet(scene::ISceneNode *node)
                     }
                 }   // for j
             } // for matrix_index
+        }
+        else
+#endif
+        {
+            // Handle readonly materials correctly: mb->getMaterial can return
+            // NULL if the node is not using readonly materials. E.g. in case
+            // of a water scene node, the mesh (which is the animated copy of
+            // the original mesh) does not contain any material information,
+            // the material is only available in the node.
+            const video::SMaterial &irrMaterial =
+                is_readonly_material ? mb->getMaterial()
+                                     : node->getMaterial(i);
+            video::ITexture* t=irrMaterial.getTexture(0);
+
+            const Material* material=0;
+            TriangleMesh *tmesh = m_track_mesh;
+            if(t)
+            {
+                std::string image = t->getName().getPtr();
+
+                // the third boolean argument is false because at this point we're
+                // dealing physics, so it's useless to warn about missing textures,
+                // we'd just get duplicate/useless warnings
+                material=material_manager->getMaterial(StringUtils::getBasename(image),
+                                                       false, false, false);
+                // Special gfx meshes will not be stored as a normal physics body,
+                // but converted to a collision body only, so that ray tests
+                // against them can be done.
+                if(material->isSurface())
+                    tmesh = m_gfx_effect_mesh;
+                // A material which is a surface must be converted,
+                // even if it's marked as ignore. So only ignore
+                // non-surface materials.
+                else if(material->isIgnore())
+                    continue;
+            }
+
+            if (mb->getVertexType() == video::EVT_STANDARD)
+            {
+                irr::video::S3DVertex* mbVertices=(video::S3DVertex*)mb->getVertices();
+                for (unsigned int matrix_index = 0; matrix_index < matrices.size(); matrix_index++)
+                {
+                    for (unsigned int j = 0; j < mb->getIndexCount(); j += 3)
+                    {
+                        for (unsigned int k = 0; k < 3; k++)
+                        {
+                            int indx = mbIndices[j + k];
+                            core::vector3df v = mbVertices[indx].Pos;
+                            matrices[matrix_index].transformVect(v);
+                            vertices[k] = v;
+                            normals[k] = mbVertices[indx].Normal;
+                        }   // for k
+
+                        if (tmesh)
+                        {
+                            tmesh->addTriangle(vertices[0], vertices[1],
+                                vertices[2], normals[0],
+                                normals[1], normals[2],
+                                material);
+                        }
+                    }   // for j
+                } // for matrix_index
+            }
+            else if (mb->getVertexType() == video::EVT_2TCOORDS)
+            {
+                irr::video::S3DVertex2TCoords* mbVertices = (video::S3DVertex2TCoords*)mb->getVertices();
+                for (unsigned int matrix_index = 0; matrix_index < matrices.size(); matrix_index++)
+                {
+                    for (unsigned int j = 0; j < mb->getIndexCount(); j += 3)
+                    {
+                        for (unsigned int k = 0; k < 3; k++)
+                        {
+                            int indx = mbIndices[j + k];
+                            core::vector3df v = mbVertices[indx].Pos;
+                            matrices[matrix_index].transformVect(v);
+                            vertices[k] = v;
+                            normals[k] = mbVertices[indx].Normal;
+                        }   // for k
+
+                        if (tmesh)
+                        {
+                            tmesh->addTriangle(vertices[0], vertices[1],
+                                vertices[2], normals[0],
+                                normals[1], normals[2],
+                                material);
+                        }
+                    }   // for j
+                } // for matrix_index
+            }
+            else if (mb->getVertexType() == video::EVT_TANGENTS)
+            {
+                irr::video::S3DVertexTangents* mbVertices = (video::S3DVertexTangents*)mb->getVertices();
+                for (unsigned int matrix_index = 0; matrix_index < matrices.size(); matrix_index++)
+                {
+                    for (unsigned int j = 0; j < mb->getIndexCount(); j += 3)
+                    {
+                        for (unsigned int k = 0; k < 3; k++)
+                        {
+                            int indx = mbIndices[j + k];
+                            core::vector3df v = mbVertices[indx].Pos;
+                            matrices[matrix_index].transformVect(v);
+                            vertices[k] = v;
+                            normals[k] = mbVertices[indx].Normal;
+                        }   // for k
+
+                        if (tmesh)
+                        {
+                            tmesh->addTriangle(vertices[0], vertices[1],
+                                vertices[2], normals[0],
+                                normals[1], normals[2],
+                                material);
+                        }
+                    }   // for j
+                } // for matrix_index
+            }
         }
     }   // for i<getMeshBufferCount
 
@@ -1175,11 +1190,9 @@ bool Track::loadMainTrack(const XMLNode &root)
     else
     {
         // SPM does the combine for you
+        tangent_mesh = mesh;
 #ifndef SERVER_ONLY
-        tangent_mesh = mesh;
         tangent_mesh->grab();
-#else
-        tangent_mesh = mesh;
 #endif
     }
     // The merged mesh is grabbed by the octtree, so we don't need
@@ -2187,6 +2200,12 @@ void Track::loadObjects(const XMLNode* root, const std::string& path, ModelDefin
  */
 void Track::adjustForFog(scene::IMesh* mesh, scene::ISceneNode* parent_scene_node)
 {
+#ifndef SERVER_ONLY
+    if (CVS->isGLSL())
+    {
+        return;
+    }
+#endif
     unsigned int n = mesh->getMeshBufferCount();
     for (unsigned int i=0; i<n; i++)
     {
@@ -2198,7 +2217,7 @@ void Track::adjustForFog(scene::IMesh* mesh, scene::ISceneNode* parent_scene_nod
             if (t) material_manager->adjustForFog(t, mb, parent_scene_node, m_use_fog);
 
         }   // for j<MATERIAL_MAX_TEXTURES
-    }  // for i<getMeshBufferCount()
+} // for i<getMeshBufferCount()
 }
 
 //-----------------------------------------------------------------------------

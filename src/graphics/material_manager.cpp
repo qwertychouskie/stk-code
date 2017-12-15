@@ -256,7 +256,7 @@ Material* MaterialManager::getDefaultMaterial(video::E_MATERIAL_TYPE shader_type
     auto it = m_default_materials.find(shader_type);
     if (it == m_default_materials.end())
     {
-        Material* default_material = new Material("Default", false, false, false);
+        Material* default_material = new Material("unicolor_white", false, false, false);
 
         // TODO: workaround, should not hardcode these material types here?
         // Try to find a cleaner way

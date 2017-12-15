@@ -195,7 +195,9 @@ void SPShader::bindTextures(const irr::video::SMaterial& m, RenderPass rp)
     {
         glActiveTexture(GL_TEXTURE0 + p.second);
         glBindTexture(GL_TEXTURE_2D,
-            m.TextureLayer[p.first].Texture->getOpenGLTextureName());
+            STKTexManager::getInstance()->getUnicolorTexture(irr::video::SColor(255, 255 / ((int)p.second + 1), 255, 255))->getOpenGLTextureName());
+        //glBindTexture(GL_TEXTURE_2D,
+        //    m.TextureLayer[p.first].Texture->getOpenGLTextureName());
         glBindSampler(p.second, getSampler(ST_TRILINEAR));
     }
 #endif

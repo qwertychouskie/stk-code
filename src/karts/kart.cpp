@@ -1407,7 +1407,7 @@ void Kart::update(float dt)
             m_last_factor_engine_sound = 0.0f;
         }
     }
-
+printf("%s\n", m_terrain_info->getMaterial()->getSamplerPath(0));
     // Make sure that the ray doesn't hit the kart. This is done by
     // resetting the collision filter group, so that this collision
     // object is ignored during raycasting.

@@ -581,7 +581,7 @@ bool CentralVideoSettings::isARBSparseBufferUsable() const
 
 bool CentralVideoSettings::supportsThreadedTextureLoading() const
 {
-    return isARBPixelBufferObjectUsable() && isARBBufferStorageUsable() && isARBTextureStorageUsable();
+    return false;
 }
 
 #endif   // !SERVER_ONLY

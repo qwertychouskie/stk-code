@@ -189,6 +189,7 @@ void SPMesh::finalize()
         {
             if ((*itr)->combineMeshBuffer(*itr_next))
             {
+                (*itr)->recalculateBoundingBox();
                 delete *itr_next;
                 m_buffer.erase(itr_next);
                 continue;
