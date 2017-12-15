@@ -1,5 +1,9 @@
+#ifdef Use_Bindless_Texture
+flat in sampler2D tex_layer_0;
+#else
 // spm layer 1 texture
 uniform sampler2D tex_layer_0;
+#endif
 
 in vec2 uv;
 out vec4 o_frag_color;

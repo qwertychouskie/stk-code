@@ -19,7 +19,7 @@
 #include "graphics/central_settings.hpp"
 #include "graphics/material.hpp"
 #include "graphics/material_manager.hpp"
-#include "graphics/stk_tex_manager.hpp"
+#include "graphics/sp/sp_texture_manager.hpp"
 #include "race/race_manager.hpp"
 #include "utils/mini_glm.hpp"
 #include "utils/string_utils.hpp"
@@ -107,6 +107,16 @@ void SPMeshBuffer::uploadGLMesh()
     }
     m_uploaded_gl = true;
 #ifndef SERVER_ONLY
+    m_textures.resize(m_stk_material.size());
+    for (unsigned i = 0; i < m_stk_material.size(); i++)
+    {
+        for (unsigned j = 0; j < 6; j++)
+        {
+            m_textures[i][j] = SPTextureManager::get()->getTexture
+                (std::get<2>(m_stk_material[i])->getSamplerPath(j));
+        }
+    }
+
     bool use_2_uv = std::get<2>(m_stk_material[0])->use2UV();
     bool use_tangents =
         std::get<2>(m_stk_material[0])->getShaderName() == "normalmap" &&
@@ -114,7 +124,8 @@ void SPMeshBuffer::uploadGLMesh()
     const bool vt_2101010 = CVS->isARBVertexType2101010RevUsable();
     const unsigned pitch = 48 - (use_tangents ? 0 : 4) - (use_2_uv ? 0 : 4) -
         (m_skinned ? 0 : 16) + (use_tangents && !vt_2101010 ? 4 : 0)
-        + (!vt_2101010 ? 4 : 0);
+        + (!vt_2101010 ? 4 : 0) + (CVS->isARBBindlessTextureUsable() ? 48 : 0);
+    m_pitch = pitch;
 
     if (m_vbo != 0)
     {
@@ -216,9 +227,7 @@ void SPMeshBuffer::recreateVAO(unsigned i)
         std::get<2>(m_stk_material[0])->getShaderName() == "normalmap" &&
         CVS->isGLSL();
     const bool vt_2101010 = CVS->isARBVertexType2101010RevUsable();
-    const unsigned pitch = 48 - (use_tangents ? 0 : 4) - (use_2_uv ? 0 : 4) -
-        (m_skinned ? 0 : 16) + (use_tangents && !vt_2101010 ? 4 : 0)
-        + (!vt_2101010 ? 4 : 0);
+    const unsigned pitch = m_pitch;
 
     size_t offset = 0;
 
@@ -310,6 +319,19 @@ void SPMeshBuffer::recreateVAO(unsigned i)
         glEnableVertexAttribArray(7);
         glVertexAttribPointer(7, 4, GL_HALF_FLOAT, GL_FALSE, pitch,
             (void*)offset);
+        offset += 8; 
+    }
+    if (CVS->isARBBindlessTextureUsable())
+    {
+        // 3 * 2 uvec2 for bindless samplers
+        glEnableVertexAttribArray(13);
+        glVertexAttribIPointer(13, 4, GL_UNSIGNED_INT, pitch, (void*)offset);
+        offset += 16;
+        glEnableVertexAttribArray(14);
+        glVertexAttribIPointer(14, 4, GL_UNSIGNED_INT, pitch, (void*)offset);
+        offset += 16;
+        glEnableVertexAttribArray(15);
+        glVertexAttribIPointer(15, 4, GL_UNSIGNED_INT, pitch, (void*)offset);
     }
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
     glBindBuffer(GL_ARRAY_BUFFER, m_ins_array[i]);

@@ -51,6 +51,10 @@ private:
 
     core::dimension2d<u32> m_size;
 
+    bool m_colorized = false;
+
+    bool m_alpha_mask_applied = false;
+
     // ------------------------------------------------------------------------
     void createTransparent()
     {
@@ -58,6 +62,8 @@ private:
         glBindTexture(GL_TEXTURE_2D, m_texture_name);
         static uint32_t data[4] = { 0, 0, 0, 0 };
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_BGRA,
+            GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, 1, 1, 0, GL_BGRA,
             GL_UNSIGNED_BYTE, data);
         glBindTexture(GL_TEXTURE_2D, 0);
         m_size.Width = 2;
@@ -71,6 +77,8 @@ private:
         glBindTexture(GL_TEXTURE_2D, m_texture_name);
         static int32_t data[4] = { -1, -1, -1, -1 };
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_BGRA,
+            GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, 1, 1, 0, GL_BGRA,
             GL_UNSIGNED_BYTE, data);
         glBindTexture(GL_TEXTURE_2D, 0);
         m_size.Width = 2;
@@ -119,9 +127,11 @@ public:
     // ------------------------------------------------------------------------
     GLuint getOpenGLTextureName() const              { return m_texture_name; }
     // ------------------------------------------------------------------------
+    uint64_t getTextureHandle() const              { return m_texture_handle; }
+    // ------------------------------------------------------------------------
     void initMaterial(Material* m);
     // ------------------------------------------------------------------------
-    uint64_t getTextureHandle();
+    void threadLoaded();
 
 };
 

@@ -2,8 +2,12 @@ uniform sampler2D displacement_tex;
 uniform sampler2D mask_tex;
 uniform sampler2D color_tex;
 
+#ifdef Use_Bindless_Texture
+flat in sampler2D tex_layer_0;
+#else
 // spm layer 1 texture
 uniform sampler2D tex_layer_0;
+#endif
 
 uniform vec4 direction;
 

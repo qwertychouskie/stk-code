@@ -32,7 +32,7 @@ SPTextureManager* SPTextureManager::m_sptm = NULL;
 SPTextureManager::SPTextureManager()
                 : m_max_threaded_load_obj
                   ((unsigned)std::thread::hardware_concurrency()),
-                  m_subimage_function_count(0)
+                  m_gl_cmd_function_count(0)
 {
     if (m_max_threaded_load_obj.load() == 0)
     {
@@ -84,18 +84,18 @@ SPTextureManager::~SPTextureManager()
 }   // ~SPTextureManager
 
 // ----------------------------------------------------------------------------
-void SPTextureManager::checkForSubImage(bool before_scene)
+void SPTextureManager::checkForGLCommand(bool before_scene)
 {
-    if (m_subimage_function_count.load() == 0)
+    if (m_gl_cmd_function_count.load() == 0)
     {
         return;
     }
     while (true)
     {
-        std::unique_lock<std::mutex> ul(m_subimage_mutex);
-        if (m_subimage_functions.empty())
+        std::unique_lock<std::mutex> ul(m_gl_cmd_mutex);
+        if (m_gl_cmd_functions.empty())
         {
-            if (before_scene && m_subimage_function_count.load() != 0)
+            if (before_scene && m_gl_cmd_function_count.load() != 0)
             {
                 ul.unlock();
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -106,24 +106,33 @@ void SPTextureManager::checkForSubImage(bool before_scene)
                 return;
             }
         }
-        std::function<void()> subimage = m_subimage_functions.front();
-        m_subimage_functions.pop_front();
+        std::function<bool()> gl_cmd = m_gl_cmd_functions.front();
+        m_gl_cmd_functions.pop_front();
         ul.unlock();
-        subimage();
-        m_subimage_function_count.fetch_sub(1);
+        // if return false, re-added it to the back
+        if (gl_cmd() == false)
+        {
+            std::lock_guard<std::mutex> lock(m_gl_cmd_mutex);
+            m_gl_cmd_functions.push_back(gl_cmd);
+        }
+        else
+        {
+            m_gl_cmd_function_count.fetch_sub(1);
+        }
     }
-}   // checkForSubImage
+}   // checkForGLCommand
 
 // ----------------------------------------------------------------------------
 std::shared_ptr<SPTexture> SPTextureManager::getTexture(const std::string& p)
 {
-    checkForSubImage();
+    checkForGLCommand();
     auto ret = m_textures.find(p);
     if (ret != m_textures.end())
     {
         return ret->second;
     }
     std::shared_ptr<SPTexture> t = std::make_shared<SPTexture>(p);
+    t.get()->threadLoaded();
     m_textures[p] = t;
     return t;
 }   // getTexture

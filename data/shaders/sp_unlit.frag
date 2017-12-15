@@ -1,7 +1,12 @@
+#ifdef Use_Bindless_Texture
+flat in sampler2D tex_layer_0;
+flat in sampler2D tex_layer_2;
+#else
 // spm layer 1 texture
 uniform sampler2D tex_layer_0;
 // gloss map
 uniform sampler2D tex_layer_2;
+#endif
 
 in vec4 color;
 in vec3 normal;

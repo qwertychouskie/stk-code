@@ -1233,7 +1233,7 @@ void addObject(SPMeshNode* node)
 void updateModelMatrix()
 {
     // Make sure all textures (with handles) are loaded
-    SPTextureManager::get()->checkForSubImage(true/*before_scene*/);
+    SPTextureManager::get()->checkForGLCommand(true/*before_scene*/);
     if (!sp_culling)
     {
         return;

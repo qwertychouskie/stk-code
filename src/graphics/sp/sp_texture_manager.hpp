@@ -47,13 +47,13 @@ private:
 
     std::atomic_uint m_max_threaded_load_obj;
 
-    std::atomic_int m_subimage_function_count;
+    std::atomic_int m_gl_cmd_function_count;
 
     std::list<std::function<void()> > m_threaded_functions;
 
-    std::list<std::function<void()> > m_subimage_functions;
+    std::list<std::function<bool()> > m_gl_cmd_functions;
 
-    std::mutex m_thread_obj_mutex, m_subimage_mutex;
+    std::mutex m_thread_obj_mutex, m_gl_cmd_mutex;
 
     std::condition_variable m_thread_obj_cv;
 
@@ -102,16 +102,16 @@ public:
         m_thread_obj_cv.notify_one();
     }
     // ------------------------------------------------------------------------
-    void addSubImageFunction(std::function<void()> function)
+    void addGLCommandFunction(std::function<bool()> function)
     {
-        std::lock_guard<std::mutex> lock(m_subimage_mutex);
-        m_subimage_functions.push_back(function);
+        std::lock_guard<std::mutex> lock(m_gl_cmd_mutex);
+        m_gl_cmd_functions.push_back(function);
     }
     // ------------------------------------------------------------------------
-    void addSubImageFunctionCount(int count)
-                                { m_subimage_function_count.fetch_add(count); }
+    void increaseGLCommandFunctionCount(int count)
+                                { m_gl_cmd_function_count.fetch_add(count); }
     // ------------------------------------------------------------------------
-    void checkForSubImage(bool before_scene = false);
+    void checkForGLCommand(bool before_scene = false);
     // ------------------------------------------------------------------------
     std::shared_ptr<SPTexture> getTexture(const std::string& path);
 };

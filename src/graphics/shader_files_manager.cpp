@@ -152,7 +152,7 @@ GLuint ShaderFilesManager::loadShader(const std::string &file, unsigned type)
         code << "#define Explicit_Attrib_Location_Usable\n";
     }
 
-    if (CVS->isAZDOEnabled())
+    if (CVS->isARBBindlessTextureUsable())
     {
         code << "#extension GL_ARB_bindless_texture : enable\n";
         code << "#define Use_Bindless_Texture\n";
@@ -162,8 +162,6 @@ GLuint ShaderFilesManager::loadShader(const std::string &file, unsigned type)
         code << "#define UBO_DISABLED\n";
     if (CVS->supportsGLLayerInVertexShader())
         code << "#define VSLayer\n";
-    if (CVS->needsRGBBindlessWorkaround())
-        code << "#define SRGBBindlessFix\n";
     if (CVS->needsVertexIdWorkaround())
         code << "#define Needs_Vertex_Id_Workaround\n";
     if (CVS->isDefferedEnabled())

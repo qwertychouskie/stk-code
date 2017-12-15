@@ -16,6 +16,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "graphics/sp/sp_texture.hpp"
+#include "graphics/sp/sp_texture_manager.hpp"
 #include "graphics/sp/sp_base.hpp"
 #include "graphics/sp/sp_shader.hpp"
 #include "graphics/central_settings.hpp"
@@ -60,7 +61,7 @@ SPTexture::~SPTexture()
 }   // ~SPTexture
 
 // ----------------------------------------------------------------------------
-uint64_t SPTexture::getTextureHandle()
+/*uint64_t SPTexture::getTextureHandle()
 {
 #ifndef USE_GLES2
     if (m_texture_handle == 0)
@@ -70,7 +71,7 @@ uint64_t SPTexture::getTextureHandle()
     }
 #endif
     return m_texture_handle;
-}   // getTextureHandle
+}   // getTextureHandle*/
 
 // ----------------------------------------------------------------------------
 std::shared_ptr<video::IImage> SPTexture::getImageBuffer() const
@@ -96,5 +97,15 @@ std::shared_ptr<video::IImage> SPTexture::getImageBuffer() const
     assert(image->getReferenceCount() == 1);
     return std::shared_ptr<video::IImage>(image);
 }   // getImageBuffer
+
+// ----------------------------------------------------------------------------
+void SPTexture::initMaterial(Material* m)
+{
+}
+
+// ----------------------------------------------------------------------------
+void SPTexture::threadLoaded()
+{
+}
 
 }
