@@ -425,7 +425,7 @@ public:
     // ------------------------------------------------------------------------
     bool use2UV() const                      { return !m_uv_two_tex.empty(); }
     // ------------------------------------------------------------------------
-    const std::string& getSamplerPath(unsigned layer)
+    const std::string& getSamplerPath(unsigned layer) const
     {
         assert(layer < 6);
         return m_sampler_path[layer];

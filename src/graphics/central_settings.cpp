@@ -361,7 +361,7 @@ bool CentralVideoSettings::needRHWorkaround() const
 
 bool CentralVideoSettings::needsRGBBindlessWorkaround() const
 {
-    return m_need_srgb_workaround;
+    return false;
 }
 
 bool CentralVideoSettings::needsSRGBCapableVisualWorkaround() const
@@ -466,7 +466,7 @@ bool CentralVideoSettings::isEXTTextureFilterAnisotropicUsable() const
 
 bool CentralVideoSettings::isARBSRGBFramebufferUsable() const
 {
-    return hasSRGBFramebuffer;
+    return false;
 }
 
 #if defined(USE_GLES2)
@@ -508,7 +508,7 @@ bool CentralVideoSettings::supportsAsyncInstanceUpload() const
 
 bool CentralVideoSettings::supportsTextureCompression() const
 {
-    return isEXTTextureCompressionS3TCUsable() && isARBSRGBFramebufferUsable();
+    return isEXTTextureCompressionS3TCUsable();
 }
 
 bool CentralVideoSettings::isShadowEnabled() const

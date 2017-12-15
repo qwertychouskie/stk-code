@@ -953,7 +953,7 @@ void Track::convertTrackToBullet(scene::ISceneNode *node)
                 for (unsigned int j = 0; j < mb->getIndexCount(); j += 3)
                 {
                     TriangleMesh* tmesh = m_track_mesh;
-                    Material* material = spmb->getSTKMaterial(mbIndices[j]);
+                    Material* material = spmb->getSTKMaterial(j);
                     if (material->isSurface())
                     {
                         tmesh = m_gfx_effect_mesh;

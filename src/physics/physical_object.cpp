@@ -397,7 +397,7 @@ void PhysicalObject::init(const PhysicalObject::Settings& settings)
                 video::S3DVertexSkinnedMesh* mbVertices = (video::S3DVertexSkinnedMesh*)mb->getVertices();
                 for (unsigned int j = 0; j < mb->getIndexCount(); j += 3)
                 {
-                    Material* material = spmb->getSTKMaterial(mbIndices[j]);
+                    Material* material = spmb->getSTKMaterial(j);
                     if (material->isIgnore())
                     {
                         continue;
