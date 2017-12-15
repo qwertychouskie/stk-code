@@ -906,6 +906,7 @@ void destroy()
         return;
     }
 
+    SPTextureManager::destroy();
     for (auto& p : g_shaders)
     {
         delete p.second;

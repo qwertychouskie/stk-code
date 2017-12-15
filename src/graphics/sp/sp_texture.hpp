@@ -22,7 +22,7 @@
 #include "utils/log.hpp"
 #include "utils/no_copy.hpp"
 
-#include <dimension2d.h>
+#include <atomic>
 #include <memory>
 #include <string>
 
@@ -49,7 +49,9 @@ private:
 
     GLuint m_texture_name = 0;
 
-    core::dimension2d<u32> m_size;
+    std::atomic_uint m_width;
+
+    std::atomic_uint m_height;
 
     bool m_colorized = false;
 
@@ -66,8 +68,8 @@ private:
         glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, 1, 1, 0, GL_BGRA,
             GL_UNSIGNED_BYTE, data);
         glBindTexture(GL_TEXTURE_2D, 0);
-        m_size.Width = 2;
-        m_size.Height = 2;
+        m_width.store(2);
+        m_height.store(2);
 #endif
     }
     // ------------------------------------------------------------------------
@@ -81,25 +83,12 @@ private:
         glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, 1, 1, 0, GL_BGRA,
             GL_UNSIGNED_BYTE, data);
         glBindTexture(GL_TEXTURE_2D, 0);
-        m_size.Width = 2;
-        m_size.Height = 2;
+        m_width.store(2);
+        m_height.store(2);
 #endif 
     }
     // ------------------------------------------------------------------------
-    SPTexture(bool white)
-    {
-#ifndef SERVER_ONLY
-        glGenTextures(1, &m_texture_name);
-        if (white)
-        {
-            createWhite();
-        }
-        else
-        {
-            createTransparent();
-        }
-#endif
-    }
+    SPTexture(bool white);
 
 public:
     // ------------------------------------------------------------------------

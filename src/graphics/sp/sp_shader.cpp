@@ -17,7 +17,6 @@
 
 #include "graphics/sp/sp_shader.hpp"
 #include "graphics/shader_files_manager.hpp"
-#include "graphics/stk_tex_manager.hpp"
 #include "graphics/sp/sp_base.hpp"
 #include "graphics/sp/sp_uniform_assigner.hpp"
 #include "utils/no_copy.hpp"
@@ -190,14 +189,13 @@ void SPShader::bindPrefilledTextures(RenderPass rp)
 // ----------------------------------------------------------------------------
 void SPShader::bindTextures(const irr::video::SMaterial& m, RenderPass rp)
 {
+    return;
 #ifndef SERVER_ONLY
     for (auto& p : m_samplers[rp])
     {
         glActiveTexture(GL_TEXTURE0 + p.second);
         glBindTexture(GL_TEXTURE_2D,
-            STKTexManager::getInstance()->getUnicolorTexture(irr::video::SColor(255, 255 / ((int)p.second + 1), 255, 255))->getOpenGLTextureName());
-        //glBindTexture(GL_TEXTURE_2D,
-        //    m.TextureLayer[p.first].Texture->getOpenGLTextureName());
+            m.TextureLayer[p.first].Texture->getOpenGLTextureName());
         glBindSampler(p.second, getSampler(ST_TRILINEAR));
     }
 #endif

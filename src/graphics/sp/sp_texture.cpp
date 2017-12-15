@@ -29,7 +29,8 @@
 namespace SP
 {
 // ----------------------------------------------------------------------------
-SPTexture::SPTexture(const std::string& path) : m_path(path)
+SPTexture::SPTexture(const std::string& path)
+         : m_path(path), m_width(0), m_height(0)
 {
 #ifndef SERVER_ONLY
     glGenTextures(1, &m_texture_name);
@@ -44,19 +45,44 @@ SPTexture::SPTexture(const std::string& path) : m_path(path)
 }   // SPTexture
 
 // ----------------------------------------------------------------------------
+SPTexture::SPTexture(bool white)
+         : m_width(0), m_height(0)
+{
+#ifndef SERVER_ONLY
+    glGenTextures(1, &m_texture_name);
+    if (white)
+    {
+        createWhite();
+    }
+    else
+    {
+        createTransparent();
+    }
+#ifndef USE_GLES2
+    if (CVS->isARBBindlessTextureUsable())
+    {
+        m_texture_handle = glGetTextureSamplerHandleARB(m_texture_name,
+            getSampler(ST_TRILINEAR));
+        glMakeTextureHandleResidentARB(m_texture_handle);
+    }
+#endif
+#endif
+}   // SPTexture
+
+// ----------------------------------------------------------------------------
 SPTexture::~SPTexture()
 {
 #ifndef SERVER_ONLY
-    if (m_texture_name != 0)
-    {
-        glDeleteTextures(1, &m_texture_name);
-    }
 #ifndef USE_GLES2
-    if (m_texture_handle != 0)
+    if (m_texture_handle != 0 && CVS->isARBBindlessTextureUsable())
     {
         glMakeTextureHandleNonResidentARB(m_texture_handle);
     }
 #endif
+    if (m_texture_name != 0)
+    {
+        glDeleteTextures(1, &m_texture_name);
+    }
 #endif
 }   // ~SPTexture
 
@@ -76,6 +102,7 @@ SPTexture::~SPTexture()
 // ----------------------------------------------------------------------------
 std::shared_ptr<video::IImage> SPTexture::getImageBuffer() const
 {
+#ifndef SERVER_ONLY
     if (m_img_loader == NULL)
     {
         return NULL;
@@ -94,8 +121,36 @@ std::shared_ptr<video::IImage> SPTexture::getImageBuffer() const
         return NULL;
     }
     file->drop();
+
+    core::dimension2du img_size = image->getDimension();
+    core::dimension2du tex_size = img_size.getOptimalSize
+        (!irr_driver->getVideoDriver()->queryFeature(video::EVDF_TEXTURE_NPOT));
+    const core::dimension2du& max_size = irr_driver->getVideoDriver()
+        ->getDriverAttributes().getAttributeAsDimension2d("MAX_TEXTURE_SIZE");
+
+    if (tex_size.Width > max_size.Width)
+    {
+        tex_size.Width = max_size.Width;
+    }
+    if (tex_size.Height > max_size.Height)
+    {
+        tex_size.Height = max_size.Height;
+    }
+    if (image->getColorFormat() != video::ECF_A8R8G8B8 ||
+        tex_size != img_size)
+    {
+        video::IImage* new_texture = irr_driver
+            ->getVideoDriver()->createImage(video::ECF_A8R8G8B8, tex_size);
+        if (tex_size != img_size)
+            image->copyToScaling(new_texture);
+        else
+            image->copyTo(new_texture);
+        image->drop();
+        image = new_texture;
+    }
     assert(image->getReferenceCount() == 1);
     return std::shared_ptr<video::IImage>(image);
+#endif
 }   // getImageBuffer
 
 // ----------------------------------------------------------------------------
