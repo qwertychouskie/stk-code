@@ -80,7 +80,6 @@ void SPMeshBuffer::initDrawMaterial()
             }
         }
     }   // reverse track and texture needs mirroring
-
 #endif
 }   // initDrawMaterial
 
@@ -143,7 +142,7 @@ void SPMeshBuffer::uploadGLMesh()
         }
         else
         {
-            std::array<short, 4>  normal = MiniGLM::vertexType2101010RevTo4HF
+            std::array<short, 4> normal = MiniGLM::vertexType2101010RevTo4HF
                 (m_vertices[i].m_normal);
             memcpy(ptr + v_size + offset, normal.data(), 8);
             offset += 8;

@@ -18,6 +18,7 @@
 #include "graphics/sp/sp_mesh.hpp"
 #include "graphics/sp/sp_animation.hpp"
 #include "graphics/sp/sp_mesh_buffer.hpp"
+#include "graphics/material.hpp"
 #include "utils/mini_glm.hpp"
 
 #include <algorithm>
@@ -159,6 +160,14 @@ void SPMesh::finalize()
         }
     }
     m_bounding_box.reset(0.0f, 0.0f, 0.0f);
+    // Sort with same shader name
+    std::sort(m_buffer.begin(), m_buffer.end(),
+        [](const SPMeshBuffer* a, const SPMeshBuffer* b)->bool
+        {
+            return a->getSTKMaterial()->getShaderName() <
+                b->getSTKMaterial()->getShaderName();
+        });
+
     for (unsigned i = 0; i < m_buffer.size(); i++)
     {
         m_buffer[i]->recalculateBoundingBox();
@@ -168,8 +177,26 @@ void SPMesh::finalize()
         {
             m_buffer[i]->enableSkinningData();
         }
-        m_buffer[i]->uploadGLMesh();
     }
+
+    auto itr = m_buffer.begin();
+    while (itr != m_buffer.end())
+    {
+        auto itr_next = itr + 1;
+        if (itr_next != m_buffer.end() &&
+            (*itr)->getSTKMaterial()->getShaderName() ==
+            (*itr_next)->getSTKMaterial()->getShaderName())
+        {
+            if ((*itr)->combineMeshBuffer(*itr_next))
+            {
+                delete *itr_next;
+                m_buffer.erase(itr_next);
+                continue;
+            }
+        }
+        itr++;
+    }
+
 }   // finalize
 
 }

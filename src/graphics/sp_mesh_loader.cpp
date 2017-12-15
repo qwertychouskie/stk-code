@@ -347,8 +347,6 @@ void SPMeshLoader::decompressSPM(irr::io::IReadFile* spm,
         mb->addSPMVertex(vertex);
     }
 
-    mb->setSTKMaterial(m);
-
     std::vector<uint16_t> indices;
     indices.resize(indices_count);
     if (idx_size == 2)
@@ -366,6 +364,7 @@ void SPMeshLoader::decompressSPM(irr::io::IReadFile* spm,
         }
     }
     mb->setIndices(indices);
+    mb->setSTKMaterial(m);
 
 }   // decompressSPM
 

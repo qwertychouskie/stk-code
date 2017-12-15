@@ -99,7 +99,26 @@ public:
     // ------------------------------------------------------------------------
     ~SPMeshBuffer();
     // ------------------------------------------------------------------------
-    void combineMeshBuffer(SPMeshBuffer* spmb);
+    bool combineMeshBuffer(SPMeshBuffer* spmb)
+    {
+        // We only use 16bit vertices
+        if (spmb->m_vertices.size() + m_vertices.size() > 65536)
+        {
+            return false;
+        }
+        const uint16_t old_vtx_count = (uint16_t)m_vertices.size();
+        m_vertices.insert(m_vertices.end(), spmb->m_vertices.begin(),
+            spmb->m_vertices.end());
+        for (uint16_t& idx : spmb->m_indices)
+        {
+            idx += old_vtx_count;
+        }
+        m_stk_material.emplace_back(getIndexCount(), spmb->getIndexCount(),
+            std::get<2>(spmb->m_stk_material[0]));
+        m_indices.insert(m_indices.end(), spmb->m_indices.begin(),
+            spmb->m_indices.end());
+        return true;
+    }
     // ------------------------------------------------------------------------
     void bindVAO(DrawCallType dct) const     { glBindVertexArray(m_vao[dct]); }
     // ------------------------------------------------------------------------
