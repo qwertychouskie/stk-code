@@ -32,7 +32,10 @@ SPMeshBuffer::~SPMeshBuffer()
 #ifndef SERVER_ONLY
     for (unsigned i = 0; i < DCT_FOR_VAO; i++)
     {
-        glDeleteVertexArrays(1, &m_vao[i]);
+        if (m_vao[i] != 0)
+        {
+            glDeleteVertexArrays(1, &m_vao[i]);
+        }
         if (m_ins_array[i] != 0)
         {
             if (CVS->isARBBufferStorageUsable())
@@ -44,8 +47,14 @@ SPMeshBuffer::~SPMeshBuffer()
             glDeleteBuffers(1, &m_ins_array[i]);
         }
     }
-    glDeleteBuffers(1, &m_ibo);
-    glDeleteBuffers(1, &m_vbo);
+    if (m_ibo != 0)
+    {
+        glDeleteBuffers(1, &m_ibo);
+    }
+    if (m_vbo != 0)
+    {
+        glDeleteBuffers(1, &m_vbo);
+    }
 #endif
 }   // ~SPMeshBuffer
 
@@ -91,20 +100,30 @@ inline int srgbToLinear(float color_srgb)
 }
 
 // ----------------------------------------------------------------------------
-void SPMeshBuffer::uploadGLMesh(bool skinned)
+void SPMeshBuffer::uploadGLMesh()
 {
-    m_skinned = skinned;
+    if (m_uploaded_gl)
+    {
+        return;
+    }
+    m_uploaded_gl = true;
 #ifndef SERVER_ONLY
     bool use_2_uv = std::get<2>(m_stk_material[0])->use2UV();
     bool use_tangents =
         std::get<2>(m_stk_material[0])->getShaderName() == "normalmap" &&
-        CVS->isGLSL();
+        CVS->isDefferedEnabled();
     const bool vt_2101010 = CVS->isARBVertexType2101010RevUsable();
     const unsigned pitch = 48 - (use_tangents ? 0 : 4) - (use_2_uv ? 0 : 4) -
-        (skinned ? 0 : 16) + (use_tangents && !vt_2101010 ? 4 : 0)
+        (m_skinned ? 0 : 16) + (use_tangents && !vt_2101010 ? 4 : 0)
         + (!vt_2101010 ? 4 : 0);
 
+    if (m_vbo != 0)
+    {
+        glDeleteBuffers(1, &m_vbo);
+    }
+    glGenBuffers(1, &m_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+
     unsigned v_size = (unsigned)m_vertices.size() * pitch;
     glBufferData(GL_ARRAY_BUFFER, v_size, NULL, GL_DYNAMIC_DRAW);
     size_t offset = 0;
@@ -163,14 +182,21 @@ void SPMeshBuffer::uploadGLMesh(bool skinned)
                 offset += 8;
             }
         }
-        if (skinned)
+        if (m_skinned)
         {
             memcpy(ptr + v_size + offset, &m_vertices[i].m_joint_idx[0], 16);
         }
         v_size += pitch;
     }
     glUnmapBuffer(GL_ARRAY_BUFFER);
+
+    if (m_ibo != 0)
+    {
+        glDeleteBuffers(1, &m_ibo);
+    }
+    glGenBuffers(1, &m_ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ibo);
+
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_indices.size() * 2,
         m_indices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -230,7 +256,10 @@ void SPMeshBuffer::recreateVAO(unsigned i)
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glDeleteVertexArrays(1, &m_vao[i]);
+    if (m_vao[i] != 0)
+    {
+        glDeleteVertexArrays(1, &m_vao[i]);
+    }
     glGenVertexArrays(1, &m_vao[i]);
     glBindVertexArray(m_vao[i]);
 
@@ -350,7 +379,7 @@ void SPMeshBuffer::uploadInstanceData()
         }
     }
 #endif
-    m_uploaded = true;
+    m_uploaded_instance = true;
 }   // uploadInstanceData
 
 }

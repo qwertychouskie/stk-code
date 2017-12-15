@@ -93,16 +93,20 @@ private:
 
     std::function<void()> m_use_function[RP_COUNT], m_unuse_function[RP_COUNT];
 
+    const int m_drawing_priority;
+
     const bool m_transparent_shader;
 
-    const int m_drawing_priority;
+    const bool m_use_alpha_channel;
 
 public:
     // ------------------------------------------------------------------------
     SPShader(const std::string& name, unsigned pass_count = 4,
-             bool transparent_shader = false, int drawing_priority = 0)
-           : m_name(name),  m_transparent_shader(transparent_shader),
-             m_drawing_priority(drawing_priority)
+             bool transparent_shader = false, int drawing_priority = 0,
+             bool use_alpha_channel = false)
+           : m_name(name), m_drawing_priority(drawing_priority),
+             m_transparent_shader(transparent_shader),
+             m_use_alpha_channel(use_alpha_channel || transparent_shader)
     {
         memset(m_program, 0, sizeof(GLuint) * 4);
 #ifndef SERVER_ONLY
@@ -195,6 +199,8 @@ public:
     }
     // ------------------------------------------------------------------------
     bool isTransparent() const                 { return m_transparent_shader; }
+    // ------------------------------------------------------------------------
+    bool useAlphaChannel() const                { return m_use_alpha_channel; }
     // ------------------------------------------------------------------------
     int getDrawingPriority() const               { return m_drawing_priority; }
 

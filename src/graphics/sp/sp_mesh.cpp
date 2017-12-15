@@ -164,7 +164,11 @@ void SPMesh::finalize()
         m_buffer[i]->recalculateBoundingBox();
         m_bounding_box.addInternalBox(m_buffer[i]->getBoundingBox());
         m_buffer[i]->initDrawMaterial();
-        m_buffer[i]->uploadGLMesh(!isStatic());
+        if (!isStatic())
+        {
+            m_buffer[i]->enableSkinningData();
+        }
+        m_buffer[i]->uploadGLMesh();
     }
 }   // finalize
 

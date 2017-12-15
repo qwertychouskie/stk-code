@@ -63,11 +63,15 @@ private:
 
     GLuint m_ins_array[DCT_FOR_VAO];
 
-    std::string m_tex_cmp;
+    unsigned m_pitch;
 
-    bool m_uploaded;
+    bool m_uploaded_gl;
+
+    bool m_uploaded_instance;
 
     bool m_skinned;
+
+    std::string m_tex_cmp;
 
 public:
     SPMeshBuffer()
@@ -76,23 +80,21 @@ public:
         setDebugName("SMeshBuffer");
 #endif
         m_stk_material.resize(1, std::make_tuple(0u, 0u, nullptr));
-        m_skinned = false;
 
         for (unsigned i = 0; i < DCT_FOR_VAO; i++)
         {
             m_ins_dat_mapped_ptr[i] = NULL;
             m_gl_instance_size[i] = 1;
-#ifndef SERVER_ONLY
-            glGenVertexArrays(1, &m_vao[i]);
+            m_vao[i] = 0;
             m_ins_array[i] = 0;
-#endif
         }
 
-#ifndef SERVER_ONLY
-        glGenBuffers(1, &m_ibo);
-        glGenBuffers(1, &m_vbo);
-#endif
-        m_uploaded = false;
+        m_pitch = 0;
+        m_ibo = 0;
+        m_vbo = 0;
+        m_uploaded_gl = false;
+        m_uploaded_instance = false;
+        m_skinned = false;
     }
     // ------------------------------------------------------------------------
     ~SPMeshBuffer();
@@ -110,7 +112,9 @@ public:
     // ------------------------------------------------------------------------
     void initDrawMaterial();
     // ------------------------------------------------------------------------
-    void uploadGLMesh(bool skinned);
+    void enableSkinningData()                             { m_skinned = true; }
+    // ------------------------------------------------------------------------
+    void uploadGLMesh();
     // ------------------------------------------------------------------------
     Material* getSTKMaterial(unsigned first_index = 0) const
     {
@@ -141,12 +145,12 @@ public:
     // ------------------------------------------------------------------------
     void addInstanceData(const SPInstancedData& id, DrawCallType dct)
     {
-        if (m_uploaded)
+        if (m_uploaded_instance)
         {
             for (unsigned i = 0; i < DCT_FOR_VAO; i++)
             {
                 m_ins_dat[i].clear();
-                m_uploaded = false;
+                m_uploaded_instance = false;
             }
         }
         m_ins_dat[dct].push_back(id);
@@ -173,7 +177,7 @@ public:
     // ------------------------------------------------------------------------
     void setSTKMaterial(Material* m)
     {
-        m_stk_material[0] = std::make_tuple(0u, 0u, m);
+        m_stk_material[0] = std::make_tuple(0u, getIndexCount(), m);
     }
     // ------------------------------------------------------------------------
     virtual const video::SMaterial& getMaterial() const

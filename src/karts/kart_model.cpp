@@ -588,6 +588,8 @@ bool KartModel::loadModels(const KartProperties &kart_properties)
         {
             SP::SPMeshBuffer* mb =
                 static_cast<SP::SPMeshBuffer*>(m_mesh->getMeshBuffer(i));
+            // Pre-upload gl meshes and textures for kart screen
+            mb->uploadGLMesh();
             std::vector<Material*> mbs = mb->getAllSTKMaterials();
             for (Material* m : mbs)
             {
@@ -631,12 +633,15 @@ bool KartModel::loadModels(const KartProperties &kart_properties)
         // the destructor will only free the textures if a master
         // copy is freed.
 #ifndef SERVER_ONLY
-        scene::ISkinnedMesh* sm =
-            dynamic_cast<scene::ISkinnedMesh*>(obj.m_model);
-        if (sm)
+        if (CVS->isGLSL())
         {
-            MeshTools::createSkinnedMeshWithTangents(sm,
-                &MeshTools::isNormalMap);
+            for (u32 j = 0; j < obj.m_model->getMeshBufferCount(); j++)
+            {
+                SP::SPMeshBuffer* mb = static_cast<SP::SPMeshBuffer*>
+                    (obj.m_model->getMeshBuffer(j));
+                // Pre-upload gl meshes and textures for kart screen
+                mb->uploadGLMesh();
+            }
         }
 #endif
         obj.m_model->grab();
@@ -657,6 +662,18 @@ bool KartModel::loadModels(const KartProperties &kart_properties)
         HeadlightObject& obj = m_headlight_objects[i];
         std::string full_name = kart_properties.getKartDir() + obj.getFilename();
         obj.setModel(irr_driver->getMesh(full_name));
+#ifndef SERVER_ONLY
+        if (CVS->isGLSL())
+        {
+            for (u32 j = 0; j < obj.getModel()->getMeshBufferCount(); j++)
+            {
+                SP::SPMeshBuffer* mb = static_cast<SP::SPMeshBuffer*>
+                    (obj.getModel()->getMeshBuffer(j));
+                // Pre-upload gl meshes and textures for kart screen
+                mb->uploadGLMesh();
+            }
+        }
+#endif
         obj.getModel()->grab();
         irr_driver->grabAllTextures(obj.getModel());
     }
@@ -693,8 +710,16 @@ bool KartModel::loadModels(const KartProperties &kart_properties)
             kart_properties.getKartDir()+m_wheel_filename[i];
         m_wheel_model[i] = irr_driver->getMesh(full_wheel);
 #ifndef SERVER_ONLY
-        m_wheel_model[i] = MeshTools::createMeshWithTangents(m_wheel_model[i],
-                                                      &MeshTools::isNormalMap);
+        if (CVS->isGLSL())
+        {
+            for (u32 j = 0; j < m_wheel_model[i]->getMeshBufferCount(); j++)
+            {
+                SP::SPMeshBuffer* mb = static_cast<SP::SPMeshBuffer*>
+                    (m_wheel_model[i]->getMeshBuffer(j));
+                // Pre-upload gl meshes and textures for kart screen
+                mb->uploadGLMesh();
+            }
+        }
 #endif
         // Grab all textures. This is done for the master only, so
         // the destructor will only free the textures if a master

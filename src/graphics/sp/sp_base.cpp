@@ -328,13 +328,6 @@ void loadShaders()
     shader->addBasicUniforms(RP_1ST);
     shader->addAllTextures(RP_1ST);
 
-/*    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_object_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addAllTextures(RP_2ND); */
-
     shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
     shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
@@ -347,7 +340,7 @@ void loadShaders()
 
     addShader(shader);
 
-    shader = new SPShader("solid_skinned", 4, false, 999);
+    shader = new SPShader("solid_skinned");
 
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_solid.frag", GL_FRAGMENT_SHADER, RP_1ST);
@@ -355,13 +348,6 @@ void loadShaders()
     shader->use(RP_1ST);
     shader->addBasicUniforms(RP_1ST);
     shader->addAllTextures(RP_1ST);
-
-/*    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_2ND);
-    shader->addShaderFile("sp_object_pass2.frag", GL_FRAGMENT_SHADER, RP_2ND);
-    shader->linkShaderFiles(RP_2ND);
-    shader->use(RP_2ND);
-    shader->addBasicUniforms(RP_2ND);
-    shader->addAllTextures(RP_2ND); */
 
     shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
     shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
@@ -397,7 +383,7 @@ void loadShaders()
 
     addShader(shader);
 
-    shader = new SPShader("decal_skinned", 4, false, 999);
+    shader = new SPShader("decal_skinned");
 
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_decal.frag", GL_FRAGMENT_SHADER, RP_1ST);
@@ -419,7 +405,7 @@ void loadShaders()
     addShader(shader);
 
     // ========================================================================
-    shader = new SPShader("alphatest");
+    shader = new SPShader("alphatest", 4, false, 0, true);
 
     shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_alpha_test.frag", GL_FRAGMENT_SHADER, RP_1ST);
@@ -440,7 +426,7 @@ void loadShaders()
 
     addShader(shader);
 
-    shader = new SPShader("alphatest_skinned", 4, false, 999);
+    shader = new SPShader("alphatest_skinned", 4, false, 0, true);
 
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_alpha_test.frag", GL_FRAGMENT_SHADER, RP_1ST);
@@ -462,7 +448,7 @@ void loadShaders()
     addShader(shader);
 
     // ========================================================================
-    shader = new SPShader("unlit");
+    shader = new SPShader("unlit", 4, false, 0, true);
 
     shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_unlit.frag", GL_FRAGMENT_SHADER, RP_1ST);
@@ -483,7 +469,7 @@ void loadShaders()
 
     addShader(shader);
 
-    shader = new SPShader("unlit_skinned", 4, false, 999);
+    shader = new SPShader("unlit_skinned", 4, false, 0, true);
 
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_unlit.frag", GL_FRAGMENT_SHADER, RP_1ST);
@@ -526,7 +512,7 @@ void loadShaders()
 
     addShader(shader);
 
-    shader = new SPShader("normalmap_skinned", 4, false, 999);
+    shader = new SPShader("normalmap_skinned", 4, false);
 
     shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_normal_map.frag", GL_FRAGMENT_SHADER, RP_1ST);
@@ -548,7 +534,7 @@ void loadShaders()
     addShader(shader);
 
     // ========================================================================
-    shader = new SPShader("grass");
+    shader = new SPShader("grass", 4, false, 0, true);
     shader->addShaderFile("sp_grass_pass.vert", GL_VERTEX_SHADER, RP_1ST);
     shader->addShaderFile("sp_grass.frag", GL_FRAGMENT_SHADER,
         RP_1ST);
@@ -1173,6 +1159,8 @@ void addObject(SPMeshNode* node)
         {
             continue;
         }
+
+        mb->uploadGLMesh();
         if (!added_for_skinning && node->getAnimationState())
         {
             added_for_skinning = true;
