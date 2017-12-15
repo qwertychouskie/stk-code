@@ -157,6 +157,23 @@ public:
         return NULL;
     }
     // ------------------------------------------------------------------------
+    std::array<std::shared_ptr<SPTexture>, 6>
+        getSPTextures(unsigned first_index = 0) const
+    {
+        assert(m_stk_material.size() == m_textures.size());
+        for (unsigned i = 0; i < m_stk_material.size(); i++)
+        {
+            if (i == unsigned(m_stk_material.size() - 1) ||
+                (first_index >= std::get<0>(m_stk_material[i]) &&
+                first_index < std::get<0>(m_stk_material[i + 1])))
+            {
+                return m_textures[i];
+            }
+        }
+        assert(false);
+        return std::array<std::shared_ptr<SPTexture>, 6> ();
+    }
+    // ------------------------------------------------------------------------
     std::vector<Material*> getAllSTKMaterials() const
     {
         std::vector<Material*> ret;

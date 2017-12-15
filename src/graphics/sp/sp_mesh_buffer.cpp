@@ -113,6 +113,27 @@ bool SPMeshBuffer::initBindlessTexture()
             }
         }
     }
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    std::set<uint16_t> used_vertices;
+    unsigned idx = 0;
+    for (uint16_t vertex_id : m_indices)
+    {
+        auto ret = used_vertices.find(vertex_id);
+        if (ret == used_vertices.end())
+        {
+            used_vertices.insert(vertex_id);
+            std::array<std::shared_ptr<SPTexture>, 6> textures =
+                getSPTextures(idx);
+            for (unsigned i = 0; i < 6; i++)
+            {
+                glBufferSubData(GL_ARRAY_BUFFER,
+                    (vertex_id * m_pitch) - (m_pitch - 48) + i * 8, 8,
+                    textures[i]->getTextureHandlePointer());
+            }
+        }
+        idx++;
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 #endif
     return true;
 }
@@ -134,12 +155,6 @@ void SPMeshBuffer::uploadGLMesh()
             m_textures[i][j] = SPTextureManager::get()->getTexture
                 (std::get<2>(m_stk_material[i])->getSamplerPath(j));
         }
-    }
-    if (CVS->isARBBindlessTextureUsable())
-    {
-        SPTextureManager::get()->increaseGLCommandFunctionCount(1);
-        SPTextureManager::get()->addGLCommandFunction
-            (std::bind(&SPMeshBuffer::initBindlessTexture, this));
     }
 
     bool use_2_uv = std::get<2>(m_stk_material[0])->use2UV();
@@ -224,6 +239,13 @@ void SPMeshBuffer::uploadGLMesh()
         v_size += pitch;
     }
     glUnmapBuffer(GL_ARRAY_BUFFER);
+
+    if (CVS->isARBBindlessTextureUsable())
+    {
+        SPTextureManager::get()->increaseGLCommandFunctionCount(1);
+        SPTextureManager::get()->addGLCommandFunction
+            (std::bind(&SPMeshBuffer::initBindlessTexture, this));
+    }
 
     if (m_ibo != 0)
     {
