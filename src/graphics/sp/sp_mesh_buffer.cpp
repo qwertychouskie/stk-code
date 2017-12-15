@@ -127,7 +127,7 @@ bool SPMeshBuffer::initBindlessTexture()
             for (unsigned i = 0; i < 6; i++)
             {
                 glBufferSubData(GL_ARRAY_BUFFER,
-                    (vertex_id * m_pitch) - (m_pitch - 48) + i * 8, 8,
+                    (vertex_id * m_pitch) + (m_pitch - 48) + (i * 8), 8,
                     textures[i]->getTextureHandlePointer());
             }
         }
