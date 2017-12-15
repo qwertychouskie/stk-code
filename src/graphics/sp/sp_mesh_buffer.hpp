@@ -26,6 +26,7 @@
 #include <IMeshBuffer.h>
 #include <S3DVertex.h>
 
+#include <array>
 #include <cassert>
 #include <string>
 #include <tuple>
@@ -38,12 +39,15 @@ class Material;
 
 namespace SP
 {
+class SPTexture;
 
 class SPMeshBuffer : public IMeshBuffer
 {
 private:
     std::vector<std::tuple<unsigned/*first_index_id*/,
         unsigned/*indices_count*/, Material*> > m_stk_material;
+
+    std::vector<std::array<std::shared_ptr<SPTexture>, 6> > m_textures;
 
     std::vector<video::S3DVertexSkinnedMesh> m_vertices;
 
@@ -71,6 +75,8 @@ private:
 
     bool m_skinned;
 
+    bool m_init_texture;
+
     std::string m_tex_cmp;
 
 public:
@@ -95,6 +101,7 @@ public:
         m_uploaded_gl = false;
         m_uploaded_instance = false;
         m_skinned = false;
+        m_init_texture = false;
     }
     // ------------------------------------------------------------------------
     ~SPMeshBuffer();

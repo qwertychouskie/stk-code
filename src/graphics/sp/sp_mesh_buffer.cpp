@@ -344,6 +344,14 @@ void SPMeshBuffer::recreateVAO(unsigned i)
 void SPMeshBuffer::uploadInstanceData()
 {
 #ifndef SERVER_ONLY
+    if (!m_init_texture)
+    {
+        if (CVS->isARBBindlessTextureUsable())
+        {
+        }
+        m_init_texture = true;
+    }
+
     for (unsigned i = 0; i < DCT_FOR_VAO; i++)
     {
         if (m_ins_dat[i].empty())
