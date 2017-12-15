@@ -36,6 +36,7 @@
 #include "graphics/sp/sp_mesh_buffer.hpp"
 #include "graphics/sp/sp_mesh_node.hpp"
 #include "graphics/sp/sp_shader.hpp"
+#include "graphics/sp/sp_texture_manager.hpp"
 #include "graphics/sp/sp_uniform_assigner.hpp"
 #include "tracks/track.hpp"
 #include "modes/profile_world.hpp"
@@ -1231,6 +1232,8 @@ void addObject(SPMeshNode* node)
 // ----------------------------------------------------------------------------
 void updateModelMatrix()
 {
+    // Make sure all textures (with handles) are loaded
+    SPTextureManager::get()->checkForSubImage(true/*before_scene*/);
     if (!sp_culling)
     {
         return;

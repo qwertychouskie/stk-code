@@ -44,6 +44,7 @@
 #include "graphics/vao_manager.hpp"
 #include "graphics/sp/sp_base.hpp"
 #include "graphics/sp/sp_mesh_buffer.hpp"
+#include "graphics/sp/sp_texture_manager.hpp"
 #include "io/file_manager.hpp"
 #include "io/xml_node.hpp"
 #include "items/item.hpp"
@@ -413,7 +414,7 @@ void Track::cleanup()
     irr_driver->clearLights();
     irr_driver->clearForcedBloom();
     irr_driver->clearBackgroundNodes();
-    STKTexManager::getInstance()->reset();
+    SP::SPTextureManager::get()->removeUnusedTextures();
 
     if(UserConfigParams::logMemory())
     {
