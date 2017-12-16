@@ -22,7 +22,10 @@
 #include "utils/constants.hpp"
 #include "utils/no_copy.hpp"
 
+#include "irrMath.h"
+
 #include <array>
+#include <cmath>
 #include <functional>
 #include <ostream>
 #include <memory>
@@ -167,6 +170,21 @@ void updateModelMatrix();
 void uploadAll();
 // ----------------------------------------------------------------------------
 void resetEmptyFogColor();
+// ----------------------------------------------------------------------------
+inline uint8_t srgbToLinear(float color_srgb)
+{
+    int ret;
+    if (color_srgb <= 0.04045f)
+    {
+        ret = (int)(255.0f * (color_srgb / 12.92f));
+    }
+    else
+    {
+        ret = (int)(255.0f * (powf((color_srgb + 0.055f) / 1.055f, 2.4f)));
+    }
+    return uint8_t(irr::core::clamp(ret, 0, 255));
+}
+
 }
 
 

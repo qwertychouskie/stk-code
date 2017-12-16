@@ -113,7 +113,8 @@ public:
     // ------------------------------------------------------------------------
     void checkForGLCommand(bool before_scene = false);
     // ------------------------------------------------------------------------
-    std::shared_ptr<SPTexture> getTexture(const std::string& path);
+    std::shared_ptr<SPTexture> getTexture(const std::string& path,
+                                          bool undo_srgb);
 };
 
 }

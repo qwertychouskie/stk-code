@@ -85,21 +85,6 @@ void SPMeshBuffer::initDrawMaterial()
 }   // initDrawMaterial
 
 // ----------------------------------------------------------------------------
-inline int srgbToLinear(float color_srgb)
-{
-    int ret;
-    if (color_srgb <= 0.04045f)
-    {
-        ret = (int)(255.0f * (color_srgb / 12.92f));
-    }
-    else
-    {
-        ret = (int)(255.0f * (powf((color_srgb + 0.055f) / 1.055f, 2.4f)));
-    }
-    return core::clamp(ret, 0, 255);
-}
-
-// ----------------------------------------------------------------------------
 bool SPMeshBuffer::initBindlessTexture()
 {
 #ifndef SERVER_ONLY
@@ -133,7 +118,8 @@ bool SPMeshBuffer::initBindlessTexture()
         }
         idx++;
     }
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    assert(used_vertices.size() == m_vertices.size());
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 #endif
     return true;
 }
@@ -152,8 +138,11 @@ void SPMeshBuffer::uploadGLMesh()
     {
         for (unsigned j = 0; j < 6; j++)
         {
+            // Undo the effect of srgb on 0 and 1 channel of textures
+            // which is the uv textures from .spm when advanced lighting
             m_textures[i][j] = SPTextureManager::get()->getTexture
-                (std::get<2>(m_stk_material[i])->getSamplerPath(j));
+                (std::get<2>(m_stk_material[i])->getSamplerPath(j),
+                j < 2 && CVS->isDefferedEnabled());
         }
     }
 

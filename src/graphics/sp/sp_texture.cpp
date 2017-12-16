@@ -29,8 +29,8 @@
 namespace SP
 {
 // ----------------------------------------------------------------------------
-SPTexture::SPTexture(const std::string& path)
-         : m_path(path), m_width(0), m_height(0)
+SPTexture::SPTexture(const std::string& path, bool undo_srgb)
+         : m_path(path), m_width(0), m_height(0), m_undo_srgb(undo_srgb)
 {
 #ifndef SERVER_ONLY
     glGenTextures(1, &m_texture_name);
@@ -47,7 +47,7 @@ SPTexture::SPTexture(const std::string& path)
 
 // ----------------------------------------------------------------------------
 SPTexture::SPTexture(bool white)
-         : m_width(0), m_height(0)
+         : m_width(0), m_height(0), m_undo_srgb(false)
 {
 #ifndef SERVER_ONLY
     glGenTextures(1, &m_texture_name);
@@ -141,6 +141,18 @@ std::shared_ptr<video::IImage> SPTexture::getImageBuffer() const
             image->copyTo(new_texture);
         image->drop();
         image = new_texture;
+    }
+
+    if (m_undo_srgb)
+    {
+        uint8_t* data = (uint8_t*)image->lock();
+        for (unsigned int i = 0; i < image->getDimension().Width *
+            image->getDimension().Height; i++)
+        {
+            data[i * 4] = srgbToLinear(data[i * 4] / 255.0f);
+            data[i * 4 + 1] = srgbToLinear(data[i * 4 + 1] / 255.0f);
+            data[i * 4 + 2] = srgbToLinear(data[i * 4 + 2] / 255.0f);
+        }
     }
     assert(image->getReferenceCount() == 1);
     return std::shared_ptr<video::IImage>(image);
