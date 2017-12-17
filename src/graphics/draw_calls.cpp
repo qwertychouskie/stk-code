@@ -179,14 +179,24 @@ void DrawCalls::parseSceneManager(core::list<scene::ISceneNode*> &List,
     for (; I != E; ++I)
     {
         if (LODNode *node = dynamic_cast<LODNode *>(*I))
+        {
             node->updateVisibility();
+            if (SP::sp_first_frame)
+            {
+                for (auto* node : node->getAllNodes())
+                {
+                    node->setVisible(true);
+                }
+            }
+        }
         (*I)->updateAbsolutePosition();
         if (!(*I)->isVisible())
             continue;
 
         if (STKParticle *node = dynamic_cast<STKParticle *>(*I))
         {
-            if (!isCulledPrecise(cam, *I, irr_driver->getBoundingBoxesViz()))
+            if (!isCulledPrecise(cam, *I, irr_driver->getBoundingBoxesViz()) ||
+                SP::sp_first_frame)
                 CPUParticleManager::getInstance()->addParticleNode(node);
             continue;
         }
@@ -194,7 +204,7 @@ void DrawCalls::parseSceneManager(core::list<scene::ISceneNode*> &List,
         if (scene::IBillboardSceneNode *node =
             dynamic_cast<scene::IBillboardSceneNode *>(*I))
         {
-            if (!isCulledPrecise(cam, *I))
+            if (!isCulledPrecise(cam, *I) || SP::sp_first_frame)
                 CPUParticleManager::getInstance()->addBillboardNode(node);
             continue;
         }

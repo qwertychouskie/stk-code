@@ -2054,6 +2054,8 @@ void Track::loadTrackModel(bool reverse_track, unsigned int mode_id)
         }
         m_spherical_harmonics_textures.clear();
     }
+    // Draw all object visible in first frame to load all textures
+    SP::sp_first_frame = true;
 #endif   // !SERVER_ONLY
 }   // loadTrackModel
 

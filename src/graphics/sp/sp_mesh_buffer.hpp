@@ -79,7 +79,7 @@ private:
     bool m_skinned;
 
     // ------------------------------------------------------------------------
-    bool initBindlessTexture();
+    bool initTexture();
 
 public:
     SPMeshBuffer()

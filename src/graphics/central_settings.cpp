@@ -232,7 +232,7 @@ void CentralVideoSettings::init()
         if (hasGLExtension("GL_NV_gpu_shader5"))
         {
             hasNVGPUShader5 = true;
-            Log::info("GLDriver", "GL_NV_gpu_shader5");
+            Log::info("GLDriver", "GL_NV_gpu_shader5 Present");
         }
         if (GraphicsRestrictions::isDisabled(GraphicsRestrictions::GR_GI))
         {

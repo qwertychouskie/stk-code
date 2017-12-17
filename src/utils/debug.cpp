@@ -31,6 +31,7 @@
 #include "graphics/shaders.hpp"
 #include "graphics/stk_tex_manager.hpp"
 #include "graphics/sp/sp_base.hpp"
+#include "graphics/sp/sp_texture_manager.hpp"
 #include "guiengine/widgets/label_widget.hpp"
 #include "guiengine/widgets/text_box_widget.hpp"
 #include "items/powerup_manager.hpp"
@@ -703,7 +704,7 @@ bool handleContextMenuAction(s32 cmd_id)
                 STKTexManager* stktm = STKTexManager::getInstance();
                 if (t == "tus;")
                 {
-                    stktm->dumpAllTexture(false/*mesh_texture*/);
+                    SP::SPTextureManager::get()->dumpAllTexture();
                     stktm->dumpTextureUsage();
                     return false;
                 }

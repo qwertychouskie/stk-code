@@ -67,8 +67,6 @@ bool sp_culling = true;
 // ----------------------------------------------------------------------------
 bool g_handle_shadow = false;
 // ----------------------------------------------------------------------------
-bool g_handle_rsm = false;
-// ----------------------------------------------------------------------------
 std::unordered_map<std::string, SPShader*> g_shaders;
 // ----------------------------------------------------------------------------
 SPShader* g_glow_shader = NULL;
@@ -123,7 +121,7 @@ void initSTKRenderer(ShaderBasedRenderer* sbr)
 // ----------------------------------------------------------------------------
 GLuint sp_mat_ubo[MAX_PLAYER_COUNT][3] = {};
 // ----------------------------------------------------------------------------
-GLsync sp_sync[2] = {};
+bool sp_first_frame = false;
 // ----------------------------------------------------------------------------
 GLuint sp_fog_ubo = 0;
 // ----------------------------------------------------------------------------
@@ -1075,8 +1073,6 @@ void prepareDrawCalls()
     g_handle_shadow = Track::getCurrentTrack() &&
         Track::getCurrentTrack()->hasShadows() && CVS->isDefferedEnabled() &&
         CVS->isShadowEnabled();
-    g_handle_rsm = CVS->isGlobalIlluminationEnabled() &&
-        !g_stk_sbr->getShadowMatrices()->isRSMMapAvail();
 
     if (g_handle_shadow)
     {
@@ -1128,12 +1124,9 @@ void addObject(SPMeshNode* node)
         core::aabbox3df bb = mb->getBoundingBox();
         model_matrix.transformBoxEx(bb);
         std::vector<bool> discard;
-        discard.resize((g_handle_shadow ? 6 : 1), false);
-        if (g_handle_shadow)
-        {
-            discard[5] = !g_handle_rsm;
-        }
-        for (int dc_type = 0; dc_type < (g_handle_shadow ? 5 : 1); dc_type++)
+        discard.resize((g_handle_shadow ? 5 : 1), false);
+        for (int dc_type = 0; dc_type <
+            (g_handle_shadow ? 5 : sp_first_frame ? 0 : 1); dc_type++)
         {
             for (int i = 0; i < 24; i += 4)
             {
@@ -1158,7 +1151,7 @@ void addObject(SPMeshNode* node)
                 }
             }
         }
-        if (g_handle_shadow ?
+        if (sp_first_frame || g_handle_shadow ?
             (discard[0] && discard[1] && discard[2] && discard[3] &&
             discard[4] && discard[5]) : discard[0])
         {
@@ -1195,7 +1188,7 @@ void addObject(SPMeshNode* node)
 
         for (int dc_type = 0; dc_type < (g_handle_shadow ? 5 : 1); dc_type++)
         {
-            if (discard[dc_type])
+            if (!sp_first_frame && discard[dc_type])
             {
                 continue;
             }
@@ -1264,6 +1257,7 @@ void updateModelMatrix()
 {
     // Make sure all textures (with handles) are loaded
     SPTextureManager::get()->checkForGLCommand(true/*before_scene*/);
+    SP::sp_first_frame = false;
     if (!sp_culling)
     {
         return;

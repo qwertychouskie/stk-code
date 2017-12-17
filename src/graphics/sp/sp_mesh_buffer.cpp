@@ -85,18 +85,22 @@ void SPMeshBuffer::initDrawMaterial()
 }   // initDrawMaterial
 
 // ----------------------------------------------------------------------------
-bool SPMeshBuffer::initBindlessTexture()
+bool SPMeshBuffer::initTexture()
 {
 #ifndef SERVER_ONLY
     for (unsigned i = 0; i < m_stk_material.size(); i++)
     {
         for (unsigned j = 0; j < 6; j++)
         {
-            if (m_textures[i][j]->getTextureHandle() == 0)
+            if (!m_textures[i][j]->initialized())
             {
                 return false;
             }
         }
+    }
+    if (!CVS->isARBBindlessTextureUsable())
+    {
+        return true;
     }
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     std::set<uint16_t> used_vertices;
@@ -124,7 +128,7 @@ bool SPMeshBuffer::initBindlessTexture()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 #endif
     return true;
-}
+}   // initTexture
 
 // ----------------------------------------------------------------------------
 void SPMeshBuffer::uploadGLMesh()
@@ -234,12 +238,9 @@ void SPMeshBuffer::uploadGLMesh()
     }
     glUnmapBuffer(GL_ARRAY_BUFFER);
 
-    if (CVS->isARBBindlessTextureUsable())
-    {
-        SPTextureManager::get()->increaseGLCommandFunctionCount(1);
-        SPTextureManager::get()->addGLCommandFunction
-            (std::bind(&SPMeshBuffer::initBindlessTexture, this));
-    }
+    SPTextureManager::get()->increaseGLCommandFunctionCount(1);
+    SPTextureManager::get()->addGLCommandFunction
+        (std::bind(&SPMeshBuffer::initTexture, this));
 
     if (m_ibo != 0)
     {

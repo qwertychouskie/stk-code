@@ -142,4 +142,15 @@ std::shared_ptr<SPTexture> SPTextureManager::getTexture(const std::string& p,
     return t;
 }   // getTexture
 
+// ----------------------------------------------------------------------------
+void SPTextureManager::dumpAllTexture()
+{
+    for (auto p : m_textures)
+    {
+        Log::info("STKTexManager", "%s size: %0.2fK", p.first.c_str(),
+            (p.second->getWidth() * p.second->getHeight() * 4) / 1024.0f);
+    }
+}   // dumpAllTexture
+
+// ----------------------------------------------------------------------------
 }

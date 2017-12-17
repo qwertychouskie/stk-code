@@ -195,4 +195,16 @@ void SPTexture::threadLoaded()
         });
 }   // threadLoaded
 
+// ----------------------------------------------------------------------------
+bool SPTexture::initialized() const
+{
+#ifndef SERVER_ONLY
+    if (CVS->isARBBindlessTextureUsable())
+    {
+        return m_texture_handle != 0;
+    }
+#endif
+    return m_width.load() != 0 && m_height.load() != 0;
+}   // initialized
+
 }
