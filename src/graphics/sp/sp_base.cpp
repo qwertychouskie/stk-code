@@ -79,9 +79,9 @@ typedef std::unordered_map<SPShader*, std::unordered_map<std::string,
 
 DrawCall g_draw_calls[DCT_COUNT];
 // ----------------------------------------------------------------------------
-std::vector<std::pair<SPShader*,
-    std::vector<std::tuple<std::array<GLuint, 6>, int/*material_id*/,
-    std::vector<SPMeshBuffer*> > > > > g_final_draw_calls[DCT_FOR_VAO];
+std::vector<std::pair<SPShader*, std::vector<std::pair<std::array<GLuint, 6>,
+    std::vector<std::pair<SPMeshBuffer*, int/*material_id*/> > > > > >
+    g_final_draw_calls[DCT_FOR_VAO];
 // ----------------------------------------------------------------------------
 std::unordered_set<SPMeshBuffer*> g_instances;
 // ----------------------------------------------------------------------------
@@ -1292,8 +1292,8 @@ void updateModelMatrix()
         {
             auto& p = sorted_dc[dc];
             g_final_draw_calls[i].emplace_back(p.first,
-            std::vector<std::tuple<std::array<GLuint, 6>, int,
-                std::vector<SPMeshBuffer*> > >());
+            std::vector<std::pair<std::array<GLuint, 6>,
+                std::vector<std::pair<SPMeshBuffer*, int> > > >());
 
             unsigned texture = 0;
             for (auto& q : p.second)
@@ -1302,25 +1302,33 @@ void updateModelMatrix()
                 {
                     continue;
                 }
-                int material_idx = -1;
-                std::array<std::shared_ptr<SPTexture>, 6> textures =
-                    (*(q.second.begin()))->getSPTextures(material_idx);
                 std::array<GLuint, 6> texture_names =
-                    {{
-                        textures[0]->getOpenGLTextureName(),
-                        textures[1]->getOpenGLTextureName(),
-                        textures[2]->getOpenGLTextureName(),
-                        textures[3]->getOpenGLTextureName(),
-                        textures[4]->getOpenGLTextureName(),
-                        textures[5]->getOpenGLTextureName()
-                    }};
-                g_final_draw_calls[i][dc].second.push_back
-                    (std::make_tuple(texture_names, material_idx
-                    std::vector<SPMeshBuffer*>()));
+                    {{ 0, 0, 0, 0, 0, 0 }};
+                int material_id =
+                    (*(q.second.begin()))->getMaterialID(q.first);
+
+                if (material_id != -1)
+                {
+                    std::array<std::shared_ptr<SPTexture>, 6> textures =
+                        (*(q.second.begin()))->getSPTexturesByMaterialID
+                        (material_id);
+                    texture_names =
+                        {{
+                            textures[0]->getOpenGLTextureName(),
+                            textures[1]->getOpenGLTextureName(),
+                            textures[2]->getOpenGLTextureName(),
+                            textures[3]->getOpenGLTextureName(),
+                            textures[4]->getOpenGLTextureName(),
+                            textures[5]->getOpenGLTextureName()
+                        }};
+                }
+                g_final_draw_calls[i][dc].second.emplace_back
+                    (texture_names, std::vector<std::pair<SPMeshBuffer*, int> >());
                 for (SPMeshBuffer* spmb : q.second)
                 {
-                    std::get<2>(g_final_draw_calls[i][dc].second[texture])
-                        .push_back(spmb);
+                    g_final_draw_calls[i][dc].second[texture].second.push_back
+                        (std::make_pair(spmb, material_id == -1 ?
+                        -1 : spmb->getMaterialID(q.first)));
                 }
                 texture++;
             }
@@ -1436,15 +1444,19 @@ void draw(RenderPass rp, DrawCallType dct)
                     (q.first), &material_uniforms, rp);
                 
             }*/
-            assert(!p.second[j].empty());
-            p.first->bindTextures(p.second[j][0]->getMaterial(), rp);
-            for (unsigned k = 0; k < p.second[j].size(); k++)
+            if (!CVS->isARBBindlessTextureUsable())
+            {
+                p.first->bindTextures(p.second[j].first, rp);
+            }
+            for (unsigned k = 0; k < p.second[j].second.size(); k++)
             {
                 /*std::vector<SPUniformAssigner*> draw_call_uniforms;
                 p.first->setUniformsPerObject(static_cast<SPPerObjectUniform*>
                     (draw_call), &draw_call_uniforms, rp);
                 sp_draw_call_count++;*/
-                p.second[j][k]->draw(dct);
+                p.second[j].second[k].first->draw(dct,
+                    p.second[j].second[k].second/*material_id*/,
+                    CVS->isARBBindlessTextureUsable());
                 /*for (SPUniformAssigner* ua : draw_call_uniforms)
                 {
                     ua->reset();

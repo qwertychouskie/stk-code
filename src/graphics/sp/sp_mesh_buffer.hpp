@@ -201,6 +201,13 @@ public:
         return std::array<std::shared_ptr<SPTexture>, 6> ();
     }
     // ------------------------------------------------------------------------
+    std::array<std::shared_ptr<SPTexture>, 6>
+        getSPTexturesByMaterialID(int material_id) const
+    {
+        assert((size_t)material_id < m_textures.size());
+        return m_textures[material_id];
+    }
+    // ------------------------------------------------------------------------
     std::vector<Material*> getAllSTKMaterials() const
     {
         std::vector<Material*> ret;
@@ -213,6 +220,16 @@ public:
     // ------------------------------------------------------------------------
     const std::unordered_map<std::string, unsigned>& getTextureCompare() const
                                                           { return m_tex_cmp; }
+    // ------------------------------------------------------------------------
+    int getMaterialID(const std::string& tex_cmp) const
+    {
+        auto itr = m_tex_cmp.find(tex_cmp);
+        if (itr != m_tex_cmp.end())
+        {
+            return (int)itr->second;
+        }
+        return -1;
+    }
     // ------------------------------------------------------------------------
     void addInstanceData(const SPInstancedData& id, DrawCallType dct)
     {

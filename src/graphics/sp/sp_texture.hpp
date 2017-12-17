@@ -108,6 +108,7 @@ public:
     static std::shared_ptr<SPTexture> getWhiteTexture()
     {
         SPTexture* tex = new SPTexture(true/*white*/);
+        tex->m_path = "unicolor_white";
         return std::shared_ptr<SPTexture>(tex);
     }
     // ------------------------------------------------------------------------
