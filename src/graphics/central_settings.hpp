@@ -50,7 +50,7 @@ private:
     bool hasSRGBFramebuffer;
     bool hasSamplerObjects;
     bool hasVertexType2101010Rev;
-    bool hasSparseBuffer;
+    bool hasNVGPUShader5;
 
 #if defined(USE_GLES2)
     bool hasBGRA;
@@ -96,7 +96,7 @@ public:
     bool isARBSRGBFramebufferUsable() const;
     bool isARBSamplerObjectsUsable() const;
     bool isARBVertexType2101010RevUsable() const;
-    bool isARBSparseBufferUsable() const;
+    bool isNVGPUShader5Usable() const;
 
     const std::string& getVSLayerExtension() const { return m_vs_layer_extension; }
 

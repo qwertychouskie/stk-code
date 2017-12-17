@@ -55,7 +55,7 @@ void CentralVideoSettings::init()
     hasSRGBFramebuffer = false;
     hasSamplerObjects = false;
     hasVertexType2101010Rev = false;
-    hasSparseBuffer = false;
+    hasNVGPUShader5 = false;
 
 #if defined(USE_GLES2)
     hasBGRA = false;
@@ -229,10 +229,10 @@ void CentralVideoSettings::init()
             hasVertexType2101010Rev = true;
             Log::info("GLDriver", "ARB Vertex Type 2_10_10_10_rev Present");
         }
-        if (hasGLExtension("GL_ARB_sparse_buffer"))
+        if (hasGLExtension("GL_NV_gpu_shader5"))
         {
-            hasSparseBuffer = true;
-            Log::info("GLDriver", "ARB Sparse Buffer Present");
+            hasNVGPUShader5 = true;
+            Log::info("GLDriver", "GL_NV_gpu_shader5");
         }
         if (GraphicsRestrictions::isDisabled(GraphicsRestrictions::GR_GI))
         {
@@ -574,9 +574,9 @@ bool CentralVideoSettings::isARBVertexType2101010RevUsable() const
     return hasVertexType2101010Rev;
 }
 
-bool CentralVideoSettings::isARBSparseBufferUsable() const
+bool CentralVideoSettings::isNVGPUShader5Usable() const
 {
-    return hasSparseBuffer;
+    return hasNVGPUShader5;
 }
 
 bool CentralVideoSettings::supportsThreadedTextureLoading() const

@@ -36,6 +36,7 @@
 #include "graphics/sp/sp_mesh_buffer.hpp"
 #include "graphics/sp/sp_mesh_node.hpp"
 #include "graphics/sp/sp_shader.hpp"
+#include "graphics/sp/sp_texture.hpp"
 #include "graphics/sp/sp_texture_manager.hpp"
 #include "graphics/sp/sp_uniform_assigner.hpp"
 #include "tracks/track.hpp"
@@ -78,8 +79,9 @@ typedef std::unordered_map<SPShader*, std::unordered_map<std::string,
 
 DrawCall g_draw_calls[DCT_COUNT];
 // ----------------------------------------------------------------------------
-std::vector<std::pair<SPShader*, std::vector<std::vector<SPMeshBuffer*> > > >
-                                               g_final_draw_calls[DCT_FOR_VAO];
+std::vector<std::pair<SPShader*,
+    std::vector<std::tuple<std::array<GLuint, 6>, int/*material_id*/,
+    std::vector<SPMeshBuffer*> > > > > g_final_draw_calls[DCT_FOR_VAO];
 // ----------------------------------------------------------------------------
 std::unordered_set<SPMeshBuffer*> g_instances;
 // ----------------------------------------------------------------------------
@@ -1107,6 +1109,7 @@ void addObject(SPMeshNode* node)
     {
         return;
     }
+#ifndef SERVER_ONLY
     if (node->getSPM() == NULL)
     {
         return;
@@ -1206,11 +1209,22 @@ void addObject(SPMeshNode* node)
             }
             if (shader->isTransparent())
             {
+                // Transparent shader should always uses mesh samplers
                 // All transparent draw calls go DCT_TRANSPARENT
                 if (dc_type == 0)
                 {
                     auto& ret = g_draw_calls[DCT_TRANSPARENT][shader];
-                    ret[mb->getTextureCompare()].insert(mb);
+                    if (CVS->isARBBindlessTextureUsable())
+                    {
+                        ret[""].insert(mb);
+                    }
+                    else
+                    {
+                        for (auto& p : mb->getTextureCompare())
+                        {
+                            ret[p.first].insert(mb);
+                        }
+                    }
                     mb->addInstanceData(id, DCT_TRANSPARENT);
                 }
                 else
@@ -1220,14 +1234,29 @@ void addObject(SPMeshNode* node)
             }
             else
             {
+                // Check if shader for render pass uses mesh samplers
+                const RenderPass check_pass =
+                    dc_type == DCT_NORMAL ? RP_1ST : RP_SHADOW;
+                const bool sampler_less = shader->samplerLess(check_pass) ||
+                    CVS->isARBBindlessTextureUsable();
                 auto& ret = g_draw_calls[dc_type][shader];
-                ret[mb->getTextureCompare()].insert(mb);
+                if (sampler_less)
+                {
+                    ret[""].insert(mb);
+                }
+                else
+                {
+                    for (auto& p : mb->getTextureCompare())
+                    {
+                        ret[p.first].insert(mb);
+                    }
+                }
                 mb->addInstanceData(id, (DrawCallType)dc_type);
             }
             g_instances.insert(mb);
         }
     }
-
+#endif
 }
 
 // ----------------------------------------------------------------------------
@@ -1263,7 +1292,9 @@ void updateModelMatrix()
         {
             auto& p = sorted_dc[dc];
             g_final_draw_calls[i].emplace_back(p.first,
-                std::vector<std::vector<SPMeshBuffer*> >());
+            std::vector<std::tuple<std::array<GLuint, 6>, int,
+                std::vector<SPMeshBuffer*> > >());
+
             unsigned texture = 0;
             for (auto& q : p.second)
             {
@@ -1271,11 +1302,25 @@ void updateModelMatrix()
                 {
                     continue;
                 }
+                int material_idx = -1;
+                std::array<std::shared_ptr<SPTexture>, 6> textures =
+                    (*(q.second.begin()))->getSPTextures(material_idx);
+                std::array<GLuint, 6> texture_names =
+                    {{
+                        textures[0]->getOpenGLTextureName(),
+                        textures[1]->getOpenGLTextureName(),
+                        textures[2]->getOpenGLTextureName(),
+                        textures[3]->getOpenGLTextureName(),
+                        textures[4]->getOpenGLTextureName(),
+                        textures[5]->getOpenGLTextureName()
+                    }};
                 g_final_draw_calls[i][dc].second.push_back
-                    (std::vector<SPMeshBuffer*>());
+                    (std::make_tuple(texture_names, material_idx
+                    std::vector<SPMeshBuffer*>()));
                 for (SPMeshBuffer* spmb : q.second)
                 {
-                    g_final_draw_calls[i][dc].second[texture].push_back(spmb);
+                    std::get<2>(g_final_draw_calls[i][dc].second[texture])
+                        .push_back(spmb);
                 }
                 texture++;
             }

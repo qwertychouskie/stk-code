@@ -23,6 +23,7 @@
 #include "utils/log.hpp"
 #include "utils/no_copy.hpp"
 
+#include <array>
 #include <cstring>
 #include <functional>
 #include <ostream>
@@ -154,7 +155,8 @@ public:
     // ------------------------------------------------------------------------
     void bindPrefilledTextures(RenderPass rp = RP_1ST);
     // ------------------------------------------------------------------------
-    void bindTextures(const irr::video::SMaterial& m, RenderPass rp = RP_1ST);
+    void bindTextures(const std::array<GLuint, 6>& tex,
+                      RenderPass rp = RP_1ST);
     // ------------------------------------------------------------------------
     void addBasicUniforms(RenderPass rp = RP_1ST)
     {
@@ -203,6 +205,9 @@ public:
     bool useAlphaChannel() const                { return m_use_alpha_channel; }
     // ------------------------------------------------------------------------
     int getDrawingPriority() const               { return m_drawing_priority; }
+    // ------------------------------------------------------------------------
+    bool samplerLess(RenderPass rp = RP_1ST) const
+                                             { return m_samplers[rp].empty(); }
 
 };
 

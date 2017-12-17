@@ -30,6 +30,7 @@
 #include <cassert>
 #include <string>
 #include <tuple>
+#include <unordered_map>
 #include <vector>
 
 using namespace irr;
@@ -44,10 +45,12 @@ class SPTexture;
 class SPMeshBuffer : public IMeshBuffer
 {
 private:
-    std::vector<std::tuple<unsigned/*first_index_id*/,
+    std::vector<std::tuple<size_t/*first_index_id*/,
         unsigned/*indices_count*/, Material*> > m_stk_material;
 
     std::vector<std::array<std::shared_ptr<SPTexture>, 6> > m_textures;
+
+    std::unordered_map<std::string, unsigned> m_tex_cmp;
 
     std::vector<video::S3DVertexSkinnedMesh> m_vertices;
 
@@ -74,8 +77,6 @@ private:
     bool m_uploaded_instance;
 
     bool m_skinned;
-
-    std::string m_tex_cmp;
 
     // ------------------------------------------------------------------------
     bool initBindlessTexture();
@@ -129,11 +130,37 @@ public:
     // ------------------------------------------------------------------------
     void bindVAO(DrawCallType dct) const     { glBindVertexArray(m_vao[dct]); }
     // ------------------------------------------------------------------------
-    void draw(DrawCallType dct) const
+    void draw(DrawCallType dct, int material_id = -1,
+              bool bindless_texture = false) const
     {
         glBindVertexArray(m_vao[dct]);
-        glDrawElementsInstanced(GL_TRIANGLES, getIndexCount(),
-            GL_UNSIGNED_SHORT, 0, (unsigned)m_ins_dat[dct].size());
+        if (material_id == -1)
+        {
+            if (bindless_texture)
+            {
+                for (unsigned i = 0; i < m_stk_material.size(); i++)
+                {
+                    glDrawElementsInstanced(GL_TRIANGLES,
+                        std::get<1>(m_stk_material[i]),
+                        GL_UNSIGNED_SHORT,
+                        (void*)(std::get<0>(m_stk_material[i]) << 1),
+                        (unsigned)m_ins_dat[dct].size());
+                }
+            }
+            else
+            {
+                glDrawElementsInstanced(GL_TRIANGLES, getIndexCount(),
+                    GL_UNSIGNED_SHORT, 0, (unsigned)m_ins_dat[dct].size());
+            }
+        }
+        else
+        {
+            glDrawElementsInstanced(GL_TRIANGLES,
+                std::get<1>(m_stk_material[material_id]),
+                GL_UNSIGNED_SHORT,
+                (void*)(std::get<0>(m_stk_material[material_id]) << 1),
+                (unsigned)m_ins_dat[dct].size());
+        }
     }
     // ------------------------------------------------------------------------
     void initDrawMaterial();
@@ -184,7 +211,8 @@ public:
         return ret;
     }
     // ------------------------------------------------------------------------
-    const std::string& getTextureCompare() const          { return m_tex_cmp; }
+    const std::unordered_map<std::string, unsigned>& getTextureCompare() const
+                                                          { return m_tex_cmp; }
     // ------------------------------------------------------------------------
     void addInstanceData(const SPInstancedData& id, DrawCallType dct)
     {

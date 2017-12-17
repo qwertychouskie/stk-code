@@ -187,15 +187,13 @@ void SPShader::bindPrefilledTextures(RenderPass rp)
 }   // bindPrefilledTextures
 
 // ----------------------------------------------------------------------------
-void SPShader::bindTextures(const irr::video::SMaterial& m, RenderPass rp)
+void SPShader::bindTextures(const std::array<GLuint, 6>& tex, RenderPass rp)
 {
-    return;
 #ifndef SERVER_ONLY
     for (auto& p : m_samplers[rp])
     {
         glActiveTexture(GL_TEXTURE0 + p.second);
-        glBindTexture(GL_TEXTURE_2D,
-            m.TextureLayer[p.first].Texture->getOpenGLTextureName());
+        glBindTexture(GL_TEXTURE_2D, tex[p.first]);
         glBindSampler(p.second, getSampler(ST_TRILINEAR));
     }
 #endif
