@@ -519,6 +519,8 @@ scene::ISceneNode* KartModel::attachModel(bool animated_models, bool human_playe
 
     if (m_hat_location && !m_hat_name.empty())
     {
+        file_manager->pushTextureSearchPath
+            (file_manager->getAsset(FileManager::MODEL,""), "models");
         const bool bone_attachment = m_animated_node && !m_hat_bone.empty();
         scene::ISceneNode* parent = bone_attachment ?
             m_animated_node->getJointNode(m_hat_bone.c_str()) : node;
@@ -528,6 +530,7 @@ scene::ISceneNode* KartModel::attachModel(bool animated_models, bool human_playe
             getRenderInfo());
         configNode(node, *m_hat_location, bone_attachment ?
                 getInverseBoneMatrix(m_hat_bone) : core::matrix4());
+        file_manager->popTextureSearchPath();
     }
 
     if (animated_models)
