@@ -134,9 +134,11 @@ public:
               bool bindless_texture = false) const
     {
         glBindVertexArray(m_vao[dct]);
-        if (material_id == -1)
+        if (material_id == -1 || bindless_texture)
         {
-            if (bindless_texture)
+            /*if (bindless_texture)
+            // Only nvidia gpu allow texture with non-dynamically-uniform
+            // handles (texture handles that aren't constant within a same draw)
             {
                 for (unsigned i = 0; i < m_stk_material.size(); i++)
                 {
@@ -147,7 +149,7 @@ public:
                         (unsigned)m_ins_dat[dct].size());
                 }
             }
-            else
+            else*/
             {
                 glDrawElementsInstanced(GL_TRIANGLES, getIndexCount(),
                     GL_UNSIGNED_SHORT, 0, (unsigned)m_ins_dat[dct].size());

@@ -1437,13 +1437,6 @@ void draw(RenderPass rp, DrawCallType dct)
         p.first->bindPrefilledTextures(rp);
         for (unsigned j = 0; j < p.second.size(); j++)
         {
-            /*std::vector<SPUniformAssigner*> material_uniforms;
-            if (q.first != NULL)
-            {
-                p.first->setUniformsPerObject(static_cast<SPPerObjectUniform*>
-                    (q.first), &material_uniforms, rp);
-                
-            }*/
             if (!CVS->isARBBindlessTextureUsable())
             {
                 p.first->bindTextures(p.second[j].first, rp);
@@ -1462,10 +1455,6 @@ void draw(RenderPass rp, DrawCallType dct)
                     ua->reset();
                 }*/
             }
-            /*for (SPUniformAssigner* ua : material_uniforms)
-            {
-                ua->reset();
-            }*/
         }
         for (SPUniformAssigner* ua : shader_uniforms)
         {

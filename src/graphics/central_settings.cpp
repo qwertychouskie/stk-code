@@ -436,7 +436,7 @@ bool CentralVideoSettings::isARBTextureViewUsable() const
 
 bool CentralVideoSettings::isARBBindlessTextureUsable() const
 {
-    return hasBindlessTexture;
+    return hasBindlessTexture && hasNVGPUShader5;
 }
 
 bool CentralVideoSettings::isARBShaderAtomicCountersUsable() const
