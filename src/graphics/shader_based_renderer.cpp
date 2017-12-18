@@ -69,26 +69,6 @@ void ShaderBasedRenderer::setRTT(RTT* rtts)
 } //setRTT
 
 // ----------------------------------------------------------------------------
-void ShaderBasedRenderer::setOverrideMaterial()
-{
-    video::SOverrideMaterial &overridemat = irr_driver->getVideoDriver()->getOverrideMaterial();
-    overridemat.EnablePasses = scene::ESNRP_SOLID | scene::ESNRP_TRANSPARENT;
-    overridemat.EnableFlags = 0;
-
-    if (irr_driver->getWireframe())
-    {
-        overridemat.Material.Wireframe = 1;
-        overridemat.EnableFlags |= video::EMF_WIREFRAME;
-    }
-    if (irr_driver->getMipViz())
-    {
-        overridemat.Material.MaterialType = Shaders::getShader(ES_MIPVIZ);
-        overridemat.EnableFlags |= video::EMF_MATERIAL_TYPE;
-        overridemat.EnablePasses = scene::ESNRP_SOLID;
-    }       
-} //setOverrideMaterial
-
-// ----------------------------------------------------------------------------
 void ShaderBasedRenderer::prepareForwardRenderer()
 {
     irr::video::SColor clearColor(0, 150, 150, 150);
@@ -807,8 +787,6 @@ void ShaderBasedRenderer::render(float dt)
 {
     resetObjectCount();
     resetPolyCount();
-
-    setOverrideMaterial();
 
     // Start the RTT for post-processing.
     // We do this before beginScene() because we want to capture the glClear()

@@ -48,8 +48,6 @@ private:
     ShadowMatrices              m_shadow_matrices;
     PostProcessing             *m_post_processing;
 
-    void setOverrideMaterial();
-    
     void prepareForwardRenderer();
 
     void uploadLightingData() const;
