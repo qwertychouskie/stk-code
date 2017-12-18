@@ -54,6 +54,8 @@ private:
 
     std::string m_shader_override;
 
+    video::SColorf m_glow_color;
+
     // ------------------------------------------------------------------------
     void cleanRenderInfo();
     // ------------------------------------------------------------------------
@@ -128,6 +130,14 @@ public:
             return m_static_render_info[mb_id].get();
         }
         return NULL;
+    }
+    // ------------------------------------------------------------------------
+    void setGlowColor(const video::SColorf& color)    { m_glow_color = color; }
+    // ------------------------------------------------------------------------
+    bool hasGlowColor() const
+    {
+        return !(m_glow_color.r == 0.0f && m_glow_color.g == 0.0f &&
+            m_glow_color.b == 0.0f);
     }
 };
 

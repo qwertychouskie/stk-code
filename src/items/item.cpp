@@ -19,8 +19,10 @@
 
 #include "items/item.hpp"
 
+#include "items/item_manager.hpp"
 #include "graphics/irr_driver.hpp"
 #include "graphics/lod_node.hpp"
+#include "graphics/sp/sp_mesh_node.hpp"
 #include "karts/abstract_kart.hpp"
 #include "modes/easter_egg_hunt.hpp"
 #include "modes/three_strikes_battle.hpp"
@@ -67,10 +69,10 @@ Item::Item(ItemType type, const Vec3& xyz, const Vec3& normal,
     {
         lodnode->add(100, meshnode, true);
     }
+    setType(type);
 
     m_node              = lodnode;
 
-    //m_node             = irr_driver->addMesh(mesh);
 #ifdef DEBUG
     std::string debug_name("item: ");
     debug_name += m_type;
@@ -167,6 +169,14 @@ void Item::setType(ItemType type)
 {
     m_type   = type;
     m_rotate = (type!=ITEM_BUBBLEGUM) && (type!=ITEM_TRIGGER);
+    for (auto* node : m_node->getAllNodes())
+    {
+        SP::SPMeshNode* spmn = dynamic_cast<SP::SPMeshNode*>(node);
+        if (spmn)
+        {
+            spmn->setGlowColor(ItemManager::get()->getGlowColor(type));
+        }
+    }
 }   // setType
 
 //-----------------------------------------------------------------------------
@@ -180,7 +190,6 @@ void Item::switchTo(ItemType type, scene::IMesh *mesh, scene::IMesh *lowmesh)
     if (m_type == ITEM_TRIGGER || m_type == ITEM_EASTER_EGG) return;
 
     m_original_type = m_type;
-    setType(type);
 
     scene::ISceneNode* node = m_node->getAllNodes()[0];
     ((scene::IMeshSceneNode*)node)->setMesh(mesh);
@@ -193,6 +202,8 @@ void Item::switchTo(ItemType type, scene::IMesh *mesh, scene::IMesh *lowmesh)
     }
 
     irr_driver->applyObjectPassShader(m_node->getAllNodes()[0]);
+
+    setType(type);
 
     Track::getCurrentTrack()->adjustForFog(m_node);
 #endif
@@ -212,9 +223,6 @@ void Item::switchBack()
     if(m_original_type==ITEM_NONE)
         return;
 
-    setType(m_original_type);
-    m_original_type = ITEM_NONE;
-
     scene::ISceneNode* node = m_node->getAllNodes()[0];
     ((scene::IMeshSceneNode*)node)->setMesh(m_original_mesh);
     if (m_original_lowmesh != NULL)
@@ -222,6 +230,9 @@ void Item::switchBack()
         node = m_node->getAllNodes()[1];
         ((scene::IMeshSceneNode*)node)->setMesh(m_original_lowmesh);
     }
+
+    setType(m_original_type);
+    m_original_type = ITEM_NONE;
 
     Track::getCurrentTrack()->adjustForFog(m_node);
     Vec3 hpr;

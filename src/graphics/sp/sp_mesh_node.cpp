@@ -40,6 +40,7 @@ SPMeshNode::SPMeshNode(IAnimatedMesh* mesh, ISceneNode* parent,
           : CAnimatedMeshSceneNode(mesh, parent, mgr, id, position, rotation,
                                    scale)
 {
+    m_glow_color = video::SColorf(0.0f, 0.0f, 0.0f);
     m_mesh = NULL;
     m_mesh_render_info = render_info;
     m_animated = false;
@@ -72,6 +73,7 @@ void SPMeshNode::setAnimationState(bool val)
 // ----------------------------------------------------------------------------
 void SPMeshNode::setMesh(irr::scene::IAnimatedMesh* mesh)
 {
+    m_glow_color = video::SColorf(0.0f, 0.0f, 0.0f);
     m_skinning_offset = -32768;
     m_animated = false;
     m_mesh = static_cast<SPMesh*>(mesh);

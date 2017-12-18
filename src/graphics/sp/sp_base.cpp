@@ -82,6 +82,8 @@ std::vector<std::pair<SPShader*, std::vector<std::pair<std::array<GLuint, 6>,
     std::vector<std::pair<SPMeshBuffer*, int/*material_id*/> > > > > >
     g_final_draw_calls[DCT_FOR_VAO];
 // ----------------------------------------------------------------------------
+core::map<video::SColorf, std::unordered_set<SPMeshBuffer*> > g_glow_meshes;
+// ----------------------------------------------------------------------------
 std::unordered_set<SPMeshBuffer*> g_instances;
 // ----------------------------------------------------------------------------
 std::array<GLuint, ST_COUNT> g_samplers;
@@ -1100,6 +1102,7 @@ void prepareDrawCalls()
     {
         p.clear();
     }
+    g_glow_meshes.clear();
     g_instances.clear();
 #endif
 }
