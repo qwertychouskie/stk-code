@@ -82,7 +82,8 @@ std::vector<std::pair<SPShader*, std::vector<std::pair<std::array<GLuint, 6>,
     std::vector<std::pair<SPMeshBuffer*, int/*material_id*/> > > > > >
     g_final_draw_calls[DCT_FOR_VAO];
 // ----------------------------------------------------------------------------
-core::map<video::SColorf, std::unordered_set<SPMeshBuffer*> > g_glow_meshes;
+std::unordered_map<unsigned, std::pair<video::SColorf,
+    std::unordered_set<SPMeshBuffer*> > > g_glow_meshes;
 // ----------------------------------------------------------------------------
 std::unordered_set<SPMeshBuffer*> g_instances;
 // ----------------------------------------------------------------------------
@@ -1254,10 +1255,15 @@ void addObject(SPMeshNode* node)
                     }
                 }
                 mb->addInstanceData(id, (DrawCallType)dc_type);
-                if (UserConfigParams::m_glow && node->hasGlowColor())
+                if (UserConfigParams::m_glow && node->hasGlowColor() &&
+                    CVS->isDefferedEnabled())
                 {
+
                     video::SColorf gc = node->getGlowColor();
-                    //g_glow_meshes.
+                    unsigned key = gc.toSColor().color;
+                    g_glow_meshes[key] = std::make_pair(gc,
+                        std::unordered_set<SPMeshBuffer*>());
+                    g_glow_meshes[key].second.insert(mb);
                 }
             }
             g_instances.insert(mb);
@@ -1425,6 +1431,19 @@ void uploadAll()
 void drawGlow()
 {
 #ifndef SERVER_ONLY
+    g_glow_shader->use();
+    SPUniformAssigner* glow_color_assigner =
+        g_glow_shader->getUniformAssigner("col");
+    assert(glow_color_assigner != NULL);
+    for (auto& p : g_glow_meshes)
+    {
+        glow_color_assigner->setValue(p.second.first);
+        for (SPMeshBuffer* spmb : p.second.second)
+        {
+            spmb->draw(DCT_NORMAL, -1/*material_id*/);
+        }
+    }
+    g_glow_shader->unuse();
 #endif
 }
 
