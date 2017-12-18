@@ -48,15 +48,7 @@ private:
     ShadowMatrices              m_shadow_matrices;
     PostProcessing             *m_post_processing;
 
-    /** Static glowing things are loaded once per track.
-     * Glowing items can appear ordisappear each frame */
-    std::vector<GlowData>       m_glowing;
-    unsigned int                m_nb_static_glowing;
-
     void setOverrideMaterial();
-    
-    void addItemsInGlowingList();
-    void removeItemsInGlowingList();
     
     void prepareForwardRenderer();
 
@@ -107,12 +99,7 @@ public:
                                           bool force_SH_computation = true) OVERRIDE;
 
     void addSunLight(const irr::core::vector3df &pos) OVERRIDE;
-    
-    void addGlowingNode(scene::ISceneNode *n,
-                        float r = 1.0f, float g = 1.0f, float b = 1.0f) OVERRIDE;
-                        
-    void clearGlowingNodes() OVERRIDE;
-    
+
     void render(float dt) OVERRIDE;
 
     std::unique_ptr<RenderTarget> createRenderTarget(const irr::core::dimension2du &dimension,

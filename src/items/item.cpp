@@ -69,9 +69,8 @@ Item::Item(ItemType type, const Vec3& xyz, const Vec3& normal,
     {
         lodnode->add(100, meshnode, true);
     }
-    setType(type);
-
     m_node              = lodnode;
+    setType(type);
 
 #ifdef DEBUG
     std::string debug_name("item: ");

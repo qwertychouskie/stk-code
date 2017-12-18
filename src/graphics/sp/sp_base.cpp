@@ -327,7 +327,7 @@ void loadShaders()
     shader->addAllTextures(RP_1ST);
 
     shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -348,7 +348,7 @@ void loadShaders()
     shader->addAllTextures(RP_1ST);
 
     shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -370,7 +370,7 @@ void loadShaders()
     shader->addAllTextures(RP_1ST);
 
     shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -391,7 +391,7 @@ void loadShaders()
     shader->addAllTextures(RP_1ST);
 
     shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -499,7 +499,7 @@ void loadShaders()
     shader->addAllTextures(RP_1ST);
 
     shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -520,7 +520,7 @@ void loadShaders()
     shader->addAllTextures(RP_1ST);
 
     shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -646,7 +646,7 @@ void loadShaders()
             , true/*transparent_shader*/, 999/*drawing_priority*/);
         shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER,
             RP_1ST);
-        shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER,
+        shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER,
             RP_1ST);
         shader->linkShaderFiles(RP_1ST);
         shader->use(RP_1ST);
@@ -1254,6 +1254,11 @@ void addObject(SPMeshNode* node)
                     }
                 }
                 mb->addInstanceData(id, (DrawCallType)dc_type);
+                if (UserConfigParams::m_glow && node->hasGlowColor())
+                {
+                    video::SColorf gc = node->getGlowColor();
+                    //g_glow_meshes.
+                }
             }
             g_instances.insert(mb);
         }
@@ -1278,7 +1283,8 @@ void updateModelMatrix()
         DrawCall* dc = &g_draw_calls[(DrawCallType)i];
         // Sort dc based on the drawing priority of shaders
         // The larger the drawing priority int, the last it will be drawn
-        using DrawCallPair = std::pair<SPShader*, std::unordered_map<std::string,
+        using DrawCallPair = std::pair<SPShader*,
+            std::unordered_map<std::string,
             std::unordered_set<SPMeshBuffer*> > >;
         std::vector<DrawCallPair> sorted_dc;
         for (auto& p : *dc)

@@ -89,61 +89,6 @@ void ShaderBasedRenderer::setOverrideMaterial()
 } //setOverrideMaterial
 
 // ----------------------------------------------------------------------------
-/** Add glowing items, they may appear or disappear each frame. */
-void ShaderBasedRenderer::addItemsInGlowingList()
-{
-    ItemManager * const items = ItemManager::get();
-    const u32 itemcount = items->getNumberOfItems();
-    u32 i;
-
-    for (i = 0; i < itemcount; i++)
-    {
-        Item * const item = items->getItem(i);
-        if (!item) continue;
-        const Item::ItemType type = item->getType();
-
-        if (type != Item::ITEM_NITRO_BIG && type != Item::ITEM_NITRO_SMALL &&
-            type != Item::ITEM_BONUS_BOX && type != Item::ITEM_BANANA && type != Item::ITEM_BUBBLEGUM)
-            continue;
-
-        LODNode * const lod = (LODNode *) item->getSceneNode();
-        if (!lod->isVisible()) continue;
-
-        const int level = lod->getLevel();
-        if (level < 0) continue;
-
-        scene::ISceneNode * const node = lod->getAllNodes()[level];
-        node->updateAbsolutePosition();
-
-        GlowData dat;
-        dat.node = node;
-
-        dat.r = 1.0f;
-        dat.g = 1.0f;
-        dat.b = 1.0f;
-
-        const video::SColorf &c = ItemManager::getGlowColor(type);
-        dat.r = c.getRed();
-        dat.g = c.getGreen();
-        dat.b = c.getBlue();
-
-        STKMeshSceneNode *stk_node = dynamic_cast<STKMeshSceneNode *>(node);
-        if (stk_node)
-            stk_node->setGlowColors(irr::video::SColor(0, (unsigned) (dat.r * 255.f), (unsigned)(dat.g * 255.f), (unsigned)(dat.b * 255.f)));
-
-        m_glowing.push_back(dat);
-    }    
-} //addItemsInGlowingList
-
-// ----------------------------------------------------------------------------
-/** Remove all non static glowing things */
-void ShaderBasedRenderer::removeItemsInGlowingList()
-{
-    while(m_glowing.size() > m_nb_static_glowing)
-        m_glowing.pop_back();    
-}
-
-// ----------------------------------------------------------------------------
 void ShaderBasedRenderer::prepareForwardRenderer()
 {
     irr::video::SColor clearColor(0, 150, 150, 150);
@@ -743,7 +688,6 @@ ShaderBasedRenderer::ShaderBasedRenderer()
     m_rtts                  = NULL;
     m_skybox                = NULL;
     m_spherical_harmonics   = new SphericalHarmonics(irr_driver->getAmbientLight().toSColor());
-    m_nb_static_glowing     = 0;
     SharedGPUObjects::init();
     SP::init();
     SP::initSTKRenderer(this);
@@ -859,37 +803,12 @@ void ShaderBasedRenderer::addSunLight(const core::vector3df &pos)
 }
 
 // ----------------------------------------------------------------------------
-void ShaderBasedRenderer::addGlowingNode(scene::ISceneNode *n, float r, float g, float b)
-{
-    GlowData dat;
-    dat.node = n;
-    dat.r = r;
-    dat.g = g;
-    dat.b = b;
-    
-    STKMeshSceneNode *node = static_cast<STKMeshSceneNode *>(n);
-    node->setGlowColors(irr::video::SColor(0, (unsigned) (dat.r * 255.f), (unsigned)(dat.g * 255.f), (unsigned)(dat.b * 255.f)));
-    
-    m_glowing.push_back(dat);
-    m_nb_static_glowing++;
-} //addGlowingNode
-
-// ----------------------------------------------------------------------------
-void ShaderBasedRenderer::clearGlowingNodes()
-{
-    m_glowing.clear();
-    m_nb_static_glowing = 0;
-}
-
-// ----------------------------------------------------------------------------
 void ShaderBasedRenderer::render(float dt)
 {
     resetObjectCount();
     resetPolyCount();
 
     setOverrideMaterial();
-    
-    addItemsInGlowingList();
 
     // Start the RTT for post-processing.
     // We do this before beginScene() because we want to capture the glClear()
@@ -1013,7 +932,6 @@ void ShaderBasedRenderer::render(float dt)
     PROFILER_POP_CPU_MARKER();
 
     m_post_processing->update(dt);
-    removeItemsInGlowingList();
 } //render
 
 // ----------------------------------------------------------------------------

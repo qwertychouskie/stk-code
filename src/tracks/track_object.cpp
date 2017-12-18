@@ -26,6 +26,7 @@
 #include "graphics/material_manager.hpp"
 #include "graphics/render_info.hpp"
 #include "graphics/sp/sp_mesh_buffer.hpp"
+#include "graphics/sp/sp_mesh_node.hpp"
 #include "io/file_manager.hpp"
 #include "io/xml_node.hpp"
 #include "input/device_manager.hpp"
@@ -340,8 +341,11 @@ void TrackObject::init(const XMLNode &xml_node, scene::ISceneNode* parent,
             r = glow.getRed() / 255.0f;
             g = glow.getGreen() / 255.0f;
             b = glow.getBlue() / 255.0f;
-
-            irr_driver->addGlowingNode(glownode, r, g, b);
+            SP::SPMeshNode* spmn = dynamic_cast<SP::SPMeshNode*>(glownode);
+            if (spmn)
+            {
+                spmn->setGlowColor(video::SColorf(r, g, b));
+            }
         }
 
         bool forcedbloom = false;

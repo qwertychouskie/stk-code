@@ -134,6 +134,8 @@ public:
     // ------------------------------------------------------------------------
     void setGlowColor(const video::SColorf& color)    { m_glow_color = color; }
     // ------------------------------------------------------------------------
+    const video::SColorf& getGlowColor() const         { return m_glow_color; }
+    // ------------------------------------------------------------------------
     bool hasGlowColor() const
     {
         return !(m_glow_color.r == 0.0f && m_glow_color.g == 0.0f &&

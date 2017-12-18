@@ -276,21 +276,6 @@ void STKMeshSceneNode::render()
     updateNoGL();
     updateGL();
 
-    bool isTransparent = false;
-
-    for (u32 i = 0; i < Mesh->getMeshBufferCount(); ++i)
-    {
-        scene::IMeshBuffer* mb = Mesh->getMeshBuffer(i);
-        if (!mb)
-            continue;
-
-        video::E_MATERIAL_TYPE type = mb->getMaterial().MaterialType;
-        video::IMaterialRenderer* rnd = driver->getMaterialRenderer(type);
-
-        isTransparent = rnd->isTransparent();
-        break;
-    }
-
     if (irr_driver->getPhase() == GLOW_PASS)
     {
         ColorizeShader::getInstance()->use();
