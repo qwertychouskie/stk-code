@@ -740,7 +740,7 @@ void loadShaders()
         shader = new SPShader("sp_normal_visualizer", 1);
         shader->addShaderFile("sp_normal_visualizer.vert", GL_VERTEX_SHADER,
             RP_1ST);
-        shader->addShaderFile("normal_visualizer.geom", GL_GEOMETRY_SHADER,
+        shader->addShaderFile("sp_normal_visualizer.geom", GL_GEOMETRY_SHADER,
             RP_1ST);
         shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER, RP_1ST);
         shader->linkShaderFiles(RP_1ST);
