@@ -1153,7 +1153,7 @@ void addObject(SPMeshNode* node)
         }
         if (sp_first_frame || g_handle_shadow ?
             (discard[0] && discard[1] && discard[2] && discard[3] &&
-            discard[4] && discard[5]) : discard[0])
+            discard[4]) : discard[0])
         {
             continue;
         }

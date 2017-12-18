@@ -345,7 +345,6 @@ RTT::~RTT()
     if (CVS->isShadowEnabled())
     {
         delete m_shadow_FBO;
-        glDeleteTextures(1, &shadowColorTex);
         glDeleteTextures(1, &shadowDepthTex);
     }
     if (CVS->isGlobalIlluminationEnabled())

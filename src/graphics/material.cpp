@@ -433,6 +433,17 @@ Material::Material(const XMLNode *node, bool deprecated)
         }
     }
 
+#ifndef SERVER_ONLY
+    if (!CVS->isDefferedEnabled())
+    {
+        for (int i = 2; i < 6; i++)
+        {
+            // When advanced pipeline is off only .spm uv textures are used
+            m_sampler_path[i] = "";
+        }
+    }
+#endif
+
     if (m_disable_z_write && m_shader_type != SHADERTYPE_ALPHA_BLEND && m_shader_type != SHADERTYPE_ADDITIVE)
     {
         Log::debug("material", "Disabling writes to z buffer only makes sense when compositing is blending or additive (for %s)", m_texname.c_str());

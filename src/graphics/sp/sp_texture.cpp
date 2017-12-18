@@ -136,9 +136,13 @@ std::shared_ptr<video::IImage> SPTexture::getImageBuffer() const
         video::IImage* new_texture = irr_driver
             ->getVideoDriver()->createImage(video::ECF_A8R8G8B8, tex_size);
         if (tex_size != img_size)
+        {
             image->copyToScaling(new_texture);
+        }
         else
+        {
             image->copyTo(new_texture);
+        }
         image->drop();
         image = new_texture;
     }

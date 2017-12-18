@@ -92,6 +92,7 @@ void SPMeshNode::setMesh(irr::scene::IAnimatedMesh* mesh)
                     m_joint_nodes[bone_name] = new CBoneSceneNode(this,
                         irr_driver->getSceneManager(), 0, bone_idx++,
                         bone_name.c_str());
+                    m_joint_nodes.at(bone_name)->drop();
                     m_joint_nodes.at(bone_name)->setSkinningSpace(EBSS_GLOBAL);
                 }
             }

@@ -61,7 +61,7 @@ private:
     {
         for (auto& p : m_joint_nodes)
         {
-            p.second->remove();
+            removeChild(p.second);
         }
         m_joint_nodes.clear();
         m_skinning_matrices.clear();

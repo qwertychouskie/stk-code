@@ -167,7 +167,7 @@ private:
     unsigned int m_width;
     unsigned int m_height;
 
-    unsigned shadowColorTex, shadowDepthTex;
+    unsigned shadowDepthTex;
     unsigned RSM_Color, RSM_Normal, RSM_Depth;
     unsigned RH_Red, RH_Green, RH_Blue;
     FrameBufferLayer* m_shadow_FBO, *m_RSM, *m_RH_FBO;
