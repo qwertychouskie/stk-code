@@ -348,8 +348,10 @@ void ShaderBasedRenderer::renderSceneDeferred(scene::ICameraSceneNode * const ca
 
     if (irr_driver->getNormals())
     {
+        glEnable(GL_DEPTH_TEST);
+        glDepthMask(GL_TRUE);
         m_rtts->getFBO(FBO_NORMAL_AND_DEPTHS).bind();
-        //m_geometry_passes->renderNormalsVisualisation(m_draw_calls);
+        SP::drawNormal();
         m_rtts->getFBO(FBO_COLORS).bind();
     }
 

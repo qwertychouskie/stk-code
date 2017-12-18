@@ -731,6 +731,26 @@ void loadShaders()
     g_glow_shader->addUniform("col", typeid(irr::video::SColorf), RP_1ST);
     addShader(g_glow_shader);
 
+    // ========================================================================
+    // Normal visualizer
+    // ========================================================================
+#ifndef USE_GLES2
+    if (CVS->isARBGeometryShadersUsable())
+    {
+        shader = new SPShader("sp_normal_visualizer", 1);
+        shader->addShaderFile("sp_normal_visualizer.vert", GL_VERTEX_SHADER,
+            RP_1ST);
+        shader->addShaderFile("normal_visualizer.geom", GL_GEOMETRY_SHADER,
+            RP_1ST);
+        shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER, RP_1ST);
+        shader->linkShaderFiles(RP_1ST);
+        shader->use(RP_1ST);
+        shader->addBasicUniforms(RP_1ST);
+        shader->addAllTextures(RP_1ST);
+        shader->addUniform("col", typeid(irr::video::SColorf), RP_1ST);
+        addShader(shader);
+    }
+#endif
 }   // loadShaders
 
 // ----------------------------------------------------------------------------
@@ -1428,6 +1448,32 @@ void uploadAll()
         spmb->uploadInstanceData();
     }
 
+#endif
+}
+
+// ----------------------------------------------------------------------------
+void drawNormal()
+{
+#ifndef SERVER_ONLY
+    SPShader* nv = getSPShader("sp_normal_visualizer");
+    nv->use();
+    nv->bindPrefilledTextures();
+    SPUniformAssigner* normal_color_assigner = nv->getUniformAssigner("col");
+    assert(normal_color_assigner != NULL);
+    normal_color_assigner->setValue(video::SColorf(0.2f, 0.7f, 0.0f));
+    for (unsigned i = 0; i < g_final_draw_calls[0].size(); i++)
+    {
+        auto& p = g_final_draw_calls[0][i];
+        for (unsigned j = 0; j < p.second.size(); j++)
+        {
+            for (unsigned k = 0; k < p.second[j].second.size(); k++)
+            {
+                p.second[j].second[k].first->draw(DCT_NORMAL,
+                    -1/*material_id*/);
+            }
+        }
+    }
+    nv->unuse();
 #endif
 }
 
