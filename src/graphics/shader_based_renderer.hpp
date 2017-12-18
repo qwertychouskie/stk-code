@@ -44,7 +44,6 @@ private:
     Skybox                     *m_skybox;
     SphericalHarmonics         *m_spherical_harmonics;
     DrawCalls                   m_draw_calls;
-    AbstractGeometryPasses     *m_geometry_passes;
     LightingPasses              m_lighting_passes;
     ShadowMatrices              m_shadow_matrices;
     PostProcessing             *m_post_processing;
@@ -75,12 +74,12 @@ private:
 
     void renderSSAO() const;
 
+    void renderGlow() const;
+
     void renderScene(irr::scene::ICameraSceneNode * const camnode,
                      float dt, bool hasShadows, bool forceRTT);
     void renderSceneDeferred(irr::scene::ICameraSceneNode * const camnode,
                      float dt, bool hasShadows, bool forceRTT);
-
-    void renderParticles();
 
     void debugPhysics();
     void renderPostProcessing(Camera * const camera);

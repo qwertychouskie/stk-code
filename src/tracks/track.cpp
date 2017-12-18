@@ -41,7 +41,6 @@
 #include "graphics/particle_kind_manager.hpp"
 #include "graphics/render_target.hpp"
 #include "graphics/stk_tex_manager.hpp"
-#include "graphics/vao_manager.hpp"
 #include "graphics/sp/sp_base.hpp"
 #include "graphics/sp/sp_mesh_buffer.hpp"
 #include "graphics/sp/sp_texture_manager.hpp"
@@ -298,7 +297,6 @@ void Track::cleanup()
     Graph::destroy();
     ItemManager::destroy();
 #ifndef SERVER_ONLY
-    VAOManager::kill();
     CPUParticleManager::getInstance()->cleanMaterialMap();
     SP::resetEmptyFogColor();
     ParticleKindManager::get()->cleanUpTrackSpecificGfx();

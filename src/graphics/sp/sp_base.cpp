@@ -22,6 +22,7 @@
 #include "graphics/central_settings.hpp"
 #include "graphics/frame_buffer.hpp"
 #include "graphics/irr_driver.hpp"
+#include "graphics/material.hpp"
 #include "graphics/shader_based_renderer.hpp"
 #include "graphics/shared_gpu_objects.hpp"
 #include "graphics/shader_based_renderer.hpp"
@@ -137,12 +138,6 @@ void shadowCascadeUniformAssigner(SPUniformAssigner* ua)
 {
     ua->setValue(sp_cur_shadow_cascade);
 }   // shadowCascadeUniformAssigner
-
-// ----------------------------------------------------------------------------
-void rsmUniformAssigner(SPUniformAssigner* ua)
-{
-    ua->setValue(g_stk_sbr->getShadowMatrices()->getRSMMatrix());
-}   // rsmUniformAssigner
 
 // ----------------------------------------------------------------------------
 void fogUniformAssigner(SPUniformAssigner* ua)
@@ -330,7 +325,7 @@ void loadShaders()
     shader->addAllTextures(RP_1ST);
 
     shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -351,7 +346,7 @@ void loadShaders()
     shader->addAllTextures(RP_1ST);
 
     shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -373,7 +368,7 @@ void loadShaders()
     shader->addAllTextures(RP_1ST);
 
     shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -394,7 +389,7 @@ void loadShaders()
     shader->addAllTextures(RP_1ST);
 
     shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -502,7 +497,7 @@ void loadShaders()
     shader->addAllTextures(RP_1ST);
 
     shader->addShaderFile("sp_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -523,7 +518,7 @@ void loadShaders()
     shader->addAllTextures(RP_1ST);
 
     shader->addShaderFile("sp_skinning_shadow.vert", GL_VERTEX_SHADER, RP_SHADOW);
-    shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
+    shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER, RP_SHADOW);
     shader->linkShaderFiles(RP_SHADOW);
     shader->use(RP_SHADOW);
     shader->addBasicUniforms(RP_SHADOW);
@@ -649,7 +644,7 @@ void loadShaders()
             , true/*transparent_shader*/, 999/*drawing_priority*/);
         shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER,
             RP_1ST);
-        shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER,
+        shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER,
             RP_1ST);
         shader->linkShaderFiles(RP_1ST);
         shader->use(RP_1ST);
@@ -721,8 +716,19 @@ void loadShaders()
         addShader(shader);
     }
 
-}   // loadShaders
+    // ========================================================================
+    // Glow shader
+    // ========================================================================
+    g_glow_shader = new SPShader("sp_glow_shader", 1);
+    g_glow_shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
+    g_glow_shader->addShaderFile("colorize.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    g_glow_shader->linkShaderFiles(RP_1ST);
+    g_glow_shader->use(RP_1ST);
+    g_glow_shader->addBasicUniforms(RP_1ST);
+    g_glow_shader->addUniform("col", typeid(irr::video::SColorf), RP_1ST);
+    addShader(g_glow_shader);
 
+}   // loadShaders
 
 // ----------------------------------------------------------------------------
 void resetEmptyFogColor()
@@ -1317,7 +1323,8 @@ void updateModelMatrix()
                         }};
                 }
                 g_final_draw_calls[i][dc].second.emplace_back
-                    (texture_names, std::vector<std::pair<SPMeshBuffer*, int> >());
+                    (texture_names,
+                    std::vector<std::pair<SPMeshBuffer*, int> >());
                 for (SPMeshBuffer* spmb : q.second)
                 {
                     g_final_draw_calls[i][dc].second[texture].second.push_back
@@ -1406,6 +1413,13 @@ void uploadAll()
 }
 
 // ----------------------------------------------------------------------------
+void drawGlow()
+{
+#ifndef SERVER_ONLY
+#endif
+}
+
+// ----------------------------------------------------------------------------
 void draw(RenderPass rp, DrawCallType dct)
 {
 #ifndef SERVER_ONLY
@@ -1484,15 +1498,7 @@ void d()
     static_cast<SPPerObjectUniform*>(shader)
         ->addAssignerFunction("fog_enabled", fogUniformAssigner);
     g_shaders.push_back(shader);
-
-    g_glow_shader = new SPShader("sp_glow_shader", 1);
-    g_glow_shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
-    g_glow_shader->addShaderFile("sp_glow_object.frag", GL_FRAGMENT_SHADER,
-        RP_1ST);
-    g_glow_shader->linkShaderFiles(RP_1ST);
-    g_glow_shader->use(RP_1ST);
-    g_glow_shader->addBasicUniforms(RP_1ST);
-    g_shaders.push_back(g_glow_shader);*/
+*/
 }
 
 /*

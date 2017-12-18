@@ -52,10 +52,8 @@ enum DrawCallType: unsigned int
     DCT_SHADOW3,
     DCT_SHADOW4,
     DCT_TRANSPARENT,
-    DCT_GLOW,
-    DCT_FOR_VAO = DCT_GLOW,
-    DCT_RSM,
-    DCT_COUNT
+    DCT_FOR_VAO,
+    DCT_COUNT = DCT_FOR_VAO
 };
 
 inline std::ostream& operator<<(std::ostream& os, const DrawCallType& dct)
@@ -74,10 +72,6 @@ inline std::ostream& operator<<(std::ostream& os, const DrawCallType& dct)
             return os << "shadow cam 3";
         case DCT_SHADOW4:
             return os << "shadow cam 4";
-        case DCT_RSM:
-            return os << "reflective shadow map";
-        case DCT_GLOW:
-            return os << "glow";
         default:
             return os;
     }
@@ -120,36 +114,21 @@ void destroy();
 // ----------------------------------------------------------------------------
 GLuint getSampler(SamplerType);
 // ----------------------------------------------------------------------------
-std::shared_ptr<SPMaterial> addSPMaterial(const std::shared_ptr<SPMaterial>&);
-// ----------------------------------------------------------------------------
 SPShader* getGlowShader();
 // ----------------------------------------------------------------------------
 SPShader* getSPShader(const std::string& name);
-// ----------------------------------------------------------------------------
-std::shared_ptr<SPMaterial> getSPMaterial(irr::video::ITexture* l1,
-                                          irr::video::ITexture* l2 = NULL);
-// ----------------------------------------------------------------------------
-std::shared_ptr<SPMaterial> getSPNullMaterial();
-// ----------------------------------------------------------------------------
-SPMaterial* getSPMaterial(const std::string& name);
 // ----------------------------------------------------------------------------
 void prepareDrawCalls();
 // ----------------------------------------------------------------------------
 void draw(RenderPass, DrawCallType dct = DCT_NORMAL);
 // ----------------------------------------------------------------------------
-void addGlobalSector();
-// ----------------------------------------------------------------------------
-void destroySectors();
-// ----------------------------------------------------------------------------
-bool destroyingSectors();
+void drawGlow();
 // ----------------------------------------------------------------------------
 void drawBoundingBoxes();
 // ----------------------------------------------------------------------------
 void addObject(SPMeshNode*);
 // ----------------------------------------------------------------------------
 void removeObject(SPMeshNode*);
-// ----------------------------------------------------------------------------
-void removeAllObjects();
 // ----------------------------------------------------------------------------
 void cleanAllMeshBuffer();
 // ----------------------------------------------------------------------------

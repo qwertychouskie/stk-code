@@ -23,9 +23,8 @@
 #include "graphics/camera.hpp"
 #include "graphics/central_settings.hpp"
 #include "graphics/cpu_particle_manager.hpp"
-#include "graphics/draw_policies.hpp"
 #include "graphics/frame_buffer_layer.hpp"
-#include "graphics/geometry_passes.hpp"
+#include "graphics/glwrap.hpp"
 #include "graphics/graphics_restrictions.hpp"
 #include "graphics/irr_driver.hpp"
 #include "graphics/lod_node.hpp"
@@ -235,6 +234,29 @@ void ShaderBasedRenderer::renderSSAO() const
 }   // renderSSAO
 
 // ----------------------------------------------------------------------------
+void ShaderBasedRenderer::renderGlow() const
+{
+    irr_driver->getSceneManager()->setCurrentRendertime(scene::ESNRP_SOLID);
+    m_rtts->getFBO(FBO_TMP1_WITH_DS).bind();
+    glClearStencil(0);
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_STENCIL_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    glStencilFunc(GL_ALWAYS, 1, ~0);
+    glEnable(GL_STENCIL_TEST);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+    glDisable(GL_BLEND);
+
+    SP::drawGlow();
+
+    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+    glDisable(GL_STENCIL_TEST);
+}   // renderGlow
+
+// ----------------------------------------------------------------------------
 void ShaderBasedRenderer::renderShadows()
 {
     PROFILER_PUSH_CPU_MARKER("- Shadow Pass", 0xFF, 0x00, 0x00);
@@ -317,7 +339,7 @@ void ShaderBasedRenderer::renderSceneDeferred(scene::ICameraSceneNode * const ca
     PROFILER_PUSH_CPU_MARKER("- Draw Call Generation", 0xFF, 0xFF, 0xFF);
     unsigned solid_poly_count = 0;
     unsigned shadow_poly_count = 0;
-    m_draw_calls.prepareDrawCalls(m_shadow_matrices, camnode, solid_poly_count, shadow_poly_count);
+    m_draw_calls.prepareDrawCalls(camnode);
     m_poly_count[SOLID_NORMAL_AND_DEPTH_PASS] += solid_poly_count;
     m_poly_count[SHADOW_PASS] += shadow_poly_count;
     PROFILER_POP_CPU_MARKER();
@@ -333,18 +355,6 @@ void ShaderBasedRenderer::renderSceneDeferred(scene::ICameraSceneNode * const ca
         if (CVS->isShadowEnabled() && hasShadow)
         {
             renderShadows();
-            if (CVS->isGlobalIlluminationEnabled())
-            {
-                if (!m_shadow_matrices.isRSMMapAvail())
-                {
-                    PROFILER_PUSH_CPU_MARKER("- RSM", 0xFF, 0x0, 0xFF);
-                    m_geometry_passes->renderReflectiveShadowMap(m_draw_calls,
-                                                                 m_shadow_matrices, 
-                                                                 m_rtts->getReflectiveShadowMapFrameBuffer()); //TODO: move somewhere else as RSM are computed only once per track
-                    m_shadow_matrices.setRSMMapAvail(true);
-                    PROFILER_POP_CPU_MARKER();
-                }
-            }
         }
         irr_driver->getSceneManager()->setActiveCamera(camnode);
     }
@@ -367,29 +377,8 @@ void ShaderBasedRenderer::renderSceneDeferred(scene::ICameraSceneNode * const ca
     // Lights
     {
         PROFILER_PUSH_CPU_MARKER("- Light", 0x00, 0xFF, 0x00);
-
-        if (CVS->isGlobalIlluminationEnabled() && hasShadow)
-        {
-            ScopedGPUTimer timer(irr_driver->getGPUTimer(Q_RH));
-            m_lighting_passes.renderRadianceHints( m_shadow_matrices,
-                                                   m_rtts->getRadianceHintFrameBuffer(),
-                                                   m_rtts->getReflectiveShadowMapFrameBuffer());
-        }
-
         m_rtts->getFBO(FBO_COMBINED_DIFFUSE_SPECULAR).bind();
         glClear(GL_COLOR_BUFFER_BIT);
-        m_rtts->getFBO(FBO_DIFFUSE).bind();
-
-        if (CVS->isGlobalIlluminationEnabled() && hasShadow)
-        {
-            ScopedGPUTimer timer(irr_driver->getGPUTimer(Q_GI));
-            m_lighting_passes.renderGlobalIllumination( m_shadow_matrices,
-                                                        m_rtts->getRadianceHintFrameBuffer(),
-                                                        m_rtts->getRenderTarget(RTT_NORMAL_AND_DEPTH),
-                                                        m_rtts->getDepthStencilTexture());
-        }
-
-        m_rtts->getFBO(FBO_COMBINED_DIFFUSE_SPECULAR).bind();
         GLuint specular_probe = 0;
         if (m_skybox)
         {
@@ -441,7 +430,7 @@ void ShaderBasedRenderer::renderSceneDeferred(scene::ICameraSceneNode * const ca
     if (irr_driver->getNormals())
     {
         m_rtts->getFBO(FBO_NORMAL_AND_DEPTHS).bind();
-        m_geometry_passes->renderNormalsVisualisation(m_draw_calls);
+        //m_geometry_passes->renderNormalsVisualisation(m_draw_calls);
         m_rtts->getFBO(FBO_COLORS).bind();
     }
 
@@ -466,36 +455,13 @@ void ShaderBasedRenderer::renderSceneDeferred(scene::ICameraSceneNode * const ca
         PROFILER_POP_CPU_MARKER();
     }
 
-    if (irr_driver->getRH())
-    {
-        glDisable(GL_BLEND);
-        m_rtts->getFBO(FBO_COLORS).bind();
-        m_post_processing->renderRHDebug(m_rtts->getRadianceHintFrameBuffer().getRTT()[0],
-                                         m_rtts->getRadianceHintFrameBuffer().getRTT()[1],
-                                         m_rtts->getRadianceHintFrameBuffer().getRTT()[2],
-                                         m_shadow_matrices.getRHMatrix(),
-                                         m_shadow_matrices.getRHExtend());
-    }
-
-    if (irr_driver->getGI())
-    {
-        glDisable(GL_BLEND);
-        m_rtts->getFBO(FBO_COLORS).bind();
-        m_lighting_passes.renderGlobalIllumination(m_shadow_matrices,
-                                                   m_rtts->getRadianceHintFrameBuffer(),
-                                                   m_rtts->getRenderTarget(RTT_NORMAL_AND_DEPTH),
-                                                   m_rtts->getDepthStencilTexture());
-    }
-
     PROFILER_PUSH_CPU_MARKER("- Glow", 0xFF, 0xFF, 0x00);
     // Render anything glowing.
-    if (!irr_driver->getWireframe() && !irr_driver->getMipViz() && UserConfigParams::m_glow)
+    if (UserConfigParams::m_glow)
     {
         ScopedGPUTimer Timer(irr_driver->getGPUTimer(Q_GLOW));
         irr_driver->setPhase(GLOW_PASS);
-        m_geometry_passes->renderGlowingObjects(m_draw_calls, m_glowing,
-                                                m_rtts->getFBO(FBO_TMP1_WITH_DS));
-                                                
+        renderGlow();
         m_post_processing->renderGlow(m_rtts->getFBO(FBO_TMP1_WITH_DS),
                                       m_rtts->getFBO(FBO_HALF1),
                                       m_rtts->getFBO(FBO_QUARTER1),
@@ -555,7 +521,7 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
     PROFILER_PUSH_CPU_MARKER("- Draw Call Generation", 0xFF, 0xFF, 0xFF);
     unsigned solid_poly_count = 0;
     unsigned shadow_poly_count = 0;
-    m_draw_calls.prepareDrawCalls(m_shadow_matrices, camnode, solid_poly_count, shadow_poly_count);
+    m_draw_calls.prepareDrawCalls(camnode);
     m_poly_count[SOLID_NORMAL_AND_DEPTH_PASS] += solid_poly_count;
     m_poly_count[SHADOW_PASS] += shadow_poly_count;
     PROFILER_POP_CPU_MARKER();
@@ -674,12 +640,6 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
 } //renderScene
 
 // ----------------------------------------------------------------------------
-void ShaderBasedRenderer::renderParticles()
-{
-    m_draw_calls.renderParticlesList();
-} //renderParticles
-
-// ----------------------------------------------------------------------------
 void ShaderBasedRenderer::debugPhysics()
 {
     // Note that drawAll must be called before rendering
@@ -787,23 +747,6 @@ ShaderBasedRenderer::ShaderBasedRenderer()
     SharedGPUObjects::init();
     SP::init();
     SP::initSTKRenderer(this);
-
-    if (CVS->isAZDOEnabled())
-    {
-        m_geometry_passes = new GeometryPasses<MultidrawPolicy>();
-        Log::info("ShaderBasedRenderer", "Geometry will be rendered with multidraw policy.");
-    }
-    else if (CVS->supportsIndirectInstancingRendering())
-    {
-        m_geometry_passes = new GeometryPasses<IndirectDrawPolicy>();
-        Log::info("ShaderBasedRenderer", "Geometry will be rendered with indirect draw policy.");
-    }
-    else
-    {
-        m_geometry_passes = new GeometryPasses<GL3DrawPolicy>();
-        Log::info("ShaderBasedRenderer", "Geometry will be rendered with GL3 policy.");
-    }
-
     m_post_processing = new PostProcessing(irr_driver->getVideoDriver());    
 }
 
@@ -823,7 +766,6 @@ ShaderBasedRenderer::~ShaderBasedRenderer()
         // check if we createad the OpenGL device by calling initDevice()
         m_post_processing->drop();
     }
-    delete m_geometry_passes;
     delete m_spherical_harmonics;
     delete m_skybox;
     delete m_rtts;

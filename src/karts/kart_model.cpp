@@ -31,7 +31,6 @@
 #include "graphics/material_manager.hpp"
 #include "graphics/mesh_tools.hpp"
 #include "graphics/render_info.hpp"
-#include "graphics/stk_animated_mesh.hpp"
 #include "graphics/sp/sp_animation.hpp"
 #include "graphics/sp/sp_mesh.hpp"
 #include "graphics/sp/sp_mesh_buffer.hpp"

@@ -34,7 +34,6 @@
 #include "graphics/render_target.hpp"
 #include "graphics/shader_based_renderer.hpp"
 #include "graphics/shaders.hpp"
-#include "graphics/stk_animated_mesh.hpp"
 #include "graphics/stk_mesh_loader.hpp"
 #include "graphics/sp_mesh_loader.hpp"
 #include "graphics/sp/sp_base.hpp"
@@ -857,7 +856,6 @@ void IrrDriver::applyResolutionSettings()
     // FIXME: this load sequence is (mostly) duplicated from main.cpp!!
     // That's just error prone
     // (we're sure to update main.cpp at some point and forget this one...)
-    VAOManager::getInstance()->kill();
     STKTexManager::getInstance()->kill();
 #ifdef ENABLE_RECORDER
     ogrDestroy();

@@ -22,9 +22,11 @@
 #include "config/user_config.hpp"
 #include "graphics/central_settings.hpp"
 #include "graphics/frame_buffer_layer.hpp"
-#include "graphics/materials.hpp"
 #include "utils/log.hpp"
 
+#include <dimension2d.h>
+
+using namespace irr;
 static GLuint generateRTT3D(GLenum target, unsigned int w, unsigned int h, 
                             unsigned int d, GLint internalFormat, GLint format,
                             GLint type, unsigned mipmaplevel = 1)
@@ -266,29 +268,6 @@ RTT::RTT(unsigned int width, unsigned int height, float rtt_scale)
         m_shadow_FBO = new FrameBufferLayer(somevector, shadowDepthTex, UserConfigParams::m_shadows_resolution, UserConfigParams::m_shadows_resolution, 4);
     }
 
-/*    if (CVS->isGlobalIlluminationEnabled())
-    {
-        //Todo : use "normal" shadowtex
-        RSM_Color = generateRTT(shadowsize0, GL_RGB8, GL_RGB, GL_UNSIGNED_BYTE);
-        RSM_Normal = generateRTT(shadowsize0, GL_RGB16F, GL_RGB, GL_FLOAT);
-        RSM_Depth = generateRTT(shadowsize0, GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8);
-
-        somevector.clear();
-        somevector.push_back(RSM_Color);
-        somevector.push_back(RSM_Normal);
-        m_RSM = new FrameBuffer(somevector, RSM_Depth, shadowsize0.Width, shadowsize0.Height, true);
-
-        RH_Red = generateRTT3D(GL_TEXTURE_3D, 32, 16, 32, GL_RGBA16F, GL_RGBA, GL_FLOAT);
-        RH_Green = generateRTT3D(GL_TEXTURE_3D, 32, 16, 32, GL_RGBA16F, GL_RGBA, GL_FLOAT);
-        RH_Blue = generateRTT3D(GL_TEXTURE_3D, 32, 16, 32, GL_RGBA16F, GL_RGBA, GL_FLOAT);
-
-        somevector.clear();
-        somevector.push_back(RH_Red);
-        somevector.push_back(RH_Green);
-        somevector.push_back(RH_Blue);
-        m_RH_FBO = new FrameBuffer(somevector, 32, 16, true);
-    }*/
-
     // Clear this FBO to 1s so that if no SSAO is computed we can still use it.
     getFBO(FBO_HALF1_R).bind();
     glClearColor(1., 1., 1., 1.);
@@ -303,43 +282,11 @@ RTT::RTT(unsigned int width, unsigned int height, float rtt_scale)
     glClearColor(color, color, color, color);
     glClear(GL_COLOR_BUFFER_BIT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-#if !defined(USE_GLES2)
-    if (CVS->isAZDOEnabled())
-    {
-        uint64_t handle =
-            glGetTextureSamplerHandleARB(getRenderTarget(RTT_DIFFUSE),
-            ObjectPass2Shader::getInstance()->m_sampler_ids[0]);
-        glMakeTextureHandleResidentARB(handle);
-        m_prefilled_handles.push_back(handle);
-        handle =
-            glGetTextureSamplerHandleARB(getRenderTarget(RTT_SPECULAR),
-            ObjectPass2Shader::getInstance()->m_sampler_ids[1]);
-        glMakeTextureHandleResidentARB(handle);
-        m_prefilled_handles.push_back(handle);
-        handle =
-            glGetTextureSamplerHandleARB(getRenderTarget(RTT_HALF1_R),
-            ObjectPass2Shader::getInstance()->m_sampler_ids[2]);
-        glMakeTextureHandleResidentARB(handle);
-        m_prefilled_handles.push_back(handle);
-        handle =
-            glGetTextureSamplerHandleARB(getDepthStencilTexture(),
-            ObjectPass2Shader::getInstance()->m_sampler_ids[3]);
-        glMakeTextureHandleResidentARB(handle);
-        m_prefilled_handles.push_back(handle);
-    }
-#endif
 }
 
 RTT::~RTT()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-#if !defined(USE_GLES2)
-    if (CVS->isAZDOEnabled())
-    {
-        for (uint64_t& handle : m_prefilled_handles)
-            glMakeTextureHandleNonResidentARB(handle);
-    }
-#endif
     glDeleteTextures(RTT_COUNT, RenderTargetTextures);
     glDeleteTextures(1, &DepthStencilTexture);
     if (CVS->isShadowEnabled())
