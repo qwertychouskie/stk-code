@@ -201,7 +201,7 @@ void ShaderBasedRenderer::renderShadows()
     {
         m_rtts->getShadowFrameBuffer().bindDepthOnly();
         glClearColor(1., 1., 1., 1.);
-        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+        glClear(GL_DEPTH_BUFFER_BIT);
         glClearColor(0., 0., 0., 0.);
     }
     for (unsigned cascade = 0; cascade < 4; cascade++)
@@ -210,7 +210,7 @@ void ShaderBasedRenderer::renderShadows()
         {
             m_rtts->getShadowFrameBuffer().bindLayerDepthOnly(cascade);
             glClearColor(1., 1., 1., 1.);
-            glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+            glClear(GL_DEPTH_BUFFER_BIT);
             glClearColor(0., 0., 0., 0.);
         }
         SP::sp_cur_shadow_cascade = cascade;
@@ -268,20 +268,14 @@ void ShaderBasedRenderer::renderSceneDeferred(scene::ICameraSceneNode * const ca
     m_poly_count[SOLID_NORMAL_AND_DEPTH_PASS] += solid_poly_count;
     m_poly_count[SHADOW_PASS] += shadow_poly_count;
     PROFILER_POP_CPU_MARKER();
-    // For correct position of headlight in karts
     PROFILER_PUSH_CPU_MARKER("Update Light Info", 0xFF, 0x0, 0x0);
     m_lighting_passes.updateLightsInfo(camnode, dt);
     PROFILER_POP_CPU_MARKER();
 
     // Shadows
+    if (CVS->isShadowEnabled() && hasShadow)
     {
-        // To avoid wrong culling, use the largest view possible
-        irr_driver->getSceneManager()->setActiveCamera(m_shadow_matrices.getSunCam());
-        if (CVS->isShadowEnabled() && hasShadow)
-        {
-            renderShadows();
-        }
-        irr_driver->getSceneManager()->setActiveCamera(camnode);
+        renderShadows();
     }
 
     glDepthMask(GL_TRUE);

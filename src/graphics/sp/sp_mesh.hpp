@@ -110,7 +110,7 @@ public:
     // ------------------------------------------------------------------------
     virtual void convertMeshToTangents(bool(*predicate)(IMeshBuffer*)) {}
     // ------------------------------------------------------------------------
-    virtual bool isStatic() { return m_frame_count == 0; }
+    virtual bool isStatic() { return m_all_armatures.empty(); }
     // ------------------------------------------------------------------------
     virtual bool setHardwareSkinning(bool on) { return true; }
     // ------------------------------------------------------------------------

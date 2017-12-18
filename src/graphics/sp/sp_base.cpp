@@ -1261,9 +1261,13 @@ void addObject(SPMeshNode* node)
 
                     video::SColorf gc = node->getGlowColor();
                     unsigned key = gc.toSColor().color;
-                    g_glow_meshes[key] = std::make_pair(gc,
-                        std::unordered_set<SPMeshBuffer*>());
-                    g_glow_meshes[key].second.insert(mb);
+                    auto ret = g_glow_meshes.find(key);
+                    if (ret == g_glow_meshes.end())
+                    {
+                        g_glow_meshes[key] = std::make_pair(gc,
+                            std::unordered_set<SPMeshBuffer*>());
+                    }
+                    g_glow_meshes.at(key).second.insert(mb);
                 }
             }
             g_instances.insert(mb);
