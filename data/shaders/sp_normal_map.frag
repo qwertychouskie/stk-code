@@ -2,7 +2,6 @@
 flat in sampler2D tex_layer_0;
 flat in sampler2D tex_layer_2;
 flat in sampler2D tex_layer_3;
-flat in sampler2D tex_layer_4;
 #else
 // spm layer 1 texture
 uniform sampler2D tex_layer_0;

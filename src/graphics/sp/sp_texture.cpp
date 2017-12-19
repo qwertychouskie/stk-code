@@ -130,7 +130,7 @@ std::shared_ptr<video::IImage> SPTexture::getTextureImage() const
     }
     core::dimension2du img_size = image->getDimension();
     core::dimension2du tex_size = img_size.getOptimalSize
-        (!irr_driver->getVideoDriver()->queryFeature(video::EVDF_TEXTURE_NPOT));
+        (true/*requirePowerOfTwo*/, false/*requireSquare*/, false/*larger*/);
     const core::dimension2du& max_size = irr_driver->getVideoDriver()
         ->getDriverAttributes().getAttributeAsDimension2d("MAX_TEXTURE_SIZE");
 
@@ -180,6 +180,38 @@ std::shared_ptr<video::IImage> SPTexture::getTextureImage() const
 }   // getTextureImage
 
 // ----------------------------------------------------------------------------
+bool SPTexture::texImage2d(std::shared_ptr<video::IImage> texture)
+{
+    if (texture)
+    {
+        glBindTexture(GL_TEXTURE_2D, m_texture_name);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+            texture->getDimension().Width, texture->getDimension().Height,
+            0,
+#ifdef USE_GLES2
+            GL_RGBA,
+#else
+            GL_BGRA,
+#endif
+            GL_UNSIGNED_BYTE, texture->lock());
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    addTextureHandle();
+    if (texture)
+    {
+        m_width.store(texture->getDimension().Width);
+        m_height.store(texture->getDimension().Height);
+    }
+    else
+    {
+        m_width.store(2);
+        m_height.store(2);
+    }
+    return true;
+}   // texImage2d
+
+// ----------------------------------------------------------------------------
 bool SPTexture::threadedLoad()
 {
 #ifndef SERVER_ONLY
@@ -191,35 +223,7 @@ bool SPTexture::threadedLoad()
     }
     SPTextureManager::get()->increaseGLCommandFunctionCount(1);
     SPTextureManager::get()->addGLCommandFunction([this, image]()->bool
-        {
-            if (image)
-            {
-                glBindTexture(GL_TEXTURE_2D, m_texture_name);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                    image->getDimension().Width, image->getDimension().Height,
-                    0,
-#ifdef USE_GLES2
-                    GL_RGBA,
-#else
-                    GL_BGRA,
-#endif
-                    GL_UNSIGNED_BYTE, image->lock());
-                glGenerateMipmap(GL_TEXTURE_2D);
-                glBindTexture(GL_TEXTURE_2D, 0);
-            }
-            addTextureHandle();
-            if (image)
-            {
-                m_width.store(image->getDimension().Width);
-                m_height.store(image->getDimension().Height);
-            }
-            else
-            {
-                m_width.store(2);
-                m_height.store(2);
-            }
-            return true;
-        });
+        { return texImage2d(image); });
 #endif
     return true;
 }   // threadedLoad
