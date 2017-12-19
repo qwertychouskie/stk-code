@@ -107,7 +107,10 @@ std::shared_ptr<video::IImage> SPTexture::getImageFromPath
         {
             image->drop();
         }
-        file->drop();
+        if (file)
+        {
+            file->drop();
+        }
         return NULL;
     }
     file->drop();
@@ -118,8 +121,9 @@ std::shared_ptr<video::IImage> SPTexture::getImageFromPath
 // ----------------------------------------------------------------------------
 std::shared_ptr<video::IImage> SPTexture::getTextureImage() const
 {
+    std::shared_ptr<video::IImage> image;
 #ifndef SERVER_ONLY
-    std::shared_ptr<video::IImage> image = getImageFromPath(m_path);
+    image = getImageFromPath(m_path);
     if (!image)
     {
         return NULL;
@@ -155,24 +159,30 @@ std::shared_ptr<video::IImage> SPTexture::getTextureImage() const
         image.reset(new_texture);
     }
 
-    if (m_undo_srgb)
+    uint8_t* data = (uint8_t*)image->lock();
+    for (unsigned int i = 0; i < image->getDimension().Width *
+        image->getDimension().Height; i++)
     {
-        uint8_t* data = (uint8_t*)image->lock();
-        for (unsigned int i = 0; i < image->getDimension().Width *
-            image->getDimension().Height; i++)
+#ifdef USE_GLES2
+        uint8_t tmp_val = data[i * 4];
+        data[i * 4] = data[i * 4 + 2];
+        data[i * 4 + 2] = tmp_val;
+#endif
+        if (m_undo_srgb)
         {
             data[i * 4] = srgbToLinear(data[i * 4] / 255.0f);
             data[i * 4 + 1] = srgbToLinear(data[i * 4 + 1] / 255.0f);
             data[i * 4 + 2] = srgbToLinear(data[i * 4 + 2] / 255.0f);
         }
     }
-    return image;
 #endif
+    return image;
 }   // getTextureImage
 
 // ----------------------------------------------------------------------------
 bool SPTexture::threadedLoad()
 {
+#ifndef SERVER_ONLY
     std::shared_ptr<video::IImage> image = getTextureImage();
     std::shared_ptr<video::IImage> mask = getMask(image->getDimension());
     if (mask)
@@ -187,7 +197,13 @@ bool SPTexture::threadedLoad()
                 glBindTexture(GL_TEXTURE_2D, m_texture_name);
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                     image->getDimension().Width, image->getDimension().Height,
-                    0, GL_BGRA, GL_UNSIGNED_BYTE, image->lock());
+                    0,
+#ifdef USE_GLES2
+                    GL_RGBA,
+#else
+                    GL_BGRA,
+#endif
+                    GL_UNSIGNED_BYTE, image->lock());
                 glGenerateMipmap(GL_TEXTURE_2D);
                 glBindTexture(GL_TEXTURE_2D, 0);
             }
@@ -204,6 +220,7 @@ bool SPTexture::threadedLoad()
             }
             return true;
         });
+#endif
     return true;
 }   // threadedLoad
 
@@ -211,25 +228,30 @@ bool SPTexture::threadedLoad()
 std::shared_ptr<video::IImage>
     SPTexture::getMask(const core::dimension2du& s) const
 {
+#ifndef SERVER_ONLY
     if (!m_material)
     {
         return NULL;
     }
+    const unsigned total_size = s.Width * s.Height;
     if (!m_material->getColorizationMask().empty() ||
         m_material->getColorizationFactor() > 0.0f ||
         m_material->isColorizable())
     {
+        // Load colorization mask
         std::shared_ptr<video::IImage> mask;
         if (SP::getSPShader(m_material->getShaderName())->useAlphaChannel())
         {
-            Log::warn("SPTexture", "Don't use colorization mask or factor"
+            Log::debug("SPTexture", "Don't use colorization mask or factor"
                 " with shader using alpha channel for %s", m_path.c_str());
+            // Shader using alpha channel will be colorized as a whole
             return NULL;
         }
-        float colorization_factor_encoded = uint8_t
+
+        uint8_t colorization_factor_encoded = uint8_t
             (irr::core::clamp(
             int(m_material->getColorizationFactor() * 0.4f * 255.0f), 0, 255));
-        const unsigned total_size = s.Width * s.Height;
+
         if (!m_material->getColorizationMask().empty())
         {
             // Assume all maskes are in the same directory
@@ -278,6 +300,41 @@ std::shared_ptr<video::IImage>
         }
         return mask;
     }
+    else if (!m_material->getAlphaMask().empty())
+    {
+        std::string mask_path = StringUtils::getPath(m_path) + "/" +
+            m_material->getAlphaMask();
+        std::shared_ptr<video::IImage> mask = getImageFromPath(mask_path);
+        if (!mask)
+        {
+            return NULL;
+        }
+        core::dimension2du img_size = mask->getDimension();
+        if (mask->getColorFormat() != video::ECF_A8R8G8B8 ||
+            s != img_size)
+        {
+            video::IImage* new_mask = irr_driver
+                ->getVideoDriver()->createImage(video::ECF_A8R8G8B8, s);
+            if (s != img_size)
+            {
+                mask->copyToScaling(new_mask);
+            }
+            else
+            {
+                mask->copyTo(new_mask);
+            }
+            assert(new_mask->getReferenceCount() == 1);
+            mask.reset(new_mask);
+        }
+        uint8_t* data = (uint8_t*)mask->lock();
+        for (unsigned int i = 0; i < total_size; i++)
+        {
+            // Red channel to alpha channel
+            data[i * 4 + 3] = data[i * 4];
+        }
+        return mask;
+    }
+#endif
     return NULL;
 }   // getMask
 

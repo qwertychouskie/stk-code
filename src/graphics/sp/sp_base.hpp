@@ -166,6 +166,20 @@ inline uint8_t srgbToLinear(float color_srgb)
     return uint8_t(irr::core::clamp(ret, 0, 255));
 }
 
+// ----------------------------------------------------------------------------
+inline uint8_t linearToSrgb(float color_linear)
+{
+    if (color_linear <= 0.0031308f)
+    {
+        color_linear = color_linear * 12.92f;
+    }
+    else
+    {
+        color_linear = 1.055f * powf(color_linear, 1.0f / 2.4f) - 0.055f;
+    }
+    return uint8_t(irr::core::clamp(int(color_linear * 255.0f), 0, 255));
+}
+
 }
 
 

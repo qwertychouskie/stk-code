@@ -273,7 +273,7 @@ void SPMeshBuffer::recreateVAO(unsigned i)
     bool use_2_uv = std::get<2>(m_stk_material[0])->use2UV();
     bool use_tangents =
         std::get<2>(m_stk_material[0])->getShaderName() == "normalmap" &&
-        CVS->isGLSL();
+        CVS->isDefferedEnabled();
     const bool vt_2101010 = CVS->isARBVertexType2101010RevUsable();
     const unsigned pitch = m_pitch;
 

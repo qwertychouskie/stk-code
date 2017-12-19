@@ -36,11 +36,15 @@ void main()
         float mask = col.a;
         vec3 old_hsv = rgbToHsv(col.rgb);
         float mask_step = step(mask, 0.5);
+#if !defined(Advanced_Lighting_Enabled)
+        float saturation = mask * 2.1;
+#else
         float saturation = mask * 2.5;
+#endif
         vec2 new_xy = mix(vec2(old_hsv.x, old_hsv.y), vec2(color_change.x,
             max(old_hsv.y, saturation)), vec2(mask_step, mask_step));
         vec3 new_color = hsvToRgb(vec3(new_xy.x, new_xy.y, old_hsv.z));
-        col = vec4(new_color.r, new_color.g, new_color.b, col.a);
+        col = vec4(new_color.r, new_color.g, new_color.b, 1.0);
     }
 
     vec3 final_color = col.xyz * color.xyz;
