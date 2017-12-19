@@ -191,6 +191,32 @@ std::shared_ptr<video::IImage> SPTexture::getTextureImage() const
 }   // getTextureImage
 
 // ----------------------------------------------------------------------------
+bool SPTexture::compressedTexImage2d(std::shared_ptr<video::IImage> texture,
+                                     const std::vector<std::pair<unsigned,
+                                     unsigned> >& mipmap_sizes)
+{
+    glGenTextures(1, &m_texture_name);
+    glBindTexture(GL_TEXTURE_2D, m_texture_name);
+    uint8_t* compressed = (uint8_t*)texture->lock();
+    unsigned cur_mipmap_size = 0;
+    for (unsigned i = 0; i < mipmap_sizes.size(); i++)
+    {
+        cur_mipmap_size = mipmap_sizes[i].first * mipmap_sizes[i].second;
+        glCompressedTexImage2D(GL_TEXTURE_2D, i,
+            GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+            mipmap_sizes[i].first, mipmap_sizes[i].second, 0,
+            cur_mipmap_size, compressed);
+        compressed += cur_mipmap_size * 4;
+    }
+    glBindTexture(GL_TEXTURE_2D, 0);
+    addTextureHandle();
+    m_width.store(mipmap_sizes[0].first);
+    m_height.store(mipmap_sizes[0].second);
+
+    return true;
+}   // compressedTexImage2d
+
+// ----------------------------------------------------------------------------
 bool SPTexture::texImage2d(std::shared_ptr<video::IImage> texture)
 {
     if (texture)
@@ -232,9 +258,20 @@ bool SPTexture::threadedLoad()
     {
         applyMask(image.get(), mask.get());
     }
-    SPTextureManager::get()->increaseGLCommandFunctionCount(1);
-    SPTextureManager::get()->addGLCommandFunction([this, image]()->bool
-        { return texImage2d(image); });
+
+    if (CVS->isTextureCompressionEnabled() && image)
+    {
+        auto r = compressTexture(image);
+        SPTextureManager::get()->increaseGLCommandFunctionCount(1);
+        SPTextureManager::get()->addGLCommandFunction([this, image, r]()->bool
+            { return compressedTexImage2d(image, r); });
+    }
+    else
+    {
+        SPTextureManager::get()->increaseGLCommandFunctionCount(1);
+        SPTextureManager::get()->addGLCommandFunction([this, image]()->bool
+            { return texImage2d(image); });
+    }
 #endif
     return true;
 }   // threadedLoad
@@ -381,5 +418,64 @@ bool SPTexture::initialized() const
 #endif
     return m_width.load() != 0 && m_height.load() != 0;
 }   // initialized
+
+// ----------------------------------------------------------------------------
+std::vector<std::pair<unsigned, unsigned> >
+               SPTexture::compressTexture(std::shared_ptr<video::IImage> image)
+{
+    std::vector<std::pair<unsigned, unsigned> > mipmap_sizes;
+
+#ifdef ENABLE_TC
+    unsigned width = image->getDimension().Width;
+    unsigned height = image->getDimension().Height;
+    mipmap_sizes.emplace_back(width, height);
+    while (true)
+    {
+        width = width < 2 ? 1 : width >> 1;
+        height = height < 2 ? 1 : height >> 1;
+        mipmap_sizes.emplace_back(width, height);
+        if (width == 1 && height == 1)
+        {
+            break;
+        }
+    }
+    const unsigned compressed_size = squish::GetStorageRequirements(
+        mipmap_sizes[0].first, mipmap_sizes[0].second,
+        tc_flag);
+    uint8_t* tmp = new uint8_t[image->getDimension().getArea() * 4]();
+    uint8_t* ptr_loc = tmp + compressed_size;
+    for (unsigned mip = 1; mip < mipmap_sizes.size(); mip++)
+    {
+        video::IImage* ti = irr_driver->getVideoDriver()
+            ->createImage(video::ECF_A8R8G8B8,
+            core::dimension2du(mipmap_sizes[mip].first,
+            mipmap_sizes[mip].second));
+        image->copyToScaling(ti);
+        const unsigned copy_size = ti->getDimension().getArea() * 4;
+        memcpy(ptr_loc, ti->lock(), copy_size);
+        ti->drop();
+        ptr_loc += copy_size;
+    }
+    squish::CompressImage((uint8_t*)image->lock(),
+        mipmap_sizes[0].first, mipmap_sizes[0].second,
+        mipmap_sizes[0].first * 4, tmp, tc_flag);
+    memcpy(image->lock(), tmp, image->getDimension().getArea() * 4);
+
+    ptr_loc = (uint8_t*)image->lock();
+    ptr_loc += compressed_size;
+    for (unsigned mip = 1; mip < mipmap_sizes.size(); mip++)
+    {
+        squish::CompressImage(ptr_loc,
+            mipmap_sizes[mip].first, mipmap_sizes[mip].second,
+            mipmap_sizes[mip].first * 4, tmp, tc_flag);
+        memcpy(ptr_loc, tmp, squish::GetStorageRequirements(
+            mipmap_sizes[mip].first, mipmap_sizes[mip].second,
+            tc_flag));
+        ptr_loc += mipmap_sizes[mip].first * mipmap_sizes[mip].second * 4;
+    }
+    delete [] tmp;
+#endif
+    return mipmap_sizes;
+}
 
 }

@@ -110,7 +110,12 @@ private:
     // ------------------------------------------------------------------------
     bool texImage2d(std::shared_ptr<video::IImage> texture);
     // ------------------------------------------------------------------------
-    uint8_t* compressTexture(std::shared_ptr<video::IImage> texture);
+    bool compressedTexImage2d(std::shared_ptr<video::IImage> texture,
+                              const std::vector<std::pair<unsigned,
+                              unsigned> >& mipmap_sizes);
+    // ------------------------------------------------------------------------
+    std::vector<std::pair<unsigned, unsigned> >
+                       compressTexture(std::shared_ptr<video::IImage> texture);
 
 public:
     // ------------------------------------------------------------------------
