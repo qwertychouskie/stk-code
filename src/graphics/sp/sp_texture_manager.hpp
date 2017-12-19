@@ -34,6 +34,8 @@
 #include <thread>
 #include <unordered_map>
 
+class Material;
+
 namespace SP
 {
 class SPTexture;
@@ -49,7 +51,7 @@ private:
 
     std::atomic_int m_gl_cmd_function_count;
 
-    std::list<std::function<void()> > m_threaded_functions;
+    std::list<std::function<bool()> > m_threaded_functions;
 
     std::list<std::function<bool()> > m_gl_cmd_functions;
 
@@ -95,7 +97,7 @@ public:
         }
     }
     // ------------------------------------------------------------------------
-    void addThreadedFunction(std::function<void()> threaded_function)
+    void addThreadedFunction(std::function<bool()> threaded_function)
     {
         std::lock_guard<std::mutex> lock(m_thread_obj_mutex);
         m_threaded_functions.push_back(threaded_function);
@@ -113,8 +115,8 @@ public:
     // ------------------------------------------------------------------------
     void checkForGLCommand(bool before_scene = false);
     // ------------------------------------------------------------------------
-    std::shared_ptr<SPTexture> getTexture(const std::string& path,
-                                          bool undo_srgb);
+    std::shared_ptr<SPTexture> getTexture(const std::string& p,
+                                          Material* m, bool undo_srgb);
     // ------------------------------------------------------------------------
     int dumpTextureUsage();
     // ------------------------------------------------------------------------

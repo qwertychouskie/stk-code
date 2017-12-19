@@ -233,13 +233,17 @@ scene::IAnimatedMesh* SPMeshLoader::createMesh(io::IReadFile* f)
         uint16_t pre_computed_size = 0;
         f->read(&pre_computed_size, 2);
     }
+    const bool has_armature = !m_all_armatures.empty();
     if (real_spm)
     {
         SP::SPMesh* spm = static_cast<SP::SPMesh*>(m_mesh);
         spm->m_bind_frame = m_bind_frame;
         spm->m_joint_using = m_joint_count;
         // Because the last frame in spm is usable
-        spm->m_frame_count = m_frame_count + 1;
+        if (has_armature)
+        {
+            spm->m_frame_count = m_frame_count + 1;
+        }
         for (unsigned i = 0; i < m_all_armatures.size(); i++)
         {
             // This is diffferent from m_joint_using
@@ -249,7 +253,7 @@ scene::IAnimatedMesh* SPMeshLoader::createMesh(io::IReadFile* f)
         spm->m_all_armatures = std::move(m_all_armatures);
     }
     m_mesh->finalize();
-    if (!real_spm)
+    if (!real_spm && has_armature)
     {
         // Because the last frame in spm is usable
         static_cast<scene::CSkinnedMesh*>(m_mesh)->AnimationFrames =
@@ -273,7 +277,7 @@ void SPMeshLoader::decompressSPM(irr::io::IReadFile* spm,
     assert(indices_count != 0);
 
     using namespace SP;
-    SPMeshBuffer* mb = new SPMeshBuffer();
+    SPMeshBuffer* mb = new SPMeshBuffer(read_vcolor);
     static_cast<SPMesh*>(m_mesh)->m_buffer.push_back(mb);
     const unsigned idx_size = vertices_count > 255 ? 2 : 1;
     for (unsigned i = 0; i < vertices_count; i++)

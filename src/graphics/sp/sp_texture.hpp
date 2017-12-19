@@ -27,6 +27,8 @@
 #include <memory>
 #include <string>
 
+#include <dimension2d.h>
+
 namespace irr
 {
     namespace video { class IImageLoader; class IImage; }
@@ -44,8 +46,6 @@ class SPTexture : public NoCopy
 private:
     std::string m_path;
 
-    video::IImageLoader* m_img_loader = NULL;
-
     uint64_t m_texture_handle = 0;
 
     GLuint m_texture_name = 0;
@@ -54,12 +54,15 @@ private:
 
     std::atomic_uint m_height;
 
-    bool m_colorized = false;
-
-    bool m_alpha_mask_applied = false;
+    Material* m_material;
 
     const bool m_undo_srgb;
 
+    // ------------------------------------------------------------------------
+    std::shared_ptr<video::IImage>
+                               getImageFromPath(const std::string& path) const;
+    // ------------------------------------------------------------------------
+    std::shared_ptr<video::IImage> getMask(const core::dimension2du& s) const;
     // ------------------------------------------------------------------------
     void addTextureHandle();
     // ------------------------------------------------------------------------
@@ -118,15 +121,13 @@ public:
         return std::shared_ptr<SPTexture>(tex);
     }
     // ------------------------------------------------------------------------
-    SPTexture(const std::string& path, bool undo_srgb);
+    SPTexture(const std::string& path, Material* m, bool undo_srgb);
     // ------------------------------------------------------------------------
     ~SPTexture();
     // ------------------------------------------------------------------------
     const std::string& getPath() const                       { return m_path; }
     // ------------------------------------------------------------------------
-    video::IImageLoader* getImageLoader() const        { return m_img_loader; }
-    // ------------------------------------------------------------------------
-    std::shared_ptr<video::IImage> getImageBuffer() const;
+    std::shared_ptr<video::IImage> getTextureImage() const;
     // ------------------------------------------------------------------------
     GLuint getOpenGLTextureName() const              { return m_texture_name; }
     // ------------------------------------------------------------------------
@@ -144,9 +145,7 @@ public:
     // ------------------------------------------------------------------------
     unsigned getHeight() const                      { return m_height.load(); }
     // ------------------------------------------------------------------------
-    void initMaterial(Material* m);
-    // ------------------------------------------------------------------------
-    void threadLoaded();
+    bool threadedLoad();
 
 };
 

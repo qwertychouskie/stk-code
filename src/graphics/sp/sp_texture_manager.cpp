@@ -56,11 +56,15 @@ SPTextureManager::SPTextureManager()
                     {
                         return;
                     }
-                    std::function<void()> copied =
+                    std::function<bool()> copied =
                         m_threaded_functions.front();
                     m_threaded_functions.pop_front();
                     ul.unlock();
-                    copied();
+                    // if return false, re-added it to the back
+                    if (copied() == false)
+                    {
+                        addThreadedFunction(copied);
+                    }
                 }
             });
     }
@@ -73,7 +77,7 @@ SPTextureManager::~SPTextureManager()
 {
     m_max_threaded_load_obj.store(0);
     std::unique_lock<std::mutex> ul(m_thread_obj_mutex);
-    m_threaded_functions.push_back([]()->void {});
+    m_threaded_functions.push_back([](){ return true; });
     m_thread_obj_cv.notify_all();
     ul.unlock();
     for (std::thread& t : m_threaded_load_obj)
@@ -128,6 +132,7 @@ void SPTextureManager::checkForGLCommand(bool before_scene)
 
 // ----------------------------------------------------------------------------
 std::shared_ptr<SPTexture> SPTextureManager::getTexture(const std::string& p,
+                                                        Material* m,
                                                         bool undo_srgb)
 {
     checkForGLCommand();
@@ -136,8 +141,9 @@ std::shared_ptr<SPTexture> SPTextureManager::getTexture(const std::string& p,
     {
         return ret->second;
     }
-    std::shared_ptr<SPTexture> t = std::make_shared<SPTexture>(p, undo_srgb);
-    addThreadedFunction(std::bind(&SPTexture::threadLoaded, t));
+    std::shared_ptr<SPTexture> t =
+        std::make_shared<SPTexture>(p, m, undo_srgb);
+    addThreadedFunction(std::bind(&SPTexture::threadedLoad, t));
     m_textures[p] = t;
     return t;
 }   // getTexture

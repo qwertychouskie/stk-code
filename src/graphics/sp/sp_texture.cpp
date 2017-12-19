@@ -21,28 +21,21 @@
 #include "graphics/sp/sp_shader.hpp"
 #include "graphics/central_settings.hpp"
 #include "graphics/irr_driver.hpp"
+#include "graphics/material.hpp"
+#include "utils/log.hpp"
 #include "utils/string_utils.hpp"
-
-#include <ITexture.h>
-#include <string>
 
 namespace SP
 {
 // ----------------------------------------------------------------------------
-SPTexture::SPTexture(const std::string& path, bool undo_srgb)
-         : m_path(path), m_width(0), m_height(0), m_undo_srgb(undo_srgb)
+SPTexture::SPTexture(const std::string& path, Material* m, bool undo_srgb)
+         : m_path(path), m_width(0), m_height(0), m_material(m),
+           m_undo_srgb(undo_srgb)
 {
 #ifndef SERVER_ONLY
     glGenTextures(1, &m_texture_name);
 #endif
     createWhite(false/*private_init*/);
-
-    m_img_loader = irr_driver->getVideoDriver()->getImageLoaderForFile
-        (path.c_str());
-    if (m_img_loader == NULL)
-    {
-        Log::error("SPTexture", "No image loader for %s", path.c_str());
-    }
 }   // SPTexture
 
 // ----------------------------------------------------------------------------
@@ -94,19 +87,22 @@ void SPTexture::addTextureHandle()
 }   // addTextureHandle
 
 // ----------------------------------------------------------------------------
-std::shared_ptr<video::IImage> SPTexture::getImageBuffer() const
+std::shared_ptr<video::IImage> SPTexture::getImageFromPath
+                                                (const std::string& path) const
 {
-#ifndef SERVER_ONLY
-    if (m_img_loader == NULL)
+    video::IImageLoader* img_loader =
+        irr_driver->getVideoDriver()->getImageLoaderForFile(path.c_str());
+    if (img_loader == NULL)
     {
-        return NULL;
+        Log::error("SPTexture", "No image loader for %s", path.c_str());
     }
-    io::IReadFile* file = irr::io::createReadFile(m_path.c_str());
-    video::IImage* image = m_img_loader->loadImage(file);
+
+    io::IReadFile* file = irr::io::createReadFile(path.c_str());
+    video::IImage* image = img_loader->loadImage(file);
     if (image == NULL || image->getDimension().Width == 0 ||
         image->getDimension().Height == 0)
     {
-        Log::error("SPTexture", "Failed to load image %s", m_path.c_str());
+        Log::error("SPTexture", "Failed to load image %s", path.c_str());
         if (image)
         {
             image->drop();
@@ -115,7 +111,19 @@ std::shared_ptr<video::IImage> SPTexture::getImageBuffer() const
         return NULL;
     }
     file->drop();
+    assert(image->getReferenceCount() == 1);
+    return std::shared_ptr<video::IImage>(image);
+}   // getImagefromPath
 
+// ----------------------------------------------------------------------------
+std::shared_ptr<video::IImage> SPTexture::getTextureImage() const
+{
+#ifndef SERVER_ONLY
+    std::shared_ptr<video::IImage> image = getImageFromPath(m_path);
+    if (!image)
+    {
+        return NULL;
+    }
     core::dimension2du img_size = image->getDimension();
     core::dimension2du tex_size = img_size.getOptimalSize
         (!irr_driver->getVideoDriver()->queryFeature(video::EVDF_TEXTURE_NPOT));
@@ -143,8 +151,8 @@ std::shared_ptr<video::IImage> SPTexture::getImageBuffer() const
         {
             image->copyTo(new_texture);
         }
-        image->drop();
-        image = new_texture;
+        assert(new_texture->getReferenceCount() == 1);
+        image.reset(new_texture);
     }
 
     if (m_undo_srgb)
@@ -158,20 +166,14 @@ std::shared_ptr<video::IImage> SPTexture::getImageBuffer() const
             data[i * 4 + 2] = srgbToLinear(data[i * 4 + 2] / 255.0f);
         }
     }
-    assert(image->getReferenceCount() == 1);
-    return std::shared_ptr<video::IImage>(image);
+    return image;
 #endif
-}   // getImageBuffer
+}   // getTextureImage
 
 // ----------------------------------------------------------------------------
-void SPTexture::initMaterial(Material* m)
+bool SPTexture::threadedLoad()
 {
-}
-
-// ----------------------------------------------------------------------------
-void SPTexture::threadLoaded()
-{
-    std::shared_ptr<video::IImage> image = getImageBuffer();
+    std::shared_ptr<video::IImage> image = getTextureImage();
     SPTextureManager::get()->increaseGLCommandFunctionCount(1);
     SPTextureManager::get()->addGLCommandFunction([this, image]()->bool
         {
@@ -197,7 +199,78 @@ void SPTexture::threadLoaded()
             }
             return true;
         });
-}   // threadLoaded
+    return true;
+}   // threadedLoad
+
+// ----------------------------------------------------------------------------
+std::shared_ptr<video::IImage>
+    SPTexture::getMask(const core::dimension2du& s) const
+{
+    if (!m_material->getColorizationMask().empty() ||
+        m_material->getColorizationFactor() > 0.0f ||
+        m_material->isColorizable())
+    {
+        std::shared_ptr<video::IImage> mask;
+        if (SP::getSPShader(m_material->getShaderName())->useAlphaChannel())
+        {
+            Log::warn("SPTexture", "Don't use colorization mask or factor"
+                " with shader using alpha channel for %s", m_path.c_str());
+            return NULL;
+        }
+        float colorization_factor_encoded = uint8_t
+            (irr::core::clamp(
+            int(m_material->getColorizationFactor() * 0.4f * 255.0f), 0, 255));
+        const unsigned total_size = s.Width * s.Height;
+        if (!m_material->getColorizationMask().empty())
+        {
+            // Assume all maskes are in the same directory
+            std::string mask_path = StringUtils::getPath(m_path) + "/" +
+                m_material->getColorizationMask();
+            mask = getImageFromPath(mask_path);
+            if (!mask)
+            {
+                return NULL;
+            }
+            core::dimension2du img_size = mask->getDimension();
+            if (mask->getColorFormat() != video::ECF_A8R8G8B8 ||
+                s != img_size)
+            {
+                video::IImage* new_mask = irr_driver
+                    ->getVideoDriver()->createImage(video::ECF_A8R8G8B8, s);
+                if (s != img_size)
+                {
+                    mask->copyToScaling(new_mask);
+                }
+                else
+                {
+                    mask->copyTo(new_mask);
+                }
+                assert(new_mask->getReferenceCount() == 1);
+                mask.reset(new_mask);
+            }
+        }
+        else
+        {
+            video::IImage* tmp = irr_driver
+                ->getVideoDriver()->createImage(video::ECF_A8R8G8B8, s);
+            memset(tmp->lock(), 0, total_size * 4);
+            assert(tmp->getReferenceCount() == 1);
+            mask.reset(tmp);
+        }
+        uint8_t* data = (uint8_t*)mask->lock();
+        for (unsigned int i = 0; i < total_size; i++)
+        {
+            if (!m_material->getColorizationMask().empty()
+                && data[i * 4 + 3] > 127)
+            {
+                continue;
+            }
+            data[i * 4 + 3] = colorization_factor_encoded;
+        }
+        return mask;
+    }
+    return NULL;
+}    
 
 // ----------------------------------------------------------------------------
 bool SPTexture::initialized() const

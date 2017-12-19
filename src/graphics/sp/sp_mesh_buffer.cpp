@@ -148,6 +148,7 @@ void SPMeshBuffer::uploadGLMesh()
             // which is the uv textures from .spm when advanced lighting
             m_textures[i][j] = SPTextureManager::get()->getTexture
                 (std::get<2>(m_stk_material[i])->getSamplerPath(j),
+                j == 0 ? std::get<2>(m_stk_material[i]) : NULL,
                 j < 2 && CVS->isDefferedEnabled());
         }
         // Use .spm uv texture 1 and 2 for compare in scene manager
@@ -162,7 +163,9 @@ void SPMeshBuffer::uploadGLMesh()
     const bool vt_2101010 = CVS->isARBVertexType2101010RevUsable();
     const unsigned pitch = 48 - (use_tangents ? 0 : 4) - (use_2_uv ? 0 : 4) -
         (m_skinned ? 0 : 16) + (use_tangents && !vt_2101010 ? 4 : 0)
-        + (!vt_2101010 ? 4 : 0) + (CVS->isARBBindlessTextureUsable() ? 48 : 0);
+        + (!vt_2101010 ? 4 : 0) +
+        (CVS->isARBBindlessTextureUsable() ? 48 : 0) -
+        (m_vertex_color ? 0 : 4);
     m_pitch = pitch;
 
     if (m_vbo != 0)
@@ -197,17 +200,20 @@ void SPMeshBuffer::uploadGLMesh()
             offset += 8;
         }
 
-        video::SColor vc = m_vertices[i].m_color;
-        if (CVS->isDefferedEnabled() ||
-            CVS->isARBSRGBFramebufferUsable())
+        if (m_vertex_color)
         {
-            video::SColorf tmp(vc);
-            vc.setRed(srgbToLinear(tmp.r));
-            vc.setGreen(srgbToLinear(tmp.g));
-            vc.setBlue(srgbToLinear(tmp.b));
+            video::SColor vc = m_vertices[i].m_color;
+            if (CVS->isDefferedEnabled() ||
+                CVS->isARBSRGBFramebufferUsable())
+            {
+                video::SColorf tmp(vc);
+                vc.setRed(srgbToLinear(tmp.r));
+                vc.setGreen(srgbToLinear(tmp.g));
+                vc.setBlue(srgbToLinear(tmp.b));
+            }
+            memcpy(ptr + v_size + offset, &vc, 4);
+            offset += 4;
         }
-        memcpy(ptr + v_size + offset, &vc, 4);
-        offset += 4;
         memcpy(ptr + v_size + offset, &m_vertices[i].m_all_uvs[0], 4);
         offset += 4;
         if (use_2_uv)
@@ -325,10 +331,18 @@ void SPMeshBuffer::recreateVAO(unsigned i)
         vt_2101010 ? GL_TRUE : GL_FALSE, pitch, (void*)offset);
     offset += vt_2101010 ? 4 : 8;
     // Vertex color
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, pitch,
-        (void*)offset);
-    offset += 4;
+    if (m_vertex_color)
+    {
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, pitch,
+            (void*)offset);
+        offset += 4;
+    }
+    else
+    {
+        glDisableVertexAttribArray(2);
+        glVertexAttrib4Nub(2, 255, 255, 255, 255);
+    }
     // 1st texture coordinates
     glEnableVertexAttribArray(3);
     glVertexAttribPointer(3, 2, GL_HALF_FLOAT, GL_FALSE, pitch, (void*)offset);
