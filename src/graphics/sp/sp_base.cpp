@@ -1205,11 +1205,10 @@ void addObject(SPMeshNode* node)
             g_skinning_offset = skinning_offset;
         }
 
-        float hue = mb->getSTKMaterial()->isColorizable() ?
-            node->getRenderInfo(m) ?
-            node->getRenderInfo(m)->getHue() : 0.0f : 0.0f;
-        float min_sat = mb->getSTKMaterial()->isColorizable() ?
-            mb->getSTKMaterial()->getColorizationFactor() : 0.0f;
+        float hue = node->getRenderInfo(0) &&
+            node->getRenderInfo(0)->getHue() > 0.0f ?
+            node->getRenderInfo(0)->getHue() : 0.0f;
+        float min_sat = 0.0f;
         const core::matrix4& texture_matrix =
             node->getMaterial(m).getTextureMatrix(0);
         SPInstancedData id = SPInstancedData

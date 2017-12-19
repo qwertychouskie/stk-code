@@ -64,6 +64,8 @@ private:
     // ------------------------------------------------------------------------
     std::shared_ptr<video::IImage> getMask(const core::dimension2du& s) const;
     // ------------------------------------------------------------------------
+    void applyMask(video::IImage* texture, video::IImage* mask);
+    // ------------------------------------------------------------------------
     void addTextureHandle();
     // ------------------------------------------------------------------------
     void createTransparent()

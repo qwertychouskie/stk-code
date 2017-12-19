@@ -7,8 +7,6 @@ flat in sampler2D tex_layer_4;
 uniform sampler2D tex_layer_0;
 // gloss map
 uniform sampler2D tex_layer_2;
-// colorization mask
-uniform sampler2D tex_layer_4;
 #endif
 
 flat in vec2 color_change;
@@ -35,11 +33,8 @@ void main(void)
 
     if (color_change.x > 0.0)
     {
-        float mask = texture(tex_layer_4, uv).a;
         vec3 old_hsv = rgbToHsv(col.rgb);
-        float mask_step = step(mask, 0.5);
-        vec2 new_xy = mix(vec2(old_hsv.x, old_hsv.y), vec2(color_change.x,
-            max(old_hsv.y, color_change.y)), vec2(mask_step, mask_step));
+        vec2 new_xy = vec2(color_change.x, old_hsv.y);
         vec3 new_color = hsvToRgb(vec3(new_xy.x, new_xy.y, old_hsv.z));
         col = vec4(new_color.r, new_color.g, new_color.b, col.a);
     }

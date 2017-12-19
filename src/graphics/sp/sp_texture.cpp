@@ -174,6 +174,11 @@ std::shared_ptr<video::IImage> SPTexture::getTextureImage() const
 bool SPTexture::threadedLoad()
 {
     std::shared_ptr<video::IImage> image = getTextureImage();
+    std::shared_ptr<video::IImage> mask = getMask(image->getDimension());
+    if (mask)
+    {
+        applyMask(image.get(), mask.get());
+    }
     SPTextureManager::get()->increaseGLCommandFunctionCount(1);
     SPTextureManager::get()->addGLCommandFunction([this, image]()->bool
         {
@@ -206,6 +211,10 @@ bool SPTexture::threadedLoad()
 std::shared_ptr<video::IImage>
     SPTexture::getMask(const core::dimension2du& s) const
 {
+    if (!m_material)
+    {
+        return NULL;
+    }
     if (!m_material->getColorizationMask().empty() ||
         m_material->getColorizationFactor() > 0.0f ||
         m_material->isColorizable())
@@ -270,7 +279,24 @@ std::shared_ptr<video::IImage>
         return mask;
     }
     return NULL;
-}    
+}   // getMask
+
+// ----------------------------------------------------------------------------
+void SPTexture::applyMask(video::IImage* texture, video::IImage* mask)
+{
+    assert(texture->getDimension() == mask->getDimension());
+    const core::dimension2du& dim = texture->getDimension();
+    for (unsigned int x = 0; x < dim.Width; x++)
+    {
+        for (unsigned int y = 0; y < dim.Height; y++)
+        {
+            video::SColor col = texture->getPixel(x, y);
+            video::SColor alpha = mask->getPixel(x, y);
+            col.setAlpha(alpha.getAlpha());
+            texture->setPixel(x, y, col, false);
+        }
+    }
+}   // applyMask
 
 // ----------------------------------------------------------------------------
 bool SPTexture::initialized() const

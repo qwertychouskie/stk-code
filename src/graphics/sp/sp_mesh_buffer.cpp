@@ -341,7 +341,11 @@ void SPMeshBuffer::recreateVAO(unsigned i)
     else
     {
         glDisableVertexAttribArray(2);
+#ifdef USE_GLES2
+        glVertexAttrib4f(2, 1.0f, 1.0f, 1.0f, 1.0f);
+#else
         glVertexAttrib4Nub(2, 255, 255, 255, 255);
+#endif
     }
     // 1st texture coordinates
     glEnableVertexAttribArray(3);
