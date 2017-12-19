@@ -32,6 +32,9 @@ option(ENABLE_WAYLAND_DEVICE "Enable Wayland device for linux build" OFF)
 CMAKE_DEPENDENT_OPTION(BUILD_RECORDER "Build opengl recorder" ON
     "NOT SERVER_ONLY;NOT USE_GLES2;NOT APPLE" OFF)
 
+CMAKE_DEPENDENT_OPTION(TEX_COMPRESS "Build with texture compression support" ON
+    "NOT SERVER_ONLY;NOT USE_GLES2" OFF)
+
 if (UNIX AND NOT APPLE)
     option(USE_GLES2 "Use OpenGL ES2 renderer" OFF)
 endif()
@@ -175,9 +178,19 @@ if(NOT SERVER_ONLY AND NOT USE_GLES2)
     include_directories("${PROJECT_SOURCE_DIR}/lib/graphics_utils")
 endif()
 
-if(NOT SERVER_ONLY)
-    add_subdirectory("${PROJECT_SOURCE_DIR}/lib/crunch_tc")
-    include_directories("${PROJECT_SOURCE_DIR}/lib/crunch_tc")
+if (TEX_COMPRESS)
+    find_library(TC_LIBRARY NAMES squish libsquish PATHS "${PROJECT_SOURCE_DIR}/dependencies/lib")
+    find_path(TC_INCLUDEDIR NAMES squish.h PATHS "${PROJECT_SOURCE_DIR}/dependencies/include")
+    if (NOT TC_LIBRARY OR NOT TC_INCLUDEDIR)
+            message(WARNING "libsquish not found, disabling texture compression.")
+            set(TC_LIBRARY CACHE INTERNAL "")
+            set(TC_INCLUDEDIR CACHE INTERNAL "")
+            set(TEX_COMPRESS OFF)
+    else()
+        include_directories(${TC_INCLUDEDIR})
+        mark_as_advanced(TC_LIBRARY TC_INCLUDEDIR)
+        add_definitions(-DENABLE_TC)
+    endif()
 endif()
 
 # Build the irrlicht library
@@ -431,6 +444,10 @@ if(NOT SERVER_ONLY)
     endif()
 endif()
 
+if(TEX_COMPRESS)
+    target_link_libraries(supertuxkart ${TC_LIBRARY})
+endif()
+
 if(UNIX AND NOT APPLE)
     if(USE_LIBBFD)
         target_link_libraries(supertuxkart ${LIBBFD_LIBRARIES})
@@ -443,6 +460,10 @@ endif()
 
 if(BUILD_RECORDER)
     target_link_libraries(supertuxkart ${OPENGLRECORDER_LIBRARY})
+endif()
+
+if(TEX_COMPRESS)
+    target_link_libraries(supertuxkart ${TC_LIBRARY})
 endif()
 
 # FreeBSD does not search in /usr/local/lib, but at least Freetype is installed there :(

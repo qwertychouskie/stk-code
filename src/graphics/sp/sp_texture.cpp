@@ -25,6 +25,11 @@
 #include "utils/log.hpp"
 #include "utils/string_utils.hpp"
 
+#ifdef ENABLE_TC
+#include <squish.h>
+static const unsigned tc_flag = squish::kDxt5 | squish::kColourRangeFit;
+#endif
+
 namespace SP
 {
 // ----------------------------------------------------------------------------
@@ -163,10 +168,16 @@ std::shared_ptr<video::IImage> SPTexture::getTextureImage() const
     for (unsigned int i = 0; i < image->getDimension().Width *
         image->getDimension().Height; i++)
     {
-#ifdef USE_GLES2
-        uint8_t tmp_val = data[i * 4];
-        data[i * 4] = data[i * 4 + 2];
-        data[i * 4 + 2] = tmp_val;
+#ifndef USE_GLES2
+        if (CVS->isTextureCompressionEnabled())
+        {
+#endif
+            // to RGBA for libsquish or for gles it's always true
+            uint8_t tmp_val = data[i * 4];
+            data[i * 4] = data[i * 4 + 2];
+            data[i * 4 + 2] = tmp_val;
+#ifndef USE_GLES2
+        }
 #endif
         if (m_undo_srgb)
         {
