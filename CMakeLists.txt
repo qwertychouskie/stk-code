@@ -175,6 +175,11 @@ if(NOT SERVER_ONLY AND NOT USE_GLES2)
     include_directories("${PROJECT_SOURCE_DIR}/lib/graphics_utils")
 endif()
 
+if(NOT SERVER_ONLY)
+    add_subdirectory("${PROJECT_SOURCE_DIR}/lib/crunch_tc")
+    include_directories("${PROJECT_SOURCE_DIR}/lib/crunch_tc")
+endif()
+
 # Build the irrlicht library
 add_subdirectory("${PROJECT_SOURCE_DIR}/lib/irrlicht")
 include_directories("${PROJECT_SOURCE_DIR}/lib/irrlicht/include")
@@ -420,9 +425,9 @@ target_link_libraries(supertuxkart
 
 if(NOT SERVER_ONLY)
     if(NOT USE_GLES2)
-        target_link_libraries(supertuxkart ${OPENGL_gl_LIBRARY} glew graphics_utils)
+        target_link_libraries(supertuxkart ${OPENGL_gl_LIBRARY} glew graphics_utils ${CRUNCH_LIBRARY_NAME})
     else()
-        target_link_libraries(supertuxkart GLESv2)
+        target_link_libraries(supertuxkart GLESv2 ${CRUNCH_LIBRARY_NAME})
     endif()
 endif()
 
