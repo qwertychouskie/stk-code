@@ -283,7 +283,7 @@ void CentralVideoSettings::init()
             Log::info("GLDriver", "Explicit Attrib Location Present");
             hasExplicitAttribLocation = true;
         }
-        
+
         if (!GraphicsRestrictions::isDisabled(GraphicsRestrictions::GR_UNIFORM_BUFFER_OBJECT) &&
             m_glsl == true) 
         {
@@ -305,7 +305,7 @@ void CentralVideoSettings::init()
             hasColorBufferFloat = true;
             Log::info("GLDriver", "EXT Color Buffer Float Present");
         }
-        
+
         if (GraphicsRestrictions::isDisabled(GraphicsRestrictions::GR_VERTEX_ID_WORKING))
         {
             m_need_vertex_id_workaround = true;

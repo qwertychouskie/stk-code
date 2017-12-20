@@ -16,6 +16,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "graphics/sp/sp_texture.hpp"
+#include "config/stk_config.hpp"
 #include "graphics/sp/sp_texture_manager.hpp"
 #include "graphics/sp/sp_base.hpp"
 #include "graphics/sp/sp_shader.hpp"
@@ -27,7 +28,6 @@
 
 #ifdef ENABLE_TC
 #include <squish.h>
-static const unsigned tc_flag = squish::kDxt5 | squish::kColourRangeFit;
 #endif
 
 namespace SP
@@ -192,26 +192,26 @@ std::shared_ptr<video::IImage> SPTexture::getTextureImage() const
 
 // ----------------------------------------------------------------------------
 bool SPTexture::compressedTexImage2d(std::shared_ptr<video::IImage> texture,
-                                     const std::vector<std::pair<unsigned,
-                                     unsigned> >& mipmap_sizes)
+                                     const std::vector<std::pair
+                                     <core::dimension2du, unsigned> >&
+                                     mipmap_sizes)
 {
-    glGenTextures(1, &m_texture_name);
     glBindTexture(GL_TEXTURE_2D, m_texture_name);
     uint8_t* compressed = (uint8_t*)texture->lock();
     unsigned cur_mipmap_size = 0;
     for (unsigned i = 0; i < mipmap_sizes.size(); i++)
     {
-        cur_mipmap_size = mipmap_sizes[i].first * mipmap_sizes[i].second;
+        cur_mipmap_size = mipmap_sizes[i].second;
         glCompressedTexImage2D(GL_TEXTURE_2D, i,
             GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
-            mipmap_sizes[i].first, mipmap_sizes[i].second, 0,
+            mipmap_sizes[i].first.Width, mipmap_sizes[i].first.Height, 0,
             cur_mipmap_size, compressed);
-        compressed += cur_mipmap_size * 4;
+        compressed += cur_mipmap_size;
     }
     glBindTexture(GL_TEXTURE_2D, 0);
     addTextureHandle();
-    m_width.store(mipmap_sizes[0].first);
-    m_height.store(mipmap_sizes[0].second);
+    m_width.store(mipmap_sizes[0].first.Width);
+    m_height.store(mipmap_sizes[0].first.Height);
 
     return true;
 }   // compressedTexImage2d
@@ -420,36 +420,38 @@ bool SPTexture::initialized() const
 }   // initialized
 
 // ----------------------------------------------------------------------------
-std::vector<std::pair<unsigned, unsigned> >
+std::vector<std::pair<core::dimension2du, unsigned> >
                SPTexture::compressTexture(std::shared_ptr<video::IImage> image)
 {
-    std::vector<std::pair<unsigned, unsigned> > mipmap_sizes;
+    std::vector<std::pair<core::dimension2du, unsigned> > mipmap_sizes;
 
 #ifdef ENABLE_TC
     unsigned width = image->getDimension().Width;
     unsigned height = image->getDimension().Height;
-    mipmap_sizes.emplace_back(width, height);
+    mipmap_sizes.emplace_back(core::dimension2du(width, height), 0);
     while (true)
     {
         width = width < 2 ? 1 : width >> 1;
         height = height < 2 ? 1 : height >> 1;
-        mipmap_sizes.emplace_back(width, height);
+        mipmap_sizes.emplace_back(core::dimension2du(width, height), 0);
         if (width == 1 && height == 1)
         {
             break;
         }
     }
+    const unsigned tc_flag = squish::kDxt5 | stk_config->m_tc_quality;
     const unsigned compressed_size = squish::GetStorageRequirements(
-        mipmap_sizes[0].first, mipmap_sizes[0].second,
+        mipmap_sizes[0].first.Width, mipmap_sizes[0].first.Height,
         tc_flag);
+    mipmap_sizes[0].second = compressed_size;
     uint8_t* tmp = new uint8_t[image->getDimension().getArea() * 4]();
     uint8_t* ptr_loc = tmp + compressed_size;
     for (unsigned mip = 1; mip < mipmap_sizes.size(); mip++)
     {
         video::IImage* ti = irr_driver->getVideoDriver()
             ->createImage(video::ECF_A8R8G8B8,
-            core::dimension2du(mipmap_sizes[mip].first,
-            mipmap_sizes[mip].second));
+            core::dimension2du(mipmap_sizes[mip].first.Width,
+            mipmap_sizes[mip].first.Height));
         image->copyToScaling(ti);
         const unsigned copy_size = ti->getDimension().getArea() * 4;
         memcpy(ptr_loc, ti->lock(), copy_size);
@@ -457,23 +459,45 @@ std::vector<std::pair<unsigned, unsigned> >
         ptr_loc += copy_size;
     }
     squish::CompressImage((uint8_t*)image->lock(),
-        mipmap_sizes[0].first, mipmap_sizes[0].second,
-        mipmap_sizes[0].first * 4, tmp, tc_flag);
+        mipmap_sizes[0].first.Width, mipmap_sizes[0].first.Height,
+        mipmap_sizes[0].first.Width * 4, tmp, tc_flag);
     memcpy(image->lock(), tmp, image->getDimension().getArea() * 4);
 
+    // Now compress mipmap
     ptr_loc = (uint8_t*)image->lock();
     ptr_loc += compressed_size;
     for (unsigned mip = 1; mip < mipmap_sizes.size(); mip++)
     {
+        mipmap_sizes[mip].second = squish::GetStorageRequirements(
+            mipmap_sizes[mip].first.Width, mipmap_sizes[mip].first.Height,
+            tc_flag);
         squish::CompressImage(ptr_loc,
-            mipmap_sizes[mip].first, mipmap_sizes[mip].second,
-            mipmap_sizes[mip].first * 4, tmp, tc_flag);
-        memcpy(ptr_loc, tmp, squish::GetStorageRequirements(
-            mipmap_sizes[mip].first, mipmap_sizes[mip].second,
-            tc_flag));
-        ptr_loc += mipmap_sizes[mip].first * mipmap_sizes[mip].second * 4;
+            mipmap_sizes[mip].first.Width, mipmap_sizes[mip].first.Height,
+            mipmap_sizes[mip].first.Width * 4, tmp, tc_flag);
+        memcpy(ptr_loc, tmp, mipmap_sizes[mip].second);
+        ptr_loc += mipmap_sizes[mip].first.Width *
+            mipmap_sizes[mip].first.Height * 4;
     }
     delete [] tmp;
+
+    if (mipmap_sizes.size() < 3)
+    {
+        return mipmap_sizes;
+    }
+    ptr_loc = (uint8_t*)image->lock();
+    ptr_loc = ptr_loc + compressed_size + mipmap_sizes[1].second;
+    uint8_t* in_memory = (uint8_t*)image->lock() + compressed_size +
+        (mipmap_sizes[1].first.Height * mipmap_sizes[1].first.Width * 4);
+
+    // Adjust for saving the cache
+    for (unsigned mip = 2; mip < mipmap_sizes.size(); mip++)
+    {
+        memcpy(ptr_loc, in_memory, mipmap_sizes[mip].second);
+        ptr_loc += mipmap_sizes[mip].second;
+        in_memory += mipmap_sizes[mip].first.Height *
+            mipmap_sizes[mip].first.Width * 4;
+    }
+
 #endif
     return mipmap_sizes;
 }

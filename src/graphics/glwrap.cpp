@@ -27,6 +27,7 @@
 #include "graphics/stk_mesh.hpp"
 #include "utils/profiler.hpp"
 #include "utils/cpp2011.hpp"
+#include "utils/string_utils.hpp"
 
 #include <fstream>
 #include <string>
@@ -270,9 +271,17 @@ bool hasGLExtension(const char* extension)
 #endif
     {
         const char* extensions = (const char*) glGetString(GL_EXTENSIONS);
-        if (extensions && strstr(extensions, extension) != NULL)
+        static std::vector<std::string> all_extensions;
+        if (all_extensions.empty())
         {
-            return true;
+            all_extensions = StringUtils::split(std::string(extensions), ' ');
+        }
+        for (unsigned i = 0; i < all_extensions.size(); i++)
+        {
+            if (all_extensions[i] == extension)
+            {
+                return true;
+            }
         }
     }
     return false;

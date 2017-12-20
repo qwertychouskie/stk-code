@@ -111,10 +111,10 @@ private:
     bool texImage2d(std::shared_ptr<video::IImage> texture);
     // ------------------------------------------------------------------------
     bool compressedTexImage2d(std::shared_ptr<video::IImage> texture,
-                              const std::vector<std::pair<unsigned,
+                              const std::vector<std::pair<core::dimension2du,
                               unsigned> >& mipmap_sizes);
     // ------------------------------------------------------------------------
-    std::vector<std::pair<unsigned, unsigned> >
+    std::vector<std::pair<core::dimension2du, unsigned> >
                        compressTexture(std::shared_ptr<video::IImage> texture);
 
 public:
