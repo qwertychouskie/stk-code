@@ -38,6 +38,7 @@ SPTextureManager::SPTextureManager()
     {
         m_max_threaded_load_obj.store(2);
     }
+    m_max_threaded_load_obj.store(m_max_threaded_load_obj.load() + 1);
     for (unsigned i = 0; i < m_max_threaded_load_obj; i++)
     {
         m_threaded_load_obj.emplace_back(

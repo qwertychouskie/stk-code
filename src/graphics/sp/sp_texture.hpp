@@ -59,6 +59,10 @@ private:
     const bool m_undo_srgb;
 
     // ------------------------------------------------------------------------
+    void generateHQMipmap(void* in,
+                          const std::vector<std::pair<core::dimension2du,
+                          unsigned> >&, uint8_t* out);
+    // ------------------------------------------------------------------------
     std::shared_ptr<video::IImage>
                                getImageFromPath(const std::string& path) const;
     // ------------------------------------------------------------------------

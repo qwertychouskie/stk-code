@@ -20,6 +20,7 @@
 #include "graphics/sp/sp_texture_manager.hpp"
 #include "graphics/sp/sp_base.hpp"
 #include "graphics/sp/sp_shader.hpp"
+#include "graphics/sp/sp_s3tc_compress.hpp"
 #include "graphics/central_settings.hpp"
 #include "graphics/irr_driver.hpp"
 #include "graphics/material.hpp"
@@ -28,6 +29,14 @@
 
 #ifdef ENABLE_TC
 #include <squish.h>
+#endif
+
+#ifndef SERVER_ONLY
+extern "C"
+{
+    #include <mipmap/img.h>
+    #include <mipmap/imgresize.h>
+}
 #endif
 
 namespace SP
@@ -420,6 +429,38 @@ bool SPTexture::initialized() const
 }   // initialized
 
 // ----------------------------------------------------------------------------
+void SPTexture::generateHQMipmap(void* in,
+                                 const std::vector<std::pair
+                                 <core::dimension2du, unsigned> >& mms,
+                                 uint8_t* out)
+{
+    imMipmapCascade cascade;
+    imReduceOptions options;
+    imReduceSetOptions(&options,
+        m_path.find("_nm.") != std::string::npos ?
+        IM_REDUCE_FILTER_NORMALMAP: IM_REDUCE_FILTER_LINEAR/*filter*/,
+        2/*hopcount*/, 2.0f/*alpha*/, 1.0f/*amplifynormal*/,
+        0.0f/*normalsustainfactor*/);
+#ifdef DEBUG
+    int ret = imBuildMipmapCascade(&cascade, in, mms[0].first.Width,
+        mms[0].first.Height, 1/*layercount*/, 4, mms[0].first.Width * 4,
+        &options, 0);
+    assert(ret == 1);
+#else
+    imBuildMipmapCascade(&cascade, in, mms[0].first.Width,
+        mms[0].first.Height, 1/*layercount*/, 4, mms[0].first.Width * 4,
+        &options, 0);
+#endif
+    for (unsigned int i = 1; i < mms.size(); i++)
+    {
+        const unsigned copy_size = mms[i].first.getArea() * 4;
+        memcpy(out, cascade.mipmap[i], copy_size);
+        out += copy_size;
+    }
+    imFreeMipmapCascade(&cascade);
+}   // generateHQMipmap
+
+// ----------------------------------------------------------------------------
 std::vector<std::pair<core::dimension2du, unsigned> >
                SPTexture::compressTexture(std::shared_ptr<video::IImage> image)
 {
@@ -446,7 +487,10 @@ std::vector<std::pair<core::dimension2du, unsigned> >
     mipmap_sizes[0].second = compressed_size;
     uint8_t* tmp = new uint8_t[image->getDimension().getArea() * 4]();
     uint8_t* ptr_loc = tmp + compressed_size;
-    for (unsigned mip = 1; mip < mipmap_sizes.size(); mip++)
+
+    generateHQMipmap(image->lock(), mipmap_sizes, ptr_loc);
+    // Bad but quick mipmap
+    /*for (unsigned mip = 1; mip < mipmap_sizes.size(); mip++)
     {
         video::IImage* ti = irr_driver->getVideoDriver()
             ->createImage(video::ECF_A8R8G8B8,
@@ -457,10 +501,14 @@ std::vector<std::pair<core::dimension2du, unsigned> >
         memcpy(ptr_loc, ti->lock(), copy_size);
         ti->drop();
         ptr_loc += copy_size;
-    }
-    squish::CompressImage((uint8_t*)image->lock(),
-        mipmap_sizes[0].first.Width, mipmap_sizes[0].first.Height,
-        mipmap_sizes[0].first.Width * 4, tmp, tc_flag);
+    }*/
+    tx_compress_dxtn(4, mipmap_sizes[0].first.Width,
+        mipmap_sizes[0].first.Height, (uint8_t*)image->lock(),
+        GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, tmp,
+        mipmap_sizes[0].first.Width * 4);
+    //squish::CompressImage((uint8_t*)image->lock(),
+    //    mipmap_sizes[0].first.Width, mipmap_sizes[0].first.Height,
+    //    mipmap_sizes[0].first.Width * 4, tmp, tc_flag);
     memcpy(image->lock(), tmp, image->getDimension().getArea() * 4);
 
     // Now compress mipmap
@@ -471,9 +519,13 @@ std::vector<std::pair<core::dimension2du, unsigned> >
         mipmap_sizes[mip].second = squish::GetStorageRequirements(
             mipmap_sizes[mip].first.Width, mipmap_sizes[mip].first.Height,
             tc_flag);
-        squish::CompressImage(ptr_loc,
-            mipmap_sizes[mip].first.Width, mipmap_sizes[mip].first.Height,
-            mipmap_sizes[mip].first.Width * 4, tmp, tc_flag);
+        tx_compress_dxtn(4, mipmap_sizes[mip].first.Width,
+            mipmap_sizes[mip].first.Height, ptr_loc,
+            GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, tmp,
+            mipmap_sizes[mip].first.Width * 4);
+        //squish::CompressImage(ptr_loc,
+        //    mipmap_sizes[mip].first.Width, mipmap_sizes[mip].first.Height,
+        //    mipmap_sizes[mip].first.Width * 4, tmp, tc_flag);
         memcpy(ptr_loc, tmp, mipmap_sizes[mip].second);
         ptr_loc += mipmap_sizes[mip].first.Width *
             mipmap_sizes[mip].first.Height * 4;

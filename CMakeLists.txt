@@ -173,7 +173,7 @@ if (BUILD_RECORDER)
     endif()
 endif()
 
-if(NOT SERVER_ONLY AND NOT USE_GLES2)
+if(NOT SERVER_ONLY)
     add_subdirectory("${PROJECT_SOURCE_DIR}/lib/graphics_utils")
     include_directories("${PROJECT_SOURCE_DIR}/lib/graphics_utils")
 endif()
@@ -438,9 +438,9 @@ target_link_libraries(supertuxkart
 
 if(NOT SERVER_ONLY)
     if(NOT USE_GLES2)
-        target_link_libraries(supertuxkart ${OPENGL_gl_LIBRARY} glew graphics_utils ${CRUNCH_LIBRARY_NAME})
+        target_link_libraries(supertuxkart ${OPENGL_gl_LIBRARY} glew graphics_utils)
     else()
-        target_link_libraries(supertuxkart GLESv2 ${CRUNCH_LIBRARY_NAME})
+        target_link_libraries(supertuxkart GLESv2 graphics_utils)
     endif()
 endif()
 
