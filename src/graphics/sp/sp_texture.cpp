@@ -502,13 +502,13 @@ std::vector<std::pair<core::dimension2du, unsigned> >
         ti->drop();
         ptr_loc += copy_size;
     }*/
-    tx_compress_dxtn(4, mipmap_sizes[0].first.Width,
-        mipmap_sizes[0].first.Height, (uint8_t*)image->lock(),
-        GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, tmp,
-        mipmap_sizes[0].first.Width * 4);
-    //squish::CompressImage((uint8_t*)image->lock(),
-    //    mipmap_sizes[0].first.Width, mipmap_sizes[0].first.Height,
-    //    mipmap_sizes[0].first.Width * 4, tmp, tc_flag);
+    //tx_compress_dxtn(4, mipmap_sizes[0].first.Width,
+    //    mipmap_sizes[0].first.Height, (uint8_t*)image->lock(),
+    //    GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, tmp,
+    //    mipmap_sizes[0].first.Width * 4);
+    squish::CompressImage((uint8_t*)image->lock(),
+        mipmap_sizes[0].first.Width, mipmap_sizes[0].first.Height,
+        mipmap_sizes[0].first.Width * 4, tmp, tc_flag);
     memcpy(image->lock(), tmp, image->getDimension().getArea() * 4);
 
     // Now compress mipmap
@@ -519,13 +519,13 @@ std::vector<std::pair<core::dimension2du, unsigned> >
         mipmap_sizes[mip].second = squish::GetStorageRequirements(
             mipmap_sizes[mip].first.Width, mipmap_sizes[mip].first.Height,
             tc_flag);
-        tx_compress_dxtn(4, mipmap_sizes[mip].first.Width,
-            mipmap_sizes[mip].first.Height, ptr_loc,
-            GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, tmp,
-            mipmap_sizes[mip].first.Width * 4);
-        //squish::CompressImage(ptr_loc,
-        //    mipmap_sizes[mip].first.Width, mipmap_sizes[mip].first.Height,
-        //    mipmap_sizes[mip].first.Width * 4, tmp, tc_flag);
+        //tx_compress_dxtn(4, mipmap_sizes[mip].first.Width,
+        //    mipmap_sizes[mip].first.Height, ptr_loc,
+        //    GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, tmp,
+        //    mipmap_sizes[mip].first.Width * 4);
+        squish::CompressImage(ptr_loc,
+            mipmap_sizes[mip].first.Width, mipmap_sizes[mip].first.Height,
+            mipmap_sizes[mip].first.Width * 4, tmp, tc_flag);
         memcpy(ptr_loc, tmp, mipmap_sizes[mip].second);
         ptr_loc += mipmap_sizes[mip].first.Width *
             mipmap_sizes[mip].first.Height * 4;
