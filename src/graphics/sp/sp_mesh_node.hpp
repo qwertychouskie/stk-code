@@ -56,6 +56,8 @@ private:
 
     video::SColorf m_glow_color;
 
+    std::vector<std::array<std::shared_ptr<float>, 2> > m_texture_matrices;
+
     // ------------------------------------------------------------------------
     void cleanRenderInfo();
     // ------------------------------------------------------------------------
@@ -140,6 +142,19 @@ public:
     {
         return !(m_glow_color.r == 0.0f && m_glow_color.g == 0.0f &&
             m_glow_color.b == 0.0f);
+    }
+    // ------------------------------------------------------------------------
+    std::array<std::shared_ptr<float>, 2> getTextureMatrix(unsigned mb_id)
+    {
+        assert(mb_id < m_texture_matrices.size());
+        return m_texture_matrices[mb_id];
+    }
+    // ------------------------------------------------------------------------
+    void setTextureMatrix(unsigned mb_id,
+                          std::array<std::shared_ptr<float>, 2> tm)
+    {
+        assert(mb_id < m_texture_matrices.size());
+        m_texture_matrices[mb_id] = tm;
     }
 };
 

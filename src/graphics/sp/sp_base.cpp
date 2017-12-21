@@ -1211,11 +1211,17 @@ void addObject(SPMeshNode* node)
             node->getRenderInfo(0)->getHue() > 0.0f ?
             node->getRenderInfo(0)->getHue() : 0.0f;
         float min_sat = 0.0f;
-        const core::matrix4& texture_matrix =
-            node->getMaterial(m).getTextureMatrix(0);
+        float tm_x = 0.0f;
+        float tm_y = 0.0f;
+        const auto& ret = node->getTextureMatrix(m);
+        if (ret[0] && ret[1])
+        {
+            tm_x = *ret[0];
+            tm_y = *ret[1];
+        }
         SPInstancedData id = SPInstancedData
-            (node->getAbsoluteTransformation(), texture_matrix[8],
-            texture_matrix[9], hue, min_sat, node->getSkinningOffset());
+            (node->getAbsoluteTransformation(), tm_x, tm_y, hue, min_sat,
+            node->getSkinningOffset());
 
         for (int dc_type = 0; dc_type < (g_handle_shadow ? 5 : 1); dc_type++)
         {

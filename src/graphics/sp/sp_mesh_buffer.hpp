@@ -188,6 +188,8 @@ public:
         return NULL;
     }
     // ------------------------------------------------------------------------
+    void enableTextureMatrix(unsigned mat_id);
+    // ------------------------------------------------------------------------
     std::array<std::shared_ptr<SPTexture>, 6>
         getSPTextures(unsigned first_index = 0) const
     {

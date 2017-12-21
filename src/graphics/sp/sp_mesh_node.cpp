@@ -82,6 +82,7 @@ void SPMeshNode::setMesh(irr::scene::IAnimatedMesh* mesh)
     cleanRenderInfo();
     if (m_mesh)
     {
+        m_texture_matrices.resize(m_mesh->getMeshBufferCount());
         if (!m_mesh->isStatic())
         {
             m_animated = !m_mesh->isStatic();

@@ -42,7 +42,9 @@
 #include "graphics/render_target.hpp"
 #include "graphics/stk_tex_manager.hpp"
 #include "graphics/sp/sp_base.hpp"
+#include "graphics/sp/sp_mesh.hpp"
 #include "graphics/sp/sp_mesh_buffer.hpp"
+#include "graphics/sp/sp_mesh_node.hpp"
 #include "graphics/sp/sp_texture_manager.hpp"
 #include "io/file_manager.hpp"
 #include "io/xml_node.hpp"
@@ -1459,26 +1461,62 @@ void Track::handleAnimatedTextures(scene::ISceneNode *node, const XMLNode &xml)
         name = StringUtils::toLowerCase(name);
 
         int moving_textures_found = 0;
-        for(unsigned int i=0; i<node->getMaterialCount(); i++)
+        SP::SPMeshNode* spmn = dynamic_cast<SP::SPMeshNode*>(node);
+        if (spmn)
         {
-            video::SMaterial &irrMaterial=node->getMaterial(i);
-            for(unsigned int j=0; j<video::MATERIAL_MAX_TEXTURES; j++)
+            for (unsigned i = 0; i < spmn->getSPM()->getMeshBufferCount(); i++)
             {
-                video::ITexture* t=irrMaterial.getTexture(j);
-                if(!t) continue;
-                std::string texture_name =
-                    StringUtils::getBasename(t->getName().getPtr());
+                SP::SPMeshBuffer* spmb = spmn->getSPM()->getSPMeshBuffer(i);
+                const std::vector<Material*>& m = spmb->getAllSTKMaterials();
+                bool found = false;
+                for (unsigned j = 0; j < m.size(); j++)
+                {
+                    Material* mat = m[j];
+                    std::string mat_name =
+                        StringUtils::getBasename(mat->getSamplerPath(0));
+                    mat_name = StringUtils::toLowerCase(mat_name);
+                    if (mat_name == name)
+                    {
+                        found = true;
+                        moving_textures_found++;
+                        spmb->enableTextureMatrix(j);
+                        MovingTexture* mt =
+                            new MovingTexture(NULL, *texture_node);
+                        spmn->setTextureMatrix(i, mt->getSPTM());
+                        m_animated_textures.push_back(mt);
+                        // For spm only 1 texture matrix per mesh buffer is
+                        // possible
+                        break;
+                    }
+                }
+                if (found)
+                {
+                    break;
+                }
+            }
+        }
+        else
+        {
+            for(unsigned int i=0; i<node->getMaterialCount(); i++)
+            {
+                video::SMaterial &irrMaterial=node->getMaterial(i);
+                for(unsigned int j=0; j<video::MATERIAL_MAX_TEXTURES; j++)
+                {
+                    video::ITexture* t=irrMaterial.getTexture(j);
+                    if(!t) continue;
+                    std::string texture_name =
+                        StringUtils::getBasename(t->getName().getPtr());
 
-                // to lower case, for case-insensitive comparison
-                texture_name = StringUtils::toLowerCase(texture_name);
+                    // to lower case, for case-insensitive comparison
+                    texture_name = StringUtils::toLowerCase(texture_name);
 
-                if (texture_name != name) continue;
-                core::matrix4 *m = &irrMaterial.getTextureMatrix(j);
-                m_animated_textures.push_back(new MovingTexture(m, *texture_node));
-                moving_textures_found++;
-            }   // for j<MATERIAL_MAX_TEXTURES
-        }   // for i<getMaterialCount
-
+                    if (texture_name != name) continue;
+                    core::matrix4 *m = &irrMaterial.getTextureMatrix(j);
+                    m_animated_textures.push_back(new MovingTexture(m, *texture_node));
+                    moving_textures_found++;
+                }   // for j<MATERIAL_MAX_TEXTURES
+            }   // for i<getMaterialCount
+        }
         if (moving_textures_found == 0)
             Log::warn("AnimTexture", "Did not find animate texture '%s'", name.c_str());
     }   // for node_number < xml->getNumNodes
