@@ -56,7 +56,8 @@ void main()
       ).xyz;
     normal = (u_view_matrix * vec4(world_normal, 0.0)).xyz;
 
-    uv = vec2(i_uv.x + i_misc_data.x, i_uv.y + i_misc_data.y);
+    uv = vec2(i_uv.x + (i_misc_data.x * i_normal.w),
+        i_uv.y + (i_misc_data.y * i_normal.w));
     uv_two = i_uv_two;
 
     color = i_color.zyxw;

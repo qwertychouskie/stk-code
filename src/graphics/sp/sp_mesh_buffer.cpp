@@ -472,17 +472,18 @@ void SPMeshBuffer::enableTextureMatrix(unsigned mat_id)
     auto& ret = m_stk_material[mat_id];
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     std::set<uint16_t> used_vertices;
-    for (unsigned int j = std::get<0>(ret); j < std::get<1>(ret); j += 3)
+    for (unsigned int j = 0; j < std::get<1>(ret); j += 3)
     {
         for (unsigned int k = 0; k < 3; k++)
         {
-            const uint16_t vertex_id = m_indices[j + k];
+            const uint16_t vertex_id = m_indices[std::get<0>(ret) + j + k];
             auto ret = used_vertices.find(vertex_id);
             if (ret == used_vertices.end())
             {
                 if ((m_vertices[vertex_id].m_normal & (1 << 30)) != 0)
                 {
                     // Already enabled
+                    glBindBuffer(GL_ARRAY_BUFFER, 0);
                     return;
                 }
                 used_vertices.insert(vertex_id);
