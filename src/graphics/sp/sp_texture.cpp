@@ -460,53 +460,6 @@ void SPTexture::generateHQMipmap(void* in,
 }   // generateHQMipmap
 
 // ----------------------------------------------------------------------------
-static int floatToInt(float a, int limit)
-{
-    // use ANSI round-to-zero behaviour to get round-to-nearest
-    int i = (int)(a + 0.5f);
-    // clamp to the limit
-    if (i < 0)
-    {
-        i = 0;
-    }
-    else if (i > limit)
-    {
-        i = limit;
-    }
-    return i;
-}
-
-// ----------------------------------------------------------------------------
-static int floatTo565(float* colour)
-{
-    // get the components in the correct range
-    int r = floatToInt(31.0f * colour[0], 31);
-    int g = floatToInt(63.0f * colour[1], 63);
-    int b = floatToInt(31.0f * colour[2], 31);
-
-    // pack into a single value
-    return (r << 11 ) | (g << 5) | b;
-}
-
-// ----------------------------------------------------------------------------
-static void unpack565(uint8_t* in, uint8_t* colour)
-{
-    // build the packed value
-    int packed = (int)in[0] | ((int)in[1] << 8);
-//static void unpack565(int packed, uint8_t* colour)
-//{
-    // get the components in the stored range
-    uint8_t red = (uint8_t)((packed >> 11) & 0x1f);
-    uint8_t green = (uint8_t)((packed >> 5) & 0x3f);
-    uint8_t blue = (uint8_t)(packed & 0x1f);
-
-    // scale up to 8 bits
-    colour[0] = (red << 3 ) | (red >> 2);
-    colour[1] = (green << 2 ) | (green >> 4);
-    colour[2] = (blue << 3 ) | (blue >> 2);
-}
-
-// ----------------------------------------------------------------------------
 void SPTexture::squishCompressImage(uint8_t* rgba, int width, int height,
                                     int pitch, void* blocks, unsigned flags)
 {
