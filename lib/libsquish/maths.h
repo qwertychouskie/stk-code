@@ -228,6 +228,24 @@ private:
 Sym3x3 ComputeWeightedCovariance( int n, Vec3 const* points, float const* weights );
 Vec3 ComputePrincipleComponent( Sym3x3 const& matrix );
 
+inline float SRGBToLinear(float color_srgb)
+{
+    if (color_srgb <= 0.04045f)
+    {
+        return color_srgb * 0.0773993805f;
+    }
+    return powf((color_srgb + 0.055f) / 1.055f, 2.4f);
+}
+
+inline float LinearToSRGB(float color_linear)
+{
+    if (color_linear <= 0.0031308f)
+    {
+        return color_linear * 12.92f;
+    }
+    return 1.055f * powf(color_linear, 0.416666657f) - 0.055f;
+}
+
 } // namespace squish
 
 #endif // ndef SQUISH_MATHS_H

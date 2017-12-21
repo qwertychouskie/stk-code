@@ -211,12 +211,7 @@ bool SPTexture::compressedTexImage2d(std::shared_ptr<video::IImage> texture,
     {
         cur_mipmap_size = mipmap_sizes[i].second;
         glCompressedTexImage2D(GL_TEXTURE_2D, i,
-#ifdef USE_GLES2
             GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
-#else
-            m_undo_srgb ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT :
-            GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
-#endif
             mipmap_sizes[i].first.Width, mipmap_sizes[i].first.Height, 0,
             cur_mipmap_size, compressed);
         compressed += cur_mipmap_size;
@@ -465,6 +460,53 @@ void SPTexture::generateHQMipmap(void* in,
 }   // generateHQMipmap
 
 // ----------------------------------------------------------------------------
+static int floatToInt(float a, int limit)
+{
+    // use ANSI round-to-zero behaviour to get round-to-nearest
+    int i = (int)(a + 0.5f);
+    // clamp to the limit
+    if (i < 0)
+    {
+        i = 0;
+    }
+    else if (i > limit)
+    {
+        i = limit;
+    }
+    return i;
+}
+
+// ----------------------------------------------------------------------------
+static int floatTo565(float* colour)
+{
+    // get the components in the correct range
+    int r = floatToInt(31.0f * colour[0], 31);
+    int g = floatToInt(63.0f * colour[1], 63);
+    int b = floatToInt(31.0f * colour[2], 31);
+
+    // pack into a single value
+    return (r << 11 ) | (g << 5) | b;
+}
+
+// ----------------------------------------------------------------------------
+static void unpack565(uint8_t* in, uint8_t* colour)
+{
+    // build the packed value
+    int packed = (int)in[0] | ((int)in[1] << 8);
+//static void unpack565(int packed, uint8_t* colour)
+//{
+    // get the components in the stored range
+    uint8_t red = (uint8_t)((packed >> 11) & 0x1f);
+    uint8_t green = (uint8_t)((packed >> 5) & 0x3f);
+    uint8_t blue = (uint8_t)(packed & 0x1f);
+
+    // scale up to 8 bits
+    colour[0] = (red << 3 ) | (red >> 2);
+    colour[1] = (green << 2 ) | (green >> 4);
+    colour[2] = (blue << 3 ) | (blue >> 2);
+}
+
+// ----------------------------------------------------------------------------
 void SPTexture::squishCompressImage(uint8_t* rgba, int width, int height,
                                     int pitch, void* blocks, unsigned flags)
 {
@@ -532,7 +574,8 @@ std::vector<std::pair<core::dimension2du, unsigned> >
             break;
         }
     }
-    const unsigned tc_flag = squish::kDxt5 | stk_config->m_tc_quality;
+    const unsigned tc_flag = squish::kDxt5 | stk_config->m_tc_quality |
+        (m_undo_srgb ? squish::kToLinear : 0);
     const unsigned compressed_size = squish::GetStorageRequirements(
         mipmap_sizes[0].first.Width, mipmap_sizes[0].first.Height,
         tc_flag);
