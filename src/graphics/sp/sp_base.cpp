@@ -1189,21 +1189,18 @@ void addObject(SPMeshNode* node)
         }
 
         mb->uploadGLMesh();
-        if (!added_for_skinning && node->getAnimationState())
+        // For first frame only need the vbo to be initialized
+        if (!added_for_skinning && node->getAnimationState() &&
+            !sp_first_frame)
         {
             added_for_skinning = true;
             int skinning_offset = g_skinning_offset + node->getTotalJoints();
             if (skinning_offset > int(stk_config->m_max_skinning_bones))
             {
-                skinning_offset = 1;
-                if (!sp_first_frame)
-                {
-                    // For first frame only need the vbo to be initialized
-                    Log::error("SPBase", "No enough space to render skinned"
-                        " mesh %s! Max joints can hold: %d",
-                        node->getName(), stk_config->m_max_skinning_bones);
-                    return;
-                }
+                Log::error("SPBase", "No enough space to render skinned"
+                    " mesh %s! Max joints can hold: %d",
+                    node->getName(), stk_config->m_max_skinning_bones);
+                return;
             }
             node->setSkinningOffset(g_skinning_offset);
             g_skinning_mesh.push_back(node);
