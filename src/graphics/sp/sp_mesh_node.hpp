@@ -144,7 +144,7 @@ public:
             m_glow_color.b == 0.0f);
     }
     // ------------------------------------------------------------------------
-    std::array<std::shared_ptr<float>, 2> getTextureMatrix(unsigned mb_id)
+    std::array<std::shared_ptr<float>, 2>& getTextureMatrix(unsigned mb_id)
     {
         assert(mb_id < m_texture_matrices.size());
         return m_texture_matrices[mb_id];

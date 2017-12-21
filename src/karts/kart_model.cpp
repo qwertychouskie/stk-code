@@ -34,6 +34,7 @@
 #include "graphics/sp/sp_animation.hpp"
 #include "graphics/sp/sp_mesh.hpp"
 #include "graphics/sp/sp_mesh_buffer.hpp"
+#include "graphics/sp/sp_mesh_node.hpp"
 #include "io/file_manager.hpp"
 #include "io/xml_node.hpp"
 #include "karts/abstract_kart.hpp"
@@ -643,6 +644,15 @@ bool KartModel::loadModels(const KartProperties &kart_properties)
                     (obj.m_model->getMeshBuffer(j));
                 // Pre-upload gl meshes and textures for kart screen
                 mb->uploadGLMesh();
+                if (obj.m_properties.m_texture_speed !=
+                    core::vector2df(0.0f, 0.0f))
+                {
+                    for (unsigned k = 0; k < mb->getAllSTKMaterials().size();
+                        k++)
+                    {
+                        mb->enableTextureMatrix(k);
+                    }
+                }
             }
         }
 #endif
@@ -1116,17 +1126,40 @@ void KartModel::update(float dt, float distance, float steer, float speed,
                 if (obj.m_texture_cur_offset.X > 1.0f) obj.m_texture_cur_offset.X = fmod(obj.m_texture_cur_offset.X, 1.0f);
                 if (obj.m_texture_cur_offset.Y > 1.0f) obj.m_texture_cur_offset.Y = fmod(obj.m_texture_cur_offset.Y, 1.0f);
 
-                for (unsigned int i = 0; i < obj.m_node->getMaterialCount(); i++)
+                SP::SPMeshNode* spmn = dynamic_cast<SP::SPMeshNode*>(obj.m_node);
+                if (spmn)
                 {
-                    video::SMaterial &irrMaterial = obj.m_node->getMaterial(i);
-                    for (unsigned int j = 0; j < video::MATERIAL_MAX_TEXTURES; j++)
+                    for (unsigned i = 0; i < spmn->getSPM()->getMeshBufferCount(); i++)
                     {
-                        video::ITexture* t = irrMaterial.getTexture(j);
-                        if (!t) continue;
-                        core::matrix4 *m = &irrMaterial.getTextureMatrix(j);
-                        m->setTextureTranslate(obj.m_texture_cur_offset.X, obj.m_texture_cur_offset.Y);
-                    }   // for j<MATERIAL_MAX_TEXTURES
-                }   // for i<getMaterialCount
+                        auto& ret = spmn->getTextureMatrix(i);
+                        if (!ret[0] || !ret[1])
+                        {
+                            ret[0].reset(new float);
+                            ret[1].reset(new float);
+                        }
+                        *ret[0] = obj.m_texture_cur_offset.X;
+                        *ret[1] = obj.m_texture_cur_offset.Y;
+                    }
+                }
+                else
+                {
+                    for (unsigned int i = 0;
+                        i < obj.m_node->getMaterialCount(); i++)
+                    {
+                        video::SMaterial &irrMaterial =
+                            obj.m_node->getMaterial(i);
+                        for (unsigned int j = 0; j < video::MATERIAL_MAX_TEXTURES;
+                            j++)
+                        {
+                            video::ITexture* t = irrMaterial.getTexture(j);
+                            if (!t) continue;
+                            core::matrix4 *m =
+                                &irrMaterial.getTextureMatrix(j);
+                            m->setTextureTranslate(obj.m_texture_cur_offset.X,
+                                obj.m_texture_cur_offset.Y);
+                        }   // for j<MATERIAL_MAX_TEXTURES
+                    }   // for i<getMaterialCount
+                }
             }
         }
     }
