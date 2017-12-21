@@ -267,7 +267,8 @@ bool SPTexture::threadedLoad()
         applyMask(image.get(), mask.get());
     }
 
-    if (CVS->isTextureCompressionEnabled() && image)
+    if (CVS->isTextureCompressionEnabled() && image &&
+        image->getDimension().Width >= 4 && image->getDimension().Height >= 4)
     {
         auto r = compressTexture(image);
         SPTextureManager::get()->increaseGLCommandFunctionCount(1);
