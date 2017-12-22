@@ -113,9 +113,9 @@ void SPTextureManager::initTextureArray()
 {
 #ifndef SERVER_ONLY
 #ifdef USE_GLES2
-    unsigned internal_format = GL_RGBA;
+    unsigned upload_format = GL_RGBA;
 #else
-    unsigned internal_format = GL_BGRA;
+    unsigned upload_format = GL_BGRA;
 #endif
     const unsigned size = irr_driver->getVideoDriver()->getDriverAttributes()
         .getAttributeAsDimension2d("MAX_TEXTURE_SIZE").Width;
@@ -166,12 +166,12 @@ void SPTextureManager::initTextureArray()
 #endif
     {
         glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA,
-            size, size, MAX_TA, 0, internal_format, GL_UNSIGNED_BYTE, NULL);
+            size, size, MAX_TA, 0, upload_format, GL_UNSIGNED_BYTE, NULL);
         glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0,
-            size, size, 1, internal_format, GL_UNSIGNED_BYTE,
+            size, size, 1, upload_format, GL_UNSIGNED_BYTE,
             white.data());
         glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 1,
-            size, size, 1, internal_format, GL_UNSIGNED_BYTE,
+            size, size, 1, upload_format, GL_UNSIGNED_BYTE,
             transparent.data());
         glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
     }
