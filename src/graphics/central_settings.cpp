@@ -23,8 +23,6 @@
 #include "graphics/gl_headers.hpp"
 #include "graphics/glwrap.hpp"
 #include "graphics/graphics_restrictions.hpp"
-#include "graphics/irr_driver.hpp"
-
 
 CentralVideoSettings *CVS = new CentralVideoSettings();
 
@@ -320,11 +318,10 @@ void CentralVideoSettings::init()
         {
             UserConfigParams::m_high_definition_textures = 0x00;
         }
-        
+
         if (GraphicsRestrictions::isDisabled(GraphicsRestrictions::GR_HIGHDEFINITION_TEXTURES_256))
         {
             UserConfigParams::m_high_definition_textures = 0;
-            
             if (UserConfigParams::m_max_texture_size > 256)
             {
                 UserConfigParams::m_max_texture_size = 256;
@@ -587,9 +584,8 @@ bool CentralVideoSettings::supportsThreadedTextureLoading() const
 
 bool CentralVideoSettings::useArrayTextures() const
 {
-    const core::dimension2du& max_size = irr_driver->getVideoDriver()
-        ->getDriverAttributes().getAttributeAsDimension2d("MAX_TEXTURE_SIZE");
-    return max_size.Width <= 256 && max_size.Height <= 256;
+    return (UserConfigParams::m_high_definition_textures & 0x01) == 0 &&
+        UserConfigParams::m_max_texture_size <= 256;
 }
 
 #endif   // !SERVER_ONLY

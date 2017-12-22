@@ -152,15 +152,15 @@ GLuint ShaderFilesManager::loadShader(const std::string &file, unsigned type)
         code << "#define Explicit_Attrib_Location_Usable\n";
     }
 
-    if (CVS->isARBBindlessTextureUsable())
+    if (CVS->useArrayTextures())
+    {
+        code << "#define Use_Array_Texture\n";
+    }
+    else if (CVS->isARBBindlessTextureUsable())
     {
         code << "#extension GL_ARB_bindless_texture : enable\n";
         code << "#extension GL_NV_gpu_shader5 : require\n";
         code << "#define Use_Bindless_Texture\n";
-    }
-    else if (CVS->useArrayTextures())
-    {
-        code << "#define Use_Array_Texture\n";
     }
     code << "//" << file << "\n";
     if (!CVS->isARBUniformBufferObjectUsable())
