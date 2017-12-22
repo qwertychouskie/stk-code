@@ -627,7 +627,7 @@ std::vector<std::pair<core::dimension2du, unsigned> >
     }
     // For array textures all textures need to have a same internal format
     const unsigned tc_flag = squish::kDxt5 | stk_config->m_tc_quality |
-        (m_undo_srgb && !CVS->useArrayTextures() ? squish::kToLinear : 0);
+        (m_undo_srgb && CVS->useArrayTextures() ? squish::kToLinear : 0);
     const unsigned compressed_size = squish::GetStorageRequirements(
         mipmap_sizes[0].first.Width, mipmap_sizes[0].first.Height,
         tc_flag);
