@@ -145,6 +145,10 @@ private:
                               const std::vector<std::pair<core::dimension2du,
                               unsigned> >& mipmap_sizes);
     // ------------------------------------------------------------------------
+    bool compressedTexImage3d(std::shared_ptr<video::IImage> texture,
+                              const std::vector<std::pair<core::dimension2du,
+                              unsigned> >& mipmap_sizes);
+    // ------------------------------------------------------------------------
     std::vector<std::pair<core::dimension2du, unsigned> >
                        compressTexture(std::shared_ptr<video::IImage> texture);
 

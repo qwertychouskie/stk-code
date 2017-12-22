@@ -26,6 +26,9 @@
 #include <string>
 
 const int MAX_TA = 256;
+#if !(defined(SERVER_ONLY) || defined(USE_GLES2))
+#include <squish.h>
+#endif
 
 namespace SP
 {
@@ -120,11 +123,47 @@ void SPTextureManager::initTextureArray()
     white.resize(size * size, -1);
     transparent.resize(size * size, 0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, m_all_textures_array);
+#if !(defined(SERVER_ONLY) || defined(USE_GLES2))
     if (CVS->isTextureCompressionEnabled())
     {
-        //glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+        std::vector<std::pair<core::dimension2du, unsigned> > mipmap_sizes;
+        unsigned width = size;
+        unsigned height = size;
+        mipmap_sizes.emplace_back(core::dimension2du(width, height),
+            squish::GetStorageRequirements(width, height, squish::kDxt5));
+        while (true)
+        {
+            width = width < 2 ? 1 : width >> 1;
+            height = height < 2 ? 1 : height >> 1;
+            mipmap_sizes.emplace_back(core::dimension2du(width, height),
+                squish::GetStorageRequirements(width, height, squish::kDxt5));
+            if (width == 1 && height == 1)
+            {
+                break;
+            }
+        }
+        unsigned cur_mipmap_size = 0;
+        for (unsigned i = 0; i < mipmap_sizes.size(); i++)
+        {
+            cur_mipmap_size = mipmap_sizes[i].second;
+            glCompressedTexImage3D(GL_TEXTURE_2D_ARRAY, i,
+                GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+                mipmap_sizes[i].first.Width, mipmap_sizes[i].first.Height,
+                MAX_TA, 0, cur_mipmap_size * MAX_TA, NULL);
+            glCompressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, i,
+                0, 0, 0,
+                mipmap_sizes[i].first.Width, mipmap_sizes[i].first.Height, 1,
+                GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, cur_mipmap_size,
+                white.data());
+            glCompressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, i,
+                0, 0, 1,
+                mipmap_sizes[i].first.Width, mipmap_sizes[i].first.Height, 1,
+                GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, cur_mipmap_size,
+                transparent.data());
+        }
     }
     else
+#endif
     {
         glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA,
             size, size, MAX_TA, 0, internal_format, GL_UNSIGNED_BYTE, NULL);

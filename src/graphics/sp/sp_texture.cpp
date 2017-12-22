@@ -217,14 +217,20 @@ bool SPTexture::compressedTexImage2d(std::shared_ptr<video::IImage> texture,
                                      <core::dimension2du, unsigned> >&
                                      mipmap_sizes)
 {
+    unsigned format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+#ifndef USE_GLES2
+    if (m_undo_srgb && !CVS->useArrayTextures())
+    {
+        format = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+    }
+#endif
     glBindTexture(GL_TEXTURE_2D, m_texture_name);
     uint8_t* compressed = (uint8_t*)texture->lock();
     unsigned cur_mipmap_size = 0;
     for (unsigned i = 0; i < mipmap_sizes.size(); i++)
     {
         cur_mipmap_size = mipmap_sizes[i].second;
-        glCompressedTexImage2D(GL_TEXTURE_2D, i,
-            GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+        glCompressedTexImage2D(GL_TEXTURE_2D, i, format,
             mipmap_sizes[i].first.Width, mipmap_sizes[i].first.Height, 0,
             cur_mipmap_size, compressed);
         compressed += cur_mipmap_size;
@@ -236,6 +242,33 @@ bool SPTexture::compressedTexImage2d(std::shared_ptr<video::IImage> texture,
 
     return true;
 }   // compressedTexImage2d
+
+// ----------------------------------------------------------------------------
+bool SPTexture::compressedTexImage3d(std::shared_ptr<video::IImage> texture,
+                                     const std::vector<std::pair
+                                     <core::dimension2du, unsigned> >&
+                                     mipmap_sizes)
+{
+    assert(m_texture_array_idx != -1);
+    glBindTexture(GL_TEXTURE_2D_ARRAY,
+        SPTextureManager::get()->getTextureArrayName());
+    uint8_t* compressed = (uint8_t*)texture->lock();
+    unsigned cur_mipmap_size = 0;
+    for (unsigned i = 0; i < mipmap_sizes.size(); i++)
+    {
+        cur_mipmap_size = mipmap_sizes[i].second;
+        glCompressedTexSubImage3D(GL_TEXTURE_2D_ARRAY, i,
+            0, 0, m_texture_array_idx,
+            mipmap_sizes[i].first.Width, mipmap_sizes[i].first.Height, 1,
+            GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, cur_mipmap_size, compressed);
+        compressed += cur_mipmap_size;
+    }
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    m_width.store(mipmap_sizes[0].first.Width);
+    m_height.store(mipmap_sizes[0].first.Height);
+
+    return true;
+}   // compressedTexImage3d
 
 // ----------------------------------------------------------------------------
 bool SPTexture::texImage3d(std::shared_ptr<video::IImage> texture)
@@ -309,6 +342,11 @@ bool SPTexture::threadedLoad()
     {
         if (CVS->isTextureCompressionEnabled())
         {
+            auto r = compressTexture(image);
+            SPTextureManager::get()->increaseGLCommandFunctionCount(1);
+            SPTextureManager::get()->addGLCommandFunction(
+                [this, image, r]()->bool
+                { return compressedTexImage3d(image, r); });
         }
         else
         {
@@ -587,8 +625,9 @@ std::vector<std::pair<core::dimension2du, unsigned> >
             break;
         }
     }
+    // For array textures all textures need to have a same internal format
     const unsigned tc_flag = squish::kDxt5 | stk_config->m_tc_quality |
-        (m_undo_srgb ? squish::kToLinear : 0);
+        (m_undo_srgb && !CVS->useArrayTextures() ? squish::kToLinear : 0);
     const unsigned compressed_size = squish::GetStorageRequirements(
         mipmap_sizes[0].first.Width, mipmap_sizes[0].first.Height,
         tc_flag);
