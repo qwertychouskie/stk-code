@@ -589,7 +589,7 @@ bool CentralVideoSettings::useArrayTextures() const
 {
     const core::dimension2du& max_size = irr_driver->getVideoDriver()
         ->getDriverAttributes().getAttributeAsDimension2d("MAX_TEXTURE_SIZE");
-    return max_size.Width <= 256 && max_size.Height;
+    return max_size.Width <= 256 && max_size.Height <= 256;
 }
 
 #endif   // !SERVER_ONLY

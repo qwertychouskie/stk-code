@@ -46,13 +46,15 @@ class SPTexture : public NoCopy
 private:
     std::string m_path;
 
-    uint64_t m_texture_handle = 0;
+    int m_texture_array;
 
     GLuint m_texture_name = 0;
 
     std::atomic_uint m_width;
 
     std::atomic_uint m_height;
+
+    uint64_t m_texture_handle = 0;
 
     Material* m_material;
 
@@ -133,7 +135,7 @@ private:
 #endif
     }
     // ------------------------------------------------------------------------
-    SPTexture(bool white);
+    SPTexture(bool white, int ta_idx);
     // ------------------------------------------------------------------------
     bool texImage2d(std::shared_ptr<video::IImage> texture);
     // ------------------------------------------------------------------------
@@ -148,18 +150,19 @@ public:
     // ------------------------------------------------------------------------
     static std::shared_ptr<SPTexture> getWhiteTexture()
     {
-        SPTexture* tex = new SPTexture(true/*white*/);
+        SPTexture* tex = new SPTexture(true/*white*/, 0);
         tex->m_path = "unicolor_white";
         return std::shared_ptr<SPTexture>(tex);
     }
     // ------------------------------------------------------------------------
     static std::shared_ptr<SPTexture> getTransparentTexture()
     {
-        SPTexture* tex = new SPTexture(false/*white*/);
+        SPTexture* tex = new SPTexture(false/*white*/, 1);
         return std::shared_ptr<SPTexture>(tex);
     }
     // ------------------------------------------------------------------------
-    SPTexture(const std::string& path, Material* m, bool undo_srgb);
+    SPTexture(const std::string& path, Material* m, bool undo_srgb,
+              int ta_idx);
     // ------------------------------------------------------------------------
     ~SPTexture();
     // ------------------------------------------------------------------------
@@ -184,6 +187,8 @@ public:
     unsigned getHeight() const                      { return m_height.load(); }
     // ------------------------------------------------------------------------
     bool threadedLoad();
+    // ------------------------------------------------------------------------
+    int getTextureArray() const                     { return m_texture_array; }
 
 };
 

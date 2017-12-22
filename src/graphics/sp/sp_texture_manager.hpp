@@ -61,6 +61,8 @@ private:
 
     std::list<std::thread> m_threaded_load_obj;
 
+    std::list<int> m_freed_texture_array_idx;
+
 public:
     // ------------------------------------------------------------------------
     static SPTextureManager* get()
@@ -82,20 +84,7 @@ public:
     // ------------------------------------------------------------------------
     ~SPTextureManager();
     // ------------------------------------------------------------------------
-    void removeUnusedTextures()
-    {
-        for (auto it = m_textures.begin(); it != m_textures.end();)
-        {
-            if (it->second.use_count() == 1)
-            {
-                it = m_textures.erase(it);
-            }
-            else
-            {
-                it++;
-            }
-        }
-    }
+    void removeUnusedTextures();
     // ------------------------------------------------------------------------
     void addThreadedFunction(std::function<bool()> threaded_function)
     {
@@ -121,7 +110,17 @@ public:
     int dumpTextureUsage();
     // ------------------------------------------------------------------------
     void dumpAllTexture();
-
+    // ------------------------------------------------------------------------
+    int getTextureArrayIndex()
+    {
+        if (!m_freed_texture_array_idx.empty())
+        {
+            int ret = m_freed_texture_array_idx.front();
+            m_freed_texture_array_idx.pop_front();
+            return ret;
+        }
+        return (int)m_textures.size() + 2;/* white and transparent textures*/
+    }
 };
 
 }

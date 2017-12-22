@@ -158,6 +158,10 @@ GLuint ShaderFilesManager::loadShader(const std::string &file, unsigned type)
         code << "#extension GL_NV_gpu_shader5 : require\n";
         code << "#define Use_Bindless_Texture\n";
     }
+    else if (CVS->useArrayTextures())
+    {
+        code << "#define Use_Array_Texture\n";
+    }
     code << "//" << file << "\n";
     if (!CVS->isARBUniformBufferObjectUsable())
         code << "#define UBO_DISABLED\n";

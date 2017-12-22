@@ -41,21 +41,30 @@ extern "C"
 namespace SP
 {
 // ----------------------------------------------------------------------------
-SPTexture::SPTexture(const std::string& path, Material* m, bool undo_srgb)
-         : m_path(path), m_width(0), m_height(0), m_material(m),
-           m_undo_srgb(undo_srgb)
+SPTexture::SPTexture(const std::string& path, Material* m, bool undo_srgb,
+                     int ta_idx)
+         : m_path(path), m_texture_array(ta_idx), m_width(0), m_height(0),
+           m_material(m), m_undo_srgb(undo_srgb)
 {
 #ifndef SERVER_ONLY
+    if (CVS->useArrayTextures())
+    {
+        return;
+    }
     glGenTextures(1, &m_texture_name);
 #endif
     createWhite(false/*private_init*/);
 }   // SPTexture
 
 // ----------------------------------------------------------------------------
-SPTexture::SPTexture(bool white)
-         : m_width(0), m_height(0), m_undo_srgb(false)
+SPTexture::SPTexture(bool white, int ta_idx)
+         : m_texture_array(ta_idx), m_width(0), m_height(0), m_undo_srgb(false)
 {
 #ifndef SERVER_ONLY
+    if (CVS->useArrayTextures())
+    {
+        return;
+    }
     glGenTextures(1, &m_texture_name);
     if (white)
     {
@@ -147,11 +156,11 @@ std::shared_ptr<video::IImage> SPTexture::getTextureImage() const
     const core::dimension2du& max_size = irr_driver->getVideoDriver()
         ->getDriverAttributes().getAttributeAsDimension2d("MAX_TEXTURE_SIZE");
 
-    if (tex_size.Width > max_size.Width)
+    if (tex_size.Width > max_size.Width || CVS->useArrayTextures())
     {
         tex_size.Width = max_size.Width;
     }
-    if (tex_size.Height > max_size.Height)
+    if (tex_size.Height > max_size.Height || CVS->useArrayTextures())
     {
         tex_size.Height = max_size.Height;
     }

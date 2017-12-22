@@ -19,6 +19,7 @@
 #include "graphics/sp/sp_base.hpp"
 #include "graphics/sp/sp_texture.hpp"
 #include "graphics/central_settings.hpp"
+#include "graphics/irr_driver.hpp"
 #include "utils/string_utils.hpp"
 #include "utils/vs.hpp"
 
@@ -69,6 +70,14 @@ SPTextureManager::SPTextureManager()
                 }
             });
     }
+#ifndef SERVER_ONLY
+    if (CVS->useArrayTextures())
+    {
+        Log::info("SPTextureManager", "Enable array textures, size %d",
+            irr_driver->getVideoDriver()->getDriverAttributes()
+            .getAttributeAsDimension2d("MAX_TEXTURE_SIZE").Width);
+    }
+#endif
     m_textures["unicolor_white"] = SPTexture::getWhiteTexture();
     m_textures[""] = SPTexture::getTransparentTexture();
 }   // SPTextureManager
@@ -142,12 +151,40 @@ std::shared_ptr<SPTexture> SPTextureManager::getTexture(const std::string& p,
     {
         return ret->second;
     }
+    int ta_idx = -1;
+#ifndef SERVER_ONLY
+    if (CVS->useArrayTextures())
+    {
+        ta_idx = getTextureArrayIndex();
+    }
+#endif
     std::shared_ptr<SPTexture> t =
-        std::make_shared<SPTexture>(p, m, undo_srgb);
+        std::make_shared<SPTexture>(p, m, undo_srgb, ta_idx);
     addThreadedFunction(std::bind(&SPTexture::threadedLoad, t));
     m_textures[p] = t;
     return t;
 }   // getTexture
+
+// ----------------------------------------------------------------------------
+void SPTextureManager::removeUnusedTextures()
+{
+    for (auto it = m_textures.begin(); it != m_textures.end();)
+    {
+        if (it->second.use_count() == 1)
+        {
+            int ta = it->second->getTextureArray();
+            if (ta != -1)
+            {
+                m_freed_texture_array_idx.push_back(ta);
+            }
+            it = m_textures.erase(it);
+        }
+        else
+        {
+            it++;
+        }
+    }
+}   // removeUnusedTextures
 
 // ----------------------------------------------------------------------------
 void SPTextureManager::dumpAllTexture()
