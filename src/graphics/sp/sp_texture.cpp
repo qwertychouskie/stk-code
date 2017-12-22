@@ -43,7 +43,7 @@ namespace SP
 // ----------------------------------------------------------------------------
 SPTexture::SPTexture(const std::string& path, Material* m, bool undo_srgb,
                      int ta_idx)
-         : m_path(path), m_texture_array(ta_idx), m_width(0), m_height(0),
+         : m_path(path), m_texture_array_idx(ta_idx), m_width(0), m_height(0),
            m_material(m), m_undo_srgb(undo_srgb)
 {
 #ifndef SERVER_ONLY
@@ -58,7 +58,8 @@ SPTexture::SPTexture(const std::string& path, Material* m, bool undo_srgb,
 
 // ----------------------------------------------------------------------------
 SPTexture::SPTexture(bool white, int ta_idx)
-         : m_texture_array(ta_idx), m_width(0), m_height(0), m_undo_srgb(false)
+         : m_texture_array_idx(ta_idx), m_width(0), m_height(0),
+           m_undo_srgb(false)
 {
 #ifndef SERVER_ONLY
     if (CVS->useArrayTextures())

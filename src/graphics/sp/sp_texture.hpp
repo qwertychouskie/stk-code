@@ -46,7 +46,7 @@ class SPTexture : public NoCopy
 private:
     std::string m_path;
 
-    int m_texture_array;
+    int m_texture_array_idx;
 
     GLuint m_texture_name = 0;
 
@@ -188,7 +188,7 @@ public:
     // ------------------------------------------------------------------------
     bool threadedLoad();
     // ------------------------------------------------------------------------
-    int getTextureArray() const                     { return m_texture_array; }
+    int getTextureArrayIndex() const            { return m_texture_array_idx; }
 
 };
 

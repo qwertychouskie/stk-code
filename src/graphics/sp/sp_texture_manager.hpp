@@ -45,6 +45,8 @@ class SPTextureManager : public NoCopy
 private:
     static SPTextureManager* m_sptm;
 
+    GLuint m_all_textures_array = 0;
+
     std::unordered_map<std::string, std::shared_ptr<SPTexture> > m_textures;
 
     std::atomic_uint m_max_threaded_load_obj;
@@ -62,6 +64,9 @@ private:
     std::list<std::thread> m_threaded_load_obj;
 
     std::list<int> m_freed_texture_array_idx;
+
+    // ------------------------------------------------------------------------
+    void initTextureArray();
 
 public:
     // ------------------------------------------------------------------------
@@ -119,7 +124,7 @@ public:
             m_freed_texture_array_idx.pop_front();
             return ret;
         }
-        return (int)m_textures.size() + 2;/* white and transparent textures*/
+        return (int)m_textures.size();
     }
 };
 
