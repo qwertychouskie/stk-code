@@ -107,10 +107,11 @@ void main()
         skinned_tangent += i_weight[i] * joint_matrix * idle_tangent;
     }
 
-    vec4 world_position = getWorldPosition(i_origin, i_rotation, i_scale.xyz,
+    vec4 quaternion = vec4(i_rotation.xyz, i_scale.w);
+    vec4 world_position = getWorldPosition(i_origin, quaternion, i_scale.xyz,
         skinned_position.xyz);
-    vec3 world_normal = rotateVector(i_rotation, skinned_normal.xyz);
-    vec3 world_tangent = rotateVector(i_rotation, skinned_tangent.xyz);
+    vec3 world_normal = rotateVector(quaternion, skinned_normal.xyz);
+    vec3 world_tangent = rotateVector(quaternion, skinned_tangent.xyz);
 
     tangent = (u_view_matrix * vec4(world_tangent, 0.0)).xyz;
     bitangent = (u_view_matrix *

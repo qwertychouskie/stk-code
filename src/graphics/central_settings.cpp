@@ -564,12 +564,14 @@ bool CentralVideoSettings::isARBPixelBufferObjectUsable() const
 
 bool CentralVideoSettings::isARBSamplerObjectsUsable() const
 {
-    return hasSamplerObjects;
+    return hasSamplerObjects ||
+        (m_gl_major_version > 3 || (m_gl_major_version == 3 && m_gl_minor_version >= 3));
 }
 
 bool CentralVideoSettings::isARBVertexType2101010RevUsable() const
 {
-    return hasVertexType2101010Rev;
+    return hasVertexType2101010Rev ||
+        (m_gl_major_version > 3 || (m_gl_major_version == 3 && m_gl_minor_version >= 3));
 }
 
 bool CentralVideoSettings::isNVGPUShader5Usable() const

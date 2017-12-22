@@ -174,10 +174,8 @@ void SPMeshBuffer::uploadGLMesh()
     bool use_tangents =
         std::get<2>(m_stk_material[0])->getShaderName() == "normalmap" &&
         CVS->isDefferedEnabled();
-    const bool vt_2101010 = CVS->isARBVertexType2101010RevUsable();
     const unsigned pitch = 48 - (use_tangents ? 0 : 4) - (use_2_uv ? 0 : 4) -
-        (m_skinned ? 0 : 16) + (use_tangents && !vt_2101010 ? 4 : 0)
-        + (!vt_2101010 ? 4 : 0) - (m_vertex_color ? 0 : 4) +
+        (m_skinned ? 0 : 16) - (m_vertex_color ? 0 : 4) +
         (CVS->useArrayTextures() ? 12 :
         CVS->isARBBindlessTextureUsable() ? 48 : 0);
     m_pitch = pitch;
@@ -201,18 +199,9 @@ void SPMeshBuffer::uploadGLMesh()
         offset = 0;
         memcpy(ptr + v_size + offset, &m_vertices[i].m_position.X, 12);
         offset += 12;
-        if (vt_2101010)
-        {
-            memcpy(ptr + v_size + offset, &m_vertices[i].m_normal, 12);
-            offset += 4;
-        }
-        else
-        {
-            std::array<short, 4> normal = MiniGLM::vertexType2101010RevTo4HF
-                (m_vertices[i].m_normal);
-            memcpy(ptr + v_size + offset, normal.data(), 8);
-            offset += 8;
-        }
+
+        memcpy(ptr + v_size + offset, &m_vertices[i].m_normal, 12);
+        offset += 4;
 
         if (m_vertex_color)
         {
@@ -237,18 +226,8 @@ void SPMeshBuffer::uploadGLMesh()
         }
         if (use_tangents)
         {
-            if (vt_2101010)
-            {
-                memcpy(ptr + v_size + offset, &m_vertices[i].m_tangent, 4);
-                offset += 4;
-            }
-            else
-            {
-                std::array<short, 4> tangent = MiniGLM::
-                    vertexType2101010RevTo4HF(m_vertices[i].m_tangent);
-                memcpy(ptr + v_size + offset, tangent.data(), 8);
-                offset += 8;
-            }
+            memcpy(ptr + v_size + offset, &m_vertices[i].m_tangent, 4);
+            offset += 4;
         }
         if (m_skinned)
         {
@@ -288,7 +267,6 @@ void SPMeshBuffer::recreateVAO(unsigned i)
     bool use_tangents =
         std::get<2>(m_stk_material[0])->getShaderName() == "normalmap" &&
         CVS->isDefferedEnabled();
-    const bool vt_2101010 = CVS->isARBVertexType2101010RevUsable();
     const unsigned pitch = m_pitch;
 
     size_t offset = 0;
@@ -312,16 +290,16 @@ void SPMeshBuffer::recreateVAO(unsigned i)
 #ifndef USE_GLES2
     if (CVS->isARBBufferStorageUsable())
     {
-        glBufferStorage(GL_ARRAY_BUFFER, m_gl_instance_size[i] * 40, NULL,
+        glBufferStorage(GL_ARRAY_BUFFER, m_gl_instance_size[i] * 32, NULL,
             GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
         m_ins_dat_mapped_ptr[i] = glMapBufferRange(GL_ARRAY_BUFFER, 0,
-            m_gl_instance_size[i] * 40,
+            m_gl_instance_size[i] * 32,
             GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT);
     }
     else
 #endif
     {
-        glBufferData(GL_ARRAY_BUFFER, m_gl_instance_size[i] * 40, NULL,
+        glBufferData(GL_ARRAY_BUFFER, m_gl_instance_size[i] * 32, NULL,
             GL_DYNAMIC_DRAW);
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -340,10 +318,9 @@ void SPMeshBuffer::recreateVAO(unsigned i)
     offset += 12;
     // Normal
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 4,
-        vt_2101010 ? GL_INT_2_10_10_10_REV : GL_HALF_FLOAT,
-        vt_2101010 ? GL_TRUE : GL_FALSE, pitch, (void*)offset);
-    offset += vt_2101010 ? 4 : 8;
+    glVertexAttribPointer(1, 4, GL_INT_2_10_10_10_REV, GL_TRUE, pitch,
+        (void*)offset);
+    offset += 4;
     // Vertex color
     if (m_vertex_color)
     {
@@ -377,11 +354,9 @@ void SPMeshBuffer::recreateVAO(unsigned i)
     {
         // Tangent and bi-tanget sign
         glEnableVertexAttribArray(5);
-        glVertexAttribPointer(5, 4,
-            vt_2101010 ? GL_INT_2_10_10_10_REV : GL_HALF_FLOAT,
-            vt_2101010 ? GL_TRUE : GL_FALSE, pitch,
+        glVertexAttribPointer(5, 4, GL_INT_2_10_10_10_REV, GL_TRUE, pitch,
             (void*)offset);
-        offset += vt_2101010 ? 4 : 8;
+        offset += 4;
     }
     if (m_skinned)
     {
@@ -421,23 +396,24 @@ void SPMeshBuffer::recreateVAO(unsigned i)
     glBindBuffer(GL_ARRAY_BUFFER, m_ins_array[i]);
     // Origin
     glEnableVertexAttribArray(8);
-    glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, 40, (void*)0);
+    glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, 32, (void*)0);
     glVertexAttribDivisorARB(8, 1);
-    // Rotation (quaternion)
+    // Rotation (quaternion .xyz)
     glEnableVertexAttribArray(9);
-    glVertexAttribPointer(9, 4, GL_HALF_FLOAT, GL_FALSE, 40, (void*)12);
+    glVertexAttribPointer(9, 4, GL_INT_2_10_10_10_REV, GL_TRUE, 32, (void*)12);
     glVertexAttribDivisorARB(9, 1);
-    // Scale (3 half floats and .w unused for padding)
+    // Scale (3 half floats and .w for quaternion .w)
     glEnableVertexAttribArray(10);
-    glVertexAttribPointer(10, 4, GL_HALF_FLOAT, GL_FALSE, 40, (void*)20);
+    glVertexAttribPointer(10, 4, GL_HALF_FLOAT, GL_FALSE, 32, (void*)16);
     glVertexAttribDivisorARB(10, 1);
-    // Misc data (texture translation and colorization info)
+    // Misc data (texture translation and hue change)
     glEnableVertexAttribArray(11);
-    glVertexAttribPointer(11, 4, GL_HALF_FLOAT, GL_FALSE, 40, (void*)28);
+    glVertexAttribPointer(11, 4, GL_INT_2_10_10_10_REV, GL_TRUE, 32,
+        (void*)24);
     glVertexAttribDivisorARB(11, 1);
     // Skinning offset
     glEnableVertexAttribArray(12);
-    glVertexAttribIPointer(12, 1, GL_INT, 40, (void*)36);
+    glVertexAttribIPointer(12, 1, GL_INT, 32, (void*)28);
     glVertexAttribDivisorARB(12, 1);
 
     glBindVertexArray(0);
@@ -470,15 +446,15 @@ void SPMeshBuffer::uploadInstanceData()
         if (CVS->isARBBufferStorageUsable())
         {
             memcpy(m_ins_dat_mapped_ptr[i], m_ins_dat[i].data(),
-                m_ins_dat[i].size() * 40);
+                m_ins_dat[i].size() * 32);
         }
         else
         {
             glBindBuffer(GL_ARRAY_BUFFER, m_ins_array[i]);
             void* ptr = glMapBufferRange(GL_ARRAY_BUFFER, 0,
-                m_ins_dat[i].size() * 40, GL_MAP_WRITE_BIT |
+                m_ins_dat[i].size() * 32, GL_MAP_WRITE_BIT |
                 GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-            memcpy(ptr, m_ins_dat[i].data(), m_ins_dat[i].size() * 40);
+            memcpy(ptr, m_ins_dat[i].data(), m_ins_dat[i].size() * 32);
             glUnmapBuffer(GL_ARRAY_BUFFER);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
         }

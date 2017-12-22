@@ -62,8 +62,9 @@ void main()
     vec3 test = sin(wind_direction * (i_position.y * 0.1));
     test += cos(wind_direction) * 0.7;
 
+    vec4 quaternion = vec4(i_rotation.xyz, i_scale.w);
     vec4 world_position = getWorldPosition(i_origin + test * i_color.r,
-        i_rotation, i_scale.xyz, i_position);
+        quaternion, i_scale.xyz, i_position);
 
     uv = i_uv;
     gl_Position = u_shadow_projection_view_matrices[layer] * world_position;

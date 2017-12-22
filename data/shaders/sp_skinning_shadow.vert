@@ -95,7 +95,8 @@ void main()
         skinned_position += i_weight[i] * joint_matrix * idle_position;
     }
 
-    vec4 world_position = getWorldPosition(i_origin, i_rotation, i_scale.xyz,
+    vec4 quaternion = vec4(i_rotation.xyz, i_scale.w);
+    vec4 world_position = getWorldPosition(i_origin, quaternion, i_scale.xyz,
         skinned_position.xyz);
     uv = i_uv;
     gl_Position = u_shadow_projection_view_matrices[layer] * world_position;

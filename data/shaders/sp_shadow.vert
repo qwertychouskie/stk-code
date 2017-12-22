@@ -61,7 +61,8 @@ void main()
     gl_Layer = layer;
 #endif
 
-    vec4 world_position = getWorldPosition(i_origin, i_rotation, i_scale.xyz,
+    vec4 quaternion = vec4(i_rotation.xyz, i_scale.w);
+    vec4 world_position = getWorldPosition(i_origin, quaternion, i_scale.xyz,
         i_position);
     uv = i_uv;
     gl_Position = u_shadow_projection_view_matrices[layer] * world_position;

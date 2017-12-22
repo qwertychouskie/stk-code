@@ -31,13 +31,13 @@ namespace SP
 class SPInstancedData
 {
 private:
-    char m_data[40];
+    char m_data[32];
 
 public:
     // ------------------------------------------------------------------------
     SPInstancedData(const core::matrix4& model_mat,
                     float texture_trans_x, float texture_trans_y, float hue,
-                    float min_sat, int skinning_offset)
+                    int skinning_offset)
     {
         using namespace MiniGLM;
         float position[3] = { model_mat[12], model_mat[13], model_mat[14] };
@@ -60,19 +60,18 @@ public:
             rotation.W = -rotation.W;
         }
         memcpy(m_data, position, 12);
-        short q[4] = { toFloat16(rotation.X), toFloat16(rotation.Y),
-            toFloat16(rotation.Z), toFloat16(rotation.W)};
-        memcpy(m_data + 12, q, 8);
+        uint32_t _2101010 = normalizedSignedFloatsTo1010102(
+            {{ rotation.X, rotation.Y, rotation.Z, 0.0f }});
+        memcpy(m_data + 12, &_2101010, 4);
         short s[4] = { toFloat16(scale.X), toFloat16(scale.Y),
-            toFloat16(scale.Z), 0};
-        memcpy(m_data + 20, s, 8);
-        short md[4] = { toFloat16(texture_trans_x), toFloat16(texture_trans_y),
-            toFloat16(hue), toFloat16(min_sat)};
-        memcpy(m_data + 28, md, 8);
-        memcpy(m_data + 36, &skinning_offset, 4);
+            toFloat16(scale.Z), toFloat16(rotation.W) };
+        memcpy(m_data + 16, s, 8);
+        _2101010 = normalizedSignedFloatsTo1010102(
+            {{ texture_trans_x, texture_trans_y, hue, 0.0f }});
+        memcpy(m_data + 24, &_2101010, 4);
+        memcpy(m_data + 28, &skinning_offset, 4);
     }
-    // ------------------------------------------------------------------------
-    const void* getData() const { return m_data; }
+
 };
 
 
