@@ -38,11 +38,11 @@ class SPShader;
 class SPMeshNode : public irr::scene::CAnimatedMeshSceneNode
 {
 private:
-    std::vector<std::shared_ptr<RenderInfo> > m_static_render_info;
+    std::vector<std::shared_ptr<RenderInfo> > m_render_info;
+
+    std::shared_ptr<RenderInfo> m_first_render_info;
 
     std::unordered_map<std::string, IBoneSceneNode*> m_joint_nodes;
-
-    std::shared_ptr<RenderInfo> m_mesh_render_info;
 
     SPMesh* m_mesh;
 
@@ -127,9 +127,9 @@ public:
     // ------------------------------------------------------------------------
     RenderInfo* getRenderInfo(unsigned mb_id) const
     {
-        if (m_static_render_info.size() > mb_id)
+        if (m_render_info.size() > mb_id && m_render_info[mb_id].get())
         {
-            return m_static_render_info[mb_id].get();
+            return m_render_info[mb_id].get();
         }
         return NULL;
     }

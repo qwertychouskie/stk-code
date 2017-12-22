@@ -42,7 +42,7 @@ SPMeshNode::SPMeshNode(IAnimatedMesh* mesh, ISceneNode* parent,
 {
     m_glow_color = video::SColorf(0.0f, 0.0f, 0.0f);
     m_mesh = NULL;
-    m_mesh_render_info = render_info;
+    m_first_render_info = render_info;
     m_animated = false;
     m_skinning_offset = -32768;
 }   // SPMeshNode
@@ -57,7 +57,7 @@ SPMeshNode::~SPMeshNode()
 // ----------------------------------------------------------------------------
 void SPMeshNode::cleanRenderInfo()
 {
-    m_static_render_info.clear();
+    m_render_info.clear();
 }   // cleanRenderInfo
 
 // ----------------------------------------------------------------------------
@@ -100,30 +100,24 @@ void SPMeshNode::setMesh(irr::scene::IAnimatedMesh* mesh)
                 }
             }
         }
-        if (m_mesh_render_info)
+        if (m_first_render_info)
         {
-            if (m_mesh_render_info->isStatic())
+            m_render_info.resize(m_mesh->getMeshBufferCount(),
+                m_first_render_info);
+            for (unsigned i = 0; i < m_mesh->getMeshBufferCount(); i++)
             {
-                m_static_render_info.resize(m_mesh->getMeshBufferCount(),
-                    m_mesh_render_info);
-            }
-            else
-            {
-                // Create dynamic hue for each mesh buffer in the mesh
-                const unsigned mb_count = m_mesh->getMeshBufferCount();
-                assert(m_mesh_render_info->getNumberOfHue() == mb_count);
-                for (unsigned i = 0; i < mb_count; i++)
+                SP::SPMeshBuffer* spmb = m_mesh->getSPMeshBuffer(i);
+                const std::vector<Material*>& m = spmb->getAllSTKMaterials();
+                bool keep_render_info_for_mb = false;
+                for (unsigned j = 0; j < m.size(); j++)
                 {
-                    const float hue = m_mesh_render_info->getDynamicHue(i);
-                    if (hue > 0.0f)
-                    {
-                        m_static_render_info.push_back
-                            (std::make_shared<RenderInfo>(hue));
-                    }
-                    else
-                    {
-                        m_static_render_info.push_back(NULL);
-                    }
+                    Material* mat = m[j];
+                    keep_render_info_for_mb =
+                        keep_render_info_for_mb || mat->isColorizable();
+                }
+                if (!keep_render_info_for_mb)
+                {
+                    m_render_info[i].reset();
                 }
             }
         }
