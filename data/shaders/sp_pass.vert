@@ -27,7 +27,7 @@ out vec2 uv;
 out vec2 uv_two;
 out vec4 color;
 out float camdist;
-flat out vec2 color_change;
+flat out float hue_change;
 
 #if defined(Use_Bindless_Texture)
 flat out sampler2D tex_layer_0;
@@ -81,6 +81,6 @@ void main()
 
     color = i_color.zyxw;
     camdist = length(u_view_matrix * world_position);
-    color_change = i_misc_data.zw;
+    hue_change = i_misc_data.z;
     gl_Position = u_projection_view_matrix * world_position;
 }

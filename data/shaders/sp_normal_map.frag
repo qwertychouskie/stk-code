@@ -19,7 +19,7 @@ flat in float array_2;
 flat in float array_3;
 #endif
 
-flat in vec2 color_change;
+flat in float hue_change;
 
 in vec4 color;
 in vec3 tangent;
@@ -42,7 +42,7 @@ void main()
     vec4 col = texture(tex_layer_0, uv);
 #endif
 
-    if (color_change.x > 0.0)
+    if (hue_change > 0.0)
     {
         float mask = col.a;
         vec3 old_hsv = rgbToHsv(col.rgb);
@@ -52,7 +52,7 @@ void main()
 #else
         float saturation = mask * 2.5;
 #endif
-        vec2 new_xy = mix(vec2(old_hsv.x, old_hsv.y), vec2(color_change.x,
+        vec2 new_xy = mix(vec2(old_hsv.x, old_hsv.y), vec2(hue_change,
             max(old_hsv.y, saturation)), vec2(mask_step, mask_step));
         vec3 new_color = hsvToRgb(vec3(new_xy.x, new_xy.y, old_hsv.z));
         col = vec4(new_color.r, new_color.g, new_color.b, 1.0);

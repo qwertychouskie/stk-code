@@ -14,7 +14,7 @@ flat in float array_0;
 flat in float array_2;
 #endif
 
-flat in vec2 color_change;
+flat in float hue_change;
 
 in vec4 color;
 in vec3 normal;
@@ -42,10 +42,10 @@ void main(void)
     }
     col.xyz *= color.xyz;
 
-    if (color_change.x > 0.0)
+    if (hue_change > 0.0)
     {
         vec3 old_hsv = rgbToHsv(col.rgb);
-        vec2 new_xy = vec2(color_change.x, old_hsv.y);
+        vec2 new_xy = vec2(hue_change, old_hsv.y);
         vec3 new_color = hsvToRgb(vec3(new_xy.x, new_xy.y, old_hsv.z));
         col = vec4(new_color.r, new_color.g, new_color.b, col.a);
     }

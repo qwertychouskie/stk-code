@@ -22,7 +22,7 @@ layout(location = 14) in uvec2 i_array_texture_1;
 
 out vec3 normal;
 out vec2 uv;
-flat out vec2 color_change;
+flat out float hue_change;
 
 #if defined(Use_Bindless_Texture)
 flat out sampler2D tex_layer_0;
@@ -67,6 +67,6 @@ void main()
 
     normal = (u_view_matrix * vec4(world_normal, 0.0)).xyz;
     uv = i_uv;
-    color_change = i_misc_data.zw;
+    hue_change = i_misc_data.z;
     gl_Position = u_projection_view_matrix * world_position;
 }
