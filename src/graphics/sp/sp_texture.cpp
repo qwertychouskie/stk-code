@@ -30,7 +30,7 @@
 #include <squish.h>
 #endif
 
-#ifndef SERVER_ONLY
+#if !(defined(SERVER_ONLY) || defined(USE_GLES2))
 extern "C"
 {
     #include <mipmap/img.h>
@@ -434,6 +434,7 @@ void SPTexture::generateHQMipmap(void* in,
                                  <core::dimension2du, unsigned> >& mms,
                                  uint8_t* out)
 {
+#if !(defined(SERVER_ONLY) || defined(USE_GLES2))
     imMipmapCascade cascade;
     imReduceOptions options;
     imReduceSetOptions(&options,
@@ -458,6 +459,7 @@ void SPTexture::generateHQMipmap(void* in,
         out += copy_size;
     }
     imFreeMipmapCascade(&cascade);
+#endif
 }   // generateHQMipmap
 
 // ----------------------------------------------------------------------------
