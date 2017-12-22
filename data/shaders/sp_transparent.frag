@@ -5,6 +5,11 @@ flat in sampler2D tex_layer_0;
 uniform sampler2D tex_layer_0;
 #endif
 
+#ifdef Use_Array_Texture
+uniform sampler2DArray tex_array;
+flat in float array_0;
+#endif
+
 uniform int fog_enabled;
 uniform float custom_alpha;
 
@@ -14,7 +19,13 @@ out vec4 o_diffuse_color;
 
 void main()
 {
+
+#ifdef Use_Array_Texture
+    vec4 diffusecolor = texture(tex_array, vec3(uv, array_0));
+#else
     vec4 diffusecolor = texture(tex_layer_0, uv);
+#endif
+
     vec4 finalcolor = vec4(0.);
     if (fog_enabled == 0)
     {

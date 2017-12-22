@@ -9,6 +9,11 @@ flat in sampler2D tex_layer_0;
 uniform sampler2D tex_layer_0;
 #endif
 
+#ifdef Use_Array_Texture
+uniform sampler2DArray tex_array;
+flat in float array_0;
+#endif
+
 uniform vec4 direction;
 
 in vec2 uv;
@@ -46,7 +51,13 @@ void main()
     tc += (mask < 1.) ? vec2(0.) : shift;
 
     vec4 col = texture(color_tex, tc);
+
+#ifdef Use_Array_Texture
+    vec4 blend_tex = texture(tex_array, vec3(uv, array_0));
+#else
     vec4 blend_tex = texture(tex_layer_0, uv);
+#endif
+
     col.rgb = blend_tex.rgb * blend_tex.a + (1. - blend_tex.a) * col.rgb;
     o_frag_color = vec4(col.rgb, 1.);
 }

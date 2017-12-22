@@ -23,6 +23,7 @@
 #include "graphics/gl_headers.hpp"
 #include "graphics/glwrap.hpp"
 #include "graphics/graphics_restrictions.hpp"
+#include "graphics/irr_driver.hpp"
 
 
 CentralVideoSettings *CVS = new CentralVideoSettings();
@@ -582,6 +583,13 @@ bool CentralVideoSettings::isNVGPUShader5Usable() const
 bool CentralVideoSettings::supportsThreadedTextureLoading() const
 {
     return false;
+}
+
+bool CentralVideoSettings::useArrayTextures() const
+{
+    const core::dimension2du& max_size = irr_driver->getVideoDriver()
+        ->getDriverAttributes().getAttributeAsDimension2d("MAX_TEXTURE_SIZE");
+    return max_size.Width <= 256 && max_size.Height;
 }
 
 #endif   // !SERVER_ONLY

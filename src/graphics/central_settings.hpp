@@ -96,6 +96,7 @@ public:
     bool isARBSRGBFramebufferUsable() const;
     bool isARBSamplerObjectsUsable() const;
     bool isARBVertexType2101010RevUsable() const;
+    bool useArrayTextures() const;
     bool isNVGPUShader5Usable() const;
 
     const std::string& getVSLayerExtension() const { return m_vs_layer_extension; }

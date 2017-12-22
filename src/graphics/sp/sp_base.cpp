@@ -89,7 +89,7 @@ std::unordered_set<SPMeshBuffer*> g_instances;
 // ----------------------------------------------------------------------------
 std::array<GLuint, ST_COUNT> g_samplers;
 // ----------------------------------------------------------------------------
-std::vector<GLuint> sp_prefilled_tex (5);
+std::vector<GLuint> sp_prefilled_tex (2);
 // ----------------------------------------------------------------------------
 std::vector<float> g_bounding_boxes;
 // ----------------------------------------------------------------------------
@@ -303,7 +303,7 @@ void initSkinning()
 #endif
     resizeSkinning(stk_config->m_max_skinning_bones);
 #endif
-    sp_prefilled_tex[4] = g_skinning_tex;
+    sp_prefilled_tex[1] = g_skinning_tex;
 
 }   // initSkinning
 

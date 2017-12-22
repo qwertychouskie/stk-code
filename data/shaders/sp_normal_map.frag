@@ -11,6 +11,14 @@ uniform sampler2D tex_layer_2;
 uniform sampler2D tex_layer_3;
 #endif
 
+
+#ifdef Use_Array_Texture
+uniform sampler2DArray tex_array;
+flat in float array_0;
+flat in float array_2;
+flat in float array_3;
+#endif
+
 flat in vec2 color_change;
 
 in vec4 color;
@@ -28,7 +36,11 @@ layout(location = 2) out vec2 o_gloss_map;
 
 void main()
 {
+#ifdef Use_Array_Texture
+    vec4 col = texture(tex_array, vec3(uv, array_0));
+#else
     vec4 col = texture(tex_layer_0, uv);
+#endif
 
     if (color_change.x > 0.0)
     {
@@ -57,21 +69,28 @@ void main()
     o_diffuse_color = vec4(final_color, 1.0);
 
 #if defined(Advanced_Lighting_Enabled)
-    vec3 tangent_space_normal = 2.0 * texture(tex_layer_3, uv).rgb - 1.0;
-    float gloss = texture(tex_layer_2, uv).x;
+#ifdef Use_Array_Texture
+    vec4 layer_3 = texture(tex_array, vec3(uv, array_3));
+#else
+    vec4 layer_3 = texture(tex_layer_3, uv);
+#endif
 
+    vec3 tangent_space_normal = 2.0 * layer_3.xyz - 1.0;
     vec3 frag_tangent = normalize(tangent);
     vec3 frag_bitangent = normalize(bitangent);
     vec3 frag_normal = normalize(normal);
     mat3 t_b_n = mat3(frag_tangent, frag_bitangent, frag_normal);
     vec3 world_normal = t_b_n * tangent_space_normal;
 
-	o_normal_depth.xy = 0.5 * EncodeNormal(normalize(world_normal)) + 0.5;
-	o_normal_depth.z = texture(tex_layer_2, uv).x;
+#ifdef Use_Array_Texture
+    vec4 layer_2 = texture(tex_array, vec3(uv, array_2));
+#else
+    vec4 layer_2 = texture(tex_layer_2, uv);
+#endif
 
-	o_normal_depth.xy = 0.5 * EncodeNormal(normalize(world_normal)) + 0.5;
-	o_normal_depth.z = texture(tex_layer_2, uv).x;
+    o_normal_depth.xy = 0.5 * EncodeNormal(normalize(world_normal)) + 0.5;
+    o_normal_depth.z = layer_2.x;
+    o_gloss_map = layer_2.yz;
 
-    o_gloss_map = texture(tex_layer_2, uv).gb;
 #endif
 }

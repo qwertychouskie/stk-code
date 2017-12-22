@@ -98,14 +98,6 @@ extern unsigned sp_cur_player;
 extern unsigned sp_cur_buf_id[MAX_PLAYER_COUNT];
 
 // ----------------------------------------------------------------------------
-inline void setPrefilledTextures(const std::vector<GLuint>& tex)
-{
-    sp_prefilled_tex[0] = tex[0];
-    sp_prefilled_tex[1] = tex[1];
-    sp_prefilled_tex[2] = tex[2];
-    sp_prefilled_tex[3] = tex[3];
-}
-// ----------------------------------------------------------------------------
 void init();
 // ----------------------------------------------------------------------------
 void addShader(SPShader*);

@@ -55,16 +55,6 @@
 
 void ShaderBasedRenderer::setRTT(RTT* rtts)
 {
-    if (m_rtts != rtts && rtts != NULL)
-    {
-        // Update prefilled textures if new RTT is used
-        std::vector<GLuint> prefilled_textures =
-            createVector<GLuint>(rtts->getRenderTarget(RTT_DIFFUSE),
-                                 rtts->getRenderTarget(RTT_SPECULAR),
-                                 rtts->getRenderTarget(RTT_HALF1_R),
-                                 rtts->getDepthStencilTexture());
-        SP::setPrefilledTextures(prefilled_textures);
-    }
     m_rtts = rtts;
 } //setRTT
 

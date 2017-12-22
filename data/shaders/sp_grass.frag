@@ -8,6 +8,12 @@ uniform sampler2D tex_layer_0;
 uniform sampler2D tex_layer_2;
 #endif
 
+#ifdef Use_Array_Texture
+uniform sampler2DArray tex_array;
+flat in float array_0;
+flat in float array_2;
+#endif
+
 flat in vec2 color_change;
 
 in vec3 normal;
@@ -22,7 +28,12 @@ layout(location = 2) out vec2 o_gloss_map;
 
 void main(void)
 {
+#ifdef Use_Array_Texture
+    vec4 col = texture(tex_array, vec3(uv, array_0));
+#else
     vec4 col = texture(tex_layer_0, uv);
+#endif
+
     if (col.a < 0.5)
     {
         discard;
@@ -47,9 +58,15 @@ void main(void)
     o_diffuse_color = vec4(final_color, 1.0);
 
 #if defined(Advanced_Lighting_Enabled)
-	o_normal_depth.xy = 0.5 * EncodeNormal(normalize(normal)) + 0.5;
-	o_normal_depth.z = texture(tex_layer_2, uv).r;
+#ifdef Use_Array_Texture
+    vec4 layer_2 = texture(tex_array, vec3(uv, array_2));
+#else
+    vec4 layer_2 = texture(tex_layer_2, uv);
+#endif
 
-    o_gloss_map = 0.1 * texture(tex_layer_2, uv).gb;
+    o_normal_depth.xy = 0.5 * EncodeNormal(normalize(normal)) + 0.5;
+    o_normal_depth.z = layer_2.x;
+    o_gloss_map = 0.1 * layer_2.yz;
+
 #endif
 }
