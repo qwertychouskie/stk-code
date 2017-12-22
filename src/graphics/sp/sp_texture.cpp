@@ -64,6 +64,9 @@ SPTexture::SPTexture(bool white, int ta_idx)
 #ifndef SERVER_ONLY
     if (CVS->useArrayTextures())
     {
+        m_width.store(irr_driver->getVideoDriver()->getDriverAttributes()
+            .getAttributeAsDimension2d("MAX_TEXTURE_SIZE").Width);
+        m_height.store(m_width.load());
         return;
     }
     glGenTextures(1, &m_texture_name);
@@ -235,6 +238,32 @@ bool SPTexture::compressedTexImage2d(std::shared_ptr<video::IImage> texture,
 }   // compressedTexImage2d
 
 // ----------------------------------------------------------------------------
+bool SPTexture::texImage3d(std::shared_ptr<video::IImage> texture)
+{
+    assert(m_texture_array_idx != -1);
+    if (texture)
+    {
+        glBindTexture(GL_TEXTURE_2D_ARRAY,
+            SPTextureManager::get()->getTextureArrayName());
+        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, m_texture_array_idx,
+            texture->getDimension().Width, texture->getDimension().Height,
+            1,
+#ifdef USE_GLES2
+            GL_RGBA,
+#else
+            GL_BGRA,
+#endif
+            GL_UNSIGNED_BYTE, texture->lock());
+        glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    }
+    m_width.store(irr_driver->getVideoDriver()->getDriverAttributes()
+        .getAttributeAsDimension2d("MAX_TEXTURE_SIZE").Width);
+    m_height.store(m_width.load());
+    return true;
+}   // texImage3d
+
+// ----------------------------------------------------------------------------
 bool SPTexture::texImage2d(std::shared_ptr<video::IImage> texture)
 {
     if (texture)
@@ -276,20 +305,38 @@ bool SPTexture::threadedLoad()
     {
         applyMask(image.get(), mask.get());
     }
-
-    if (CVS->isTextureCompressionEnabled() && image &&
-        image->getDimension().Width >= 4 && image->getDimension().Height >= 4)
+    if (CVS->useArrayTextures())
     {
-        auto r = compressTexture(image);
-        SPTextureManager::get()->increaseGLCommandFunctionCount(1);
-        SPTextureManager::get()->addGLCommandFunction([this, image, r]()->bool
-            { return compressedTexImage2d(image, r); });
+        if (CVS->isTextureCompressionEnabled())
+        {
+        }
+        else
+        {
+            SPTextureManager::get()->increaseGLCommandFunctionCount(1);
+            SPTextureManager::get()->addGLCommandFunction(
+                [this, image]()->bool
+                { return texImage3d(image); });
+        }
     }
     else
     {
-        SPTextureManager::get()->increaseGLCommandFunctionCount(1);
-        SPTextureManager::get()->addGLCommandFunction([this, image]()->bool
-            { return texImage2d(image); });
+        if (CVS->isTextureCompressionEnabled() && image &&
+            image->getDimension().Width >= 4 &&
+            image->getDimension().Height >= 4)
+        {
+            auto r = compressTexture(image);
+            SPTextureManager::get()->increaseGLCommandFunctionCount(1);
+            SPTextureManager::get()->addGLCommandFunction(
+                [this, image, r]()->bool
+                { return compressedTexImage2d(image, r); });
+        }
+        else
+        {
+            SPTextureManager::get()->increaseGLCommandFunctionCount(1);
+            SPTextureManager::get()->addGLCommandFunction(
+                [this, image]()->bool
+                { return texImage2d(image); });
+        }
     }
 #endif
     return true;

@@ -25,7 +25,7 @@
 
 #include <string>
 
-const int MAX_TA = 270;
+const int MAX_TA = 256;
 
 namespace SP
 {
@@ -115,7 +115,7 @@ void SPTextureManager::initTextureArray()
     unsigned internal_format = GL_BGRA;
 #endif
     const unsigned size = irr_driver->getVideoDriver()->getDriverAttributes()
-            .getAttributeAsDimension2d("MAX_TEXTURE_SIZE").Width;
+        .getAttributeAsDimension2d("MAX_TEXTURE_SIZE").Width;
     std::vector<unsigned> white, transparent;
     white.resize(size * size, -1);
     transparent.resize(size * size, 0);
@@ -128,11 +128,11 @@ void SPTextureManager::initTextureArray()
     {
         glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA,
             size, size, MAX_TA, 0, internal_format, GL_UNSIGNED_BYTE, NULL);
-        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0,
-            size, size, 0, 0, internal_format, GL_UNSIGNED_BYTE,
+        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0,
+            size, size, 1, internal_format, GL_UNSIGNED_BYTE,
             white.data());
-        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0,
-            size, size, 1, 0, internal_format, GL_UNSIGNED_BYTE,
+        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 1,
+            size, size, 1, internal_format, GL_UNSIGNED_BYTE,
             transparent.data());
         glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
     }

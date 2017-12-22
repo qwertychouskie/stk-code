@@ -126,6 +126,8 @@ public:
         }
         return (int)m_textures.size();
     }
+    // ------------------------------------------------------------------------
+    GLuint getTextureArrayName() const         { return m_all_textures_array; }
 };
 
 }

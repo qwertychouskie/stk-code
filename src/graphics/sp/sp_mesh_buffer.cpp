@@ -98,7 +98,7 @@ bool SPMeshBuffer::initTexture()
             }
         }
     }
-    if (!CVS->isARBBindlessTextureUsable())
+    if (!(CVS->useArrayTextures() || CVS->isARBBindlessTextureUsable()))
     {
         return true;
     }
@@ -115,11 +115,25 @@ bool SPMeshBuffer::initTexture()
                 used_vertices.insert(vertex_id);
                 std::array<std::shared_ptr<SPTexture>, 6> textures =
                     getSPTextures(j);
-                for (unsigned i = 0; i < 6; i++)
+                if (CVS->useArrayTextures())
                 {
-                    glBufferSubData(GL_ARRAY_BUFFER,
-                        (vertex_id * m_pitch) + (m_pitch - 48) + (i * 8), 8,
-                        textures[i]->getTextureHandlePointer());
+                    for (unsigned i = 0; i < 6; i++)
+                    {
+                        uint16_t array_index = (uint16_t)
+                            textures[i]->getTextureArrayIndex();
+                        glBufferSubData(GL_ARRAY_BUFFER,
+                            (vertex_id * m_pitch) + (m_pitch - 12) + (i * 2),
+                            2, &array_index);
+                    }
+                }
+                else
+                {
+                    for (unsigned i = 0; i < 6; i++)
+                    {
+                        glBufferSubData(GL_ARRAY_BUFFER,
+                            (vertex_id * m_pitch) + (m_pitch - 48) + (i * 8),
+                            8, textures[i]->getTextureHandlePointer());
+                    }
                 }
             }
         }
@@ -163,9 +177,9 @@ void SPMeshBuffer::uploadGLMesh()
     const bool vt_2101010 = CVS->isARBVertexType2101010RevUsable();
     const unsigned pitch = 48 - (use_tangents ? 0 : 4) - (use_2_uv ? 0 : 4) -
         (m_skinned ? 0 : 16) + (use_tangents && !vt_2101010 ? 4 : 0)
-        + (!vt_2101010 ? 4 : 0) +
-        (CVS->isARBBindlessTextureUsable() ? 48 : 0) -
-        (m_vertex_color ? 0 : 4);
+        + (!vt_2101010 ? 4 : 0) - (m_vertex_color ? 0 : 4) +
+        (CVS->useArrayTextures() ? 12 :
+        CVS->isARBBindlessTextureUsable() ? 48 : 0);
     m_pitch = pitch;
 
     if (m_vbo != 0)
@@ -381,7 +395,17 @@ void SPMeshBuffer::recreateVAO(unsigned i)
             (void*)offset);
         offset += 8; 
     }
-    if (CVS->isARBBindlessTextureUsable())
+    if (CVS->useArrayTextures())
+    {
+        // uvec4 + uvec2 for 6 texture array indices
+        glEnableVertexAttribArray(13);
+        glVertexAttribIPointer(13, 4, GL_UNSIGNED_SHORT, pitch, (void*)offset);
+        offset += 8;
+        glEnableVertexAttribArray(14);
+        glVertexAttribIPointer(14, 2, GL_UNSIGNED_SHORT, pitch, (void*)offset);
+        offset += 4;
+    }
+    else if (CVS->isARBBindlessTextureUsable())
     {
         // 3 * 2 uvec2 for bindless samplers
         glEnableVertexAttribArray(13);

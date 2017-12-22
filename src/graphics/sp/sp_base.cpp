@@ -1243,7 +1243,8 @@ void addObject(SPMeshNode* node)
                 if (dc_type == 0)
                 {
                     auto& ret = g_draw_calls[DCT_TRANSPARENT][shader];
-                    if (CVS->isARBBindlessTextureUsable())
+                    if (CVS->isARBBindlessTextureUsable() ||
+                        CVS->useArrayTextures())
                     {
                         ret[""].insert(mb);
                     }
@@ -1267,7 +1268,8 @@ void addObject(SPMeshNode* node)
                 const RenderPass check_pass =
                     dc_type == DCT_NORMAL ? RP_1ST : RP_SHADOW;
                 const bool sampler_less = shader->samplerLess(check_pass) ||
-                    CVS->isARBBindlessTextureUsable();
+                    CVS->isARBBindlessTextureUsable() ||
+                    CVS->useArrayTextures();
                 auto& ret = g_draw_calls[dc_type][shader];
                 if (sampler_less)
                 {
@@ -1529,7 +1531,8 @@ void draw(RenderPass rp, DrawCallType dct)
         p.first->bindPrefilledTextures(rp);
         for (unsigned j = 0; j < p.second.size(); j++)
         {
-            if (!CVS->isARBBindlessTextureUsable())
+            if (!(CVS->isARBBindlessTextureUsable() ||
+                CVS->useArrayTextures()))
             {
                 p.first->bindTextures(p.second[j].first, rp);
             }
@@ -1541,7 +1544,8 @@ void draw(RenderPass rp, DrawCallType dct)
                 sp_draw_call_count++;*/
                 p.second[j].second[k].first->draw(dct,
                     p.second[j].second[k].second/*material_id*/,
-                    CVS->isARBBindlessTextureUsable());
+                    CVS->isARBBindlessTextureUsable() ||
+                    CVS->useArrayTextures());
                 /*for (SPUniformAssigner* ua : draw_call_uniforms)
                 {
                     ua->reset();

@@ -113,7 +113,8 @@ void SPShader::addAllTextures(RenderPass rp)
 #else
         m_prefilled_samplers[rp].emplace_back(i, p.first, p.second.second,
             p.second.second == ST_TEXTURE_BUFFER ?
-            GL_TEXTURE_BUFFER : GL_TEXTURE_2D);
+            GL_TEXTURE_BUFFER :
+            p.first == "tex_array" ? GL_TEXTURE_2D_ARRAY : GL_TEXTURE_2D);
 #endif
     }
 
