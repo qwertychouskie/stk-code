@@ -68,6 +68,10 @@ private:
                           const std::vector<std::pair<core::dimension2du,
                           unsigned> >&, uint8_t* out);
     // ------------------------------------------------------------------------
+    void generateQuickMipmap(std::shared_ptr<video::IImage> first_image,
+                             const std::vector<std::pair<core::dimension2du,
+                             unsigned> >&, uint8_t* out);
+    // ------------------------------------------------------------------------
     std::shared_ptr<video::IImage>
                                getImageFromPath(const std::string& path) const;
     // ------------------------------------------------------------------------
@@ -137,9 +141,11 @@ private:
     // ------------------------------------------------------------------------
     SPTexture(bool white, int ta_idx);
     // ------------------------------------------------------------------------
-    bool texImage2d(std::shared_ptr<video::IImage> texture);
+    bool texImage2d(std::shared_ptr<video::IImage> texture,
+        std::shared_ptr<video::IImage> mipmaps);
     // ------------------------------------------------------------------------
-    bool texImage3d(std::shared_ptr<video::IImage> texture);
+    bool texImage3d(std::shared_ptr<video::IImage> texture,
+        std::shared_ptr<video::IImage> mipmaps);
     // ------------------------------------------------------------------------
     bool compressedTexImage2d(std::shared_ptr<video::IImage> texture,
                               const std::vector<std::pair<core::dimension2du,

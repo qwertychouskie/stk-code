@@ -17,6 +17,7 @@
 
 #include "graphics/sp/sp_texture.hpp"
 #include "config/stk_config.hpp"
+#include "config/user_config.hpp"
 #include "graphics/sp/sp_texture_manager.hpp"
 #include "graphics/sp/sp_base.hpp"
 #include "graphics/sp/sp_shader.hpp"
@@ -271,23 +272,50 @@ bool SPTexture::compressedTexImage3d(std::shared_ptr<video::IImage> texture,
 }   // compressedTexImage3d
 
 // ----------------------------------------------------------------------------
-bool SPTexture::texImage3d(std::shared_ptr<video::IImage> texture)
+bool SPTexture::texImage3d(std::shared_ptr<video::IImage> texture,
+                           std::shared_ptr<video::IImage> mipmaps)
 {
     assert(m_texture_array_idx != -1);
     if (texture)
     {
+#ifdef USE_GLES2
+        unsigned upload_format = GL_RGBA;
+#else
+        unsigned upload_format = GL_BGRA;
+#endif
         glBindTexture(GL_TEXTURE_2D_ARRAY,
             SPTextureManager::get()->getTextureArrayName());
         glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, m_texture_array_idx,
             texture->getDimension().Width, texture->getDimension().Height,
-            1,
-#ifdef USE_GLES2
-            GL_RGBA,
-#else
-            GL_BGRA,
-#endif
-            GL_UNSIGNED_BYTE, texture->lock());
-        glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+            1, upload_format, GL_UNSIGNED_BYTE, texture->lock());
+
+        assert(mipmaps);
+        std::vector<std::pair<core::dimension2du, unsigned> >
+            mipmap_sizes;
+        unsigned width = texture->getDimension().Width;
+        unsigned height = texture->getDimension().Height;
+        mipmap_sizes.emplace_back(core::dimension2du(width, height),
+            width * height * 4);
+        while (true)
+        {
+            width = width < 2 ? 1 : width >> 1;
+            height = height < 2 ? 1 : height >> 1;
+            mipmap_sizes.emplace_back
+                (core::dimension2du(width, height), width * height * 4);
+            if (width == 1 && height == 1)
+            {
+                break;
+            }
+        }
+        uint8_t* ptr = (uint8_t*)mipmaps->lock();
+        for (unsigned i = 1; i < mipmap_sizes.size(); i++)
+        {
+            glTexSubImage3D(GL_TEXTURE_2D_ARRAY, i, 0, 0, m_texture_array_idx,
+                mipmap_sizes[i].first.Width, mipmap_sizes[i].first.Height,
+                1, upload_format, GL_UNSIGNED_BYTE, ptr);
+            ptr += mipmap_sizes[i].second;
+        }
+
         glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
     }
     m_width.store(irr_driver->getVideoDriver()->getDriverAttributes()
@@ -297,21 +325,52 @@ bool SPTexture::texImage3d(std::shared_ptr<video::IImage> texture)
 }   // texImage3d
 
 // ----------------------------------------------------------------------------
-bool SPTexture::texImage2d(std::shared_ptr<video::IImage> texture)
+bool SPTexture::texImage2d(std::shared_ptr<video::IImage> texture,
+                           std::shared_ptr<video::IImage> mipmaps)
 {
     if (texture)
     {
+#ifdef USE_GLES2
+        unsigned upload_format = GL_RGBA;
+#else
+        unsigned upload_format = GL_BGRA;
+#endif
         glBindTexture(GL_TEXTURE_2D, m_texture_name);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
             texture->getDimension().Width, texture->getDimension().Height,
-            0,
-#ifdef USE_GLES2
-            GL_RGBA,
-#else
-            GL_BGRA,
-#endif
-            GL_UNSIGNED_BYTE, texture->lock());
-        glGenerateMipmap(GL_TEXTURE_2D);
+            0, upload_format, GL_UNSIGNED_BYTE, texture->lock());
+        if (mipmaps)
+        {
+            std::vector<std::pair<core::dimension2du, unsigned> >
+                mipmap_sizes;
+            unsigned width = texture->getDimension().Width;
+            unsigned height = texture->getDimension().Height;
+            mipmap_sizes.emplace_back(core::dimension2du(width, height),
+                width * height * 4);
+            while (true)
+            {
+                width = width < 2 ? 1 : width >> 1;
+                height = height < 2 ? 1 : height >> 1;
+                mipmap_sizes.emplace_back
+                    (core::dimension2du(width, height), width * height * 4);
+                if (width == 1 && height == 1)
+                {
+                    break;
+                }
+            }
+            uint8_t* ptr = (uint8_t*)mipmaps->lock();
+            for (unsigned i = 1; i < mipmap_sizes.size(); i++)
+            {
+                glTexImage2D(GL_TEXTURE_2D, i, GL_RGBA,
+                    mipmap_sizes[i].first.Width, mipmap_sizes[i].first.Height,
+                    0, upload_format, GL_UNSIGNED_BYTE, ptr);
+                ptr += mipmap_sizes[i].second;
+            }
+        }
+        else
+        {
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
         glBindTexture(GL_TEXTURE_2D, 0);
     }
     addTextureHandle();
@@ -334,10 +393,11 @@ bool SPTexture::threadedLoad()
 #ifndef SERVER_ONLY
     std::shared_ptr<video::IImage> image = getTextureImage();
     std::shared_ptr<video::IImage> mask = getMask(image->getDimension());
-    if (mask)
+    if (mask && image)
     {
         applyMask(image.get(), mask.get());
     }
+    std::shared_ptr<video::IImage> mipmaps;
     if (CVS->useArrayTextures())
     {
         if (CVS->isTextureCompressionEnabled())
@@ -350,10 +410,30 @@ bool SPTexture::threadedLoad()
         }
         else
         {
+            std::vector<std::pair<core::dimension2du, unsigned> >
+                mipmap_sizes;
+            unsigned width = image->getDimension().Width;
+            unsigned height = image->getDimension().Height;
+            mipmap_sizes.emplace_back(core::dimension2du(width, height), 0);
+            while (true)
+            {
+                width = width < 2 ? 1 : width >> 1;
+                height = height < 2 ? 1 : height >> 1;
+                mipmap_sizes.emplace_back(core::dimension2du(width, height),
+                    0);
+                if (width == 1 && height == 1)
+                {
+                    break;
+                }
+            }
+            mipmaps.reset(irr_driver->getVideoDriver()->createImage
+                (video::ECF_A8R8G8B8, mipmap_sizes[0].first));
+            generateQuickMipmap(image, mipmap_sizes,
+                (uint8_t*)mipmaps->lock());
             SPTextureManager::get()->increaseGLCommandFunctionCount(1);
             SPTextureManager::get()->addGLCommandFunction(
-                [this, image]()->bool
-                { return texImage3d(image); });
+                [this, image, mipmaps]()->bool
+                { return texImage3d(image, mipmaps); });
         }
     }
     else
@@ -370,10 +450,36 @@ bool SPTexture::threadedLoad()
         }
         else
         {
+            if (UserConfigParams::m_hq_mipmap && image &&
+                image->getDimension().Width > 1 &&
+                image->getDimension().Height > 1)
+            {
+                std::vector<std::pair<core::dimension2du, unsigned> >
+                    mipmap_sizes;
+                unsigned width = image->getDimension().Width;
+                unsigned height = image->getDimension().Height;
+                mipmap_sizes.emplace_back(core::dimension2du(width, height),
+                    0);
+                while (true)
+                {
+                    width = width < 2 ? 1 : width >> 1;
+                    height = height < 2 ? 1 : height >> 1;
+                    mipmap_sizes.emplace_back
+                        (core::dimension2du(width, height), 0);
+                    if (width == 1 && height == 1)
+                    {
+                        break;
+                    }
+                }
+                mipmaps.reset(irr_driver->getVideoDriver()->createImage
+                    (video::ECF_A8R8G8B8, mipmap_sizes[0].first));
+                generateHQMipmap(image->lock(), mipmap_sizes,
+                    (uint8_t*)mipmaps->lock());
+            }
             SPTextureManager::get()->increaseGLCommandFunctionCount(1);
             SPTextureManager::get()->addGLCommandFunction(
-                [this, image]()->bool
-                { return texImage2d(image); });
+                [this, image, mipmaps]()->bool
+                { return texImage2d(image, mipmaps); });
         }
     }
 #endif
@@ -524,6 +630,26 @@ bool SPTexture::initialized() const
 }   // initialized
 
 // ----------------------------------------------------------------------------
+void SPTexture::generateQuickMipmap(std::shared_ptr<video::IImage> first_image,
+                                    const std::vector<std::pair
+                                    <core::dimension2du, unsigned> >& mms,
+                                    uint8_t* out)
+{
+    for (unsigned mip = 1; mip < mms.size(); mip++)
+    {
+        video::IImage* ti = irr_driver->getVideoDriver()
+            ->createImage(video::ECF_A8R8G8B8,
+            core::dimension2du(mms[mip].first.Width,
+            mms[mip].first.Height));
+        first_image->copyToScaling(ti);
+        const unsigned copy_size = ti->getDimension().getArea() * 4;
+        memcpy(out, ti->lock(), copy_size);
+        ti->drop();
+        out += copy_size;
+    }
+}   // generateQuickMipmap
+
+// ----------------------------------------------------------------------------
 void SPTexture::generateHQMipmap(void* in,
                                  const std::vector<std::pair
                                  <core::dimension2du, unsigned> >& mms,
@@ -636,19 +762,6 @@ std::vector<std::pair<core::dimension2du, unsigned> >
     uint8_t* ptr_loc = tmp + compressed_size;
 
     generateHQMipmap(image->lock(), mipmap_sizes, ptr_loc);
-    // Bad but quick mipmap
-    /*for (unsigned mip = 1; mip < mipmap_sizes.size(); mip++)
-    {
-        video::IImage* ti = irr_driver->getVideoDriver()
-            ->createImage(video::ECF_A8R8G8B8,
-            core::dimension2du(mipmap_sizes[mip].first.Width,
-            mipmap_sizes[mip].first.Height));
-        image->copyToScaling(ti);
-        const unsigned copy_size = ti->getDimension().getArea() * 4;
-        memcpy(ptr_loc, ti->lock(), copy_size);
-        ti->drop();
-        ptr_loc += copy_size;
-    }*/
     squishCompressImage((uint8_t*)image->lock(),
         mipmap_sizes[0].first.Width, mipmap_sizes[0].first.Height,
         mipmap_sizes[0].first.Width * 4, tmp, tc_flag);
