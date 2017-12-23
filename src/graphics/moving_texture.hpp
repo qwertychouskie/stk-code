@@ -20,6 +20,7 @@
 #define MOVING_TEXTURE_HPP
 
 #include "utils/no_copy.hpp"
+#include <array>
 #include <memory>
 #include <string>
 #include <matrix4.h>

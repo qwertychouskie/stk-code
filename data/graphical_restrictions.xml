@@ -12,7 +12,6 @@
   <card contains="Intel"          os="linux"    version="<11.2"    disable="GeometryShader"/>
   <card contains="Intel"          os="linux"                       disable="FramebufferSRGBWorkaround2"/>
   <card contains="Intel"          os="linux"    version="<11.2"    disable="TextureCompressionS3TC"/>
-  <card contains="Intel"          os="windows"                     disable="TextureCompressionS3TC"/>
   <card contains="Intel"          os="osx"                         disable="TextureCompressionS3TC"/>
   <card contains="NVIDIA"         os="windows"  version="<344.65"  disable="BufferStorage"/>
   <card contains="NVIDIA"         os="linux"    version="<343.22"  disable="BufferStorage"/>
