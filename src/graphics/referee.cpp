@@ -20,7 +20,10 @@
 #include "graphics/central_settings.hpp"
 #include "graphics/irr_driver.hpp"
 #include "graphics/light.hpp"
+#include "graphics/material.hpp"
 #include "graphics/mesh_tools.hpp"
+#include "graphics/sp/sp_mesh_buffer.hpp"
+#include "graphics/sp/sp_mesh_node.hpp"
 #include "karts/abstract_kart.hpp"
 #include "io/file_manager.hpp"
 #include "io/xml_node.hpp"
@@ -84,7 +87,28 @@ void Referee::init()
 
     for(unsigned int i=0; i<m_st_referee_mesh->getMeshBufferCount(); i++)
     {
+        if (m_st_traffic_buffer != -1)
+        {
+            break;
+        }
         scene::IMeshBuffer *mb = m_st_referee_mesh->getMeshBuffer(i);
+        SP::SPMeshBuffer* spmb = dynamic_cast<SP::SPMeshBuffer*>(mb);
+        if (spmb)
+        {
+            auto ret = spmb->getAllSTKMaterials();
+            for (unsigned j = 0; j < ret.size(); j++)
+            {
+                std::string name =
+                    StringUtils::getBasename(ret[j]->getSamplerPath(0));
+                if (name == "traffic_light.png")
+                {
+                    m_st_traffic_buffer = i;
+                    spmb->enableTextureMatrix(j);
+                    break;
+                }
+            }
+            continue;
+        }
         video::SMaterial &irrMaterial = mb->getMaterial();
         video::ITexture* t=irrMaterial.getTexture(0);
         if(!t) continue;
@@ -224,13 +248,26 @@ void Referee::selectReadySetGo(int rsg)
 {
     if (m_st_traffic_buffer < 0)
         return;
-    video::SMaterial &m = m_scene_node->getMaterial(m_st_traffic_buffer); // m_scene_node->getMesh()->getMeshBuffer(m_st_traffic_buffer)->getMaterial();
 
-    //if (irr_driver->isGLSL() && CVS->isDefferedEnabled())
-    //    m.MaterialType = irr_driver->getShader(ES_OBJECT_UNLIT);
-
-    core::matrix4* matrix = &m.getTextureMatrix(0);
-    matrix->setTextureTranslate(0.0f, rsg*0.333f);
+    SP::SPMeshNode* spmn = dynamic_cast<SP::SPMeshNode*>(m_scene_node);
+    if (spmn)
+    {
+        spmn->setTextureMatrix(m_st_traffic_buffer,
+            {{ std::make_shared<float>(0.0f),
+            std::make_shared<float>(rsg * 0.333f) }});
+    }
+    else
+    {
+        video::SMaterial &m = m_scene_node->getMaterial(m_st_traffic_buffer);
+        core::matrix4* matrix = &m.getTextureMatrix(0);
+        matrix->setTextureTranslate(0.0f, rsg*0.333f);
+        // disable lighting, we need to see the traffic light even if facing away
+        // from the sun
+        m.AmbientColor  = video::SColor(255, 255, 255, 255);
+        m.DiffuseColor  = video::SColor(255, 255, 255, 255);
+        m.EmissiveColor = video::SColor(255, 255, 255, 255);
+        m.SpecularColor = video::SColor(255, 255, 255, 255);
+    }
 
     if (m_light != NULL)
     {
@@ -247,12 +284,5 @@ void Referee::selectReadySetGo(int rsg)
             ((LightNode*)m_light)->setColor(0.0f, 0.6f, 0.0f);
         }
     }
-
-    // disable lighting, we need to see the traffic light even if facing away
-    // from the sun
-    m.AmbientColor  = video::SColor(255, 255, 255, 255);
-    m.DiffuseColor  = video::SColor(255, 255, 255, 255);
-    m.EmissiveColor = video::SColor(255, 255, 255, 255);
-    m.SpecularColor = video::SColor(255, 255, 255, 255);
 }   // selectReadySetGo
 
