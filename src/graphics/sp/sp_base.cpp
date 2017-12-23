@@ -151,6 +151,20 @@ void fogUniformAssigner(SPUniformAssigner* ua)
 }   // fogUniformAssigner
 
 // ----------------------------------------------------------------------------
+void ghostAlphaAssigner(SPUniformAssigner* ua)
+{
+    float alpha = 1.0f;
+    if (Track::getCurrentTrack())
+    {
+        const video::SColor& c = Track::getCurrentTrack()->getSunColor();
+        float y = 0.2126f * c.getRed() + 0.7152f * c.getGreen() +
+            0.0722f * c.getBlue();
+        alpha = y > 128.0f ? 0.5f : 0.35f;
+    }
+    ua->setValue(alpha);
+}   // ghostAlphaAssigner
+
+// ----------------------------------------------------------------------------
 void alphaBlendUse()
 {
     glEnable(GL_DEPTH_TEST);
@@ -173,7 +187,7 @@ void additiveUse()
 }   // additiveUse
 
 // ----------------------------------------------------------------------------
-void ghostKartUse()
+void ghostUse()
 {
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
@@ -181,7 +195,7 @@ void ghostKartUse()
     glEnable(GL_BLEND);
     glBlendEquation(GL_FUNC_ADD);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-}   // ghostKartUse
+}   // ghostUse
 #endif
 
 
@@ -640,11 +654,39 @@ void loadShaders()
         });
     addShader(shader);
 
+    shader = new SPShader("ghost_skinned", 1, true/*transparent_shader*/,
+        900/*drawing_priority*/);
+    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_ghost.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addUniform("custom_alpha", typeid(float), RP_1ST);
+    shader->addAllTextures(RP_1ST);
+    shader->setUseFunction(ghostUse);
+    static_cast<SPPerObjectUniform*>(shader)
+        ->addAssignerFunction("custom_alpha", ghostAlphaAssigner);
+    addShader(shader);
+
+    shader = new SPShader("ghost", 1, true/*transparent_shader*/,
+        900/*drawing_priority*/);
+    shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER, RP_1ST);
+    shader->addShaderFile("sp_ghost.frag", GL_FRAGMENT_SHADER, RP_1ST);
+    shader->linkShaderFiles(RP_1ST);
+    shader->use(RP_1ST);
+    shader->addBasicUniforms(RP_1ST);
+    shader->addUniform("custom_alpha", typeid(float), RP_1ST);
+    shader->addAllTextures(RP_1ST);
+    shader->setUseFunction(ghostUse);
+    static_cast<SPPerObjectUniform*>(shader)
+        ->addAssignerFunction("custom_alpha", ghostAlphaAssigner);
+    addShader(shader);
+
     if (CVS->isDefferedEnabled())
     {
         // This displace shader will be drawn the last in transparent pass
-        shader = new SPShader("displace", 2
-            , true/*transparent_shader*/, 999/*drawing_priority*/);
+        shader = new SPShader("displace", 2, true/*transparent_shader*/,
+            999/*drawing_priority*/);
         shader->addShaderFile("sp_pass.vert", GL_VERTEX_SHADER,
             RP_1ST);
         shader->addShaderFile("white.frag", GL_FRAGMENT_SHADER,
@@ -1568,23 +1610,6 @@ void d()
 {
 /*
 
-    shader = new SPShader("ghost_kart_skinned", 1, true);
-    shader->addShaderFile("sp_skinning.vert", GL_VERTEX_SHADER, RP_1ST);
-    shader->addShaderFile("sp_transparent.frag", GL_FRAGMENT_SHADER, RP_1ST);
-    shader->linkShaderFiles(RP_1ST);
-    shader->use(RP_1ST);
-    shader->addBasicUniforms(RP_1ST);
-    shader->addUniform("texture_trans", typeid(core::vector2df), RP_1ST);
-    shader->addUniform("skinning_offset", typeid(int), RP_1ST);
-    shader->addUniform("joint_count", typeid(int), RP_1ST);
-    shader->addUniform("fog_enabled", typeid(int), RP_1ST);
-    shader->addUniform("custom_alpha", typeid(float), RP_1ST);
-    shader->addPrefilledTextures(RP_1ST);
-    shader->addTexture(ST_TRILINEAR, GL_TEXTURE_2D, "layer_one_tex", RP_1ST);
-    shader->setUseFunction(ghostKartUse);
-    static_cast<SPPerObjectUniform*>(shader)
-        ->addAssignerFunction("fog_enabled", fogUniformAssigner);
-    g_shaders.push_back(shader);
 */
 }
 

@@ -16,10 +16,11 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "graphics/sp/sp_mesh_node.hpp"
+#include "graphics/sp/sp_animation.hpp"
 #include "graphics/sp/sp_base.hpp"
 #include "graphics/sp/sp_mesh.hpp"
-#include "graphics/sp/sp_animation.hpp"
 #include "graphics/sp/sp_mesh_buffer.hpp"
+#include "graphics/sp/sp_shader.hpp"
 #include "graphics/irr_driver.hpp"
 #include "graphics/material.hpp"
 #include "graphics/render_info.hpp"
@@ -183,7 +184,18 @@ SPShader* SPMeshNode::getShader(unsigned mesh_buffer_id) const
             m_mesh->getSPMeshBuffer(mesh_buffer_id)->getSTKMaterial()
             ->getShaderName() : m_shader_override) +
             (m_animated ? "_skinned" : "");
-        return SP::getSPShader(sn);
+        SPShader* shader = SP::getSPShader(sn);
+        if (shader && shader->isTransparent())
+        {
+            // Use real transparent shader first
+            return shader;
+        }
+        if (m_first_render_info && m_first_render_info->isTransparent())
+        {
+            return SP::getSPShader
+                (std::string("ghost") + (m_animated ? "_skinned" : ""));
+        }
+        return shader;
     }
     return NULL;
 }   // getShader
