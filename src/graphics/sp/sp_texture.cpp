@@ -450,6 +450,7 @@ bool SPTexture::threadedLoad()
         }
         else
         {
+#ifndef USE_GLES2
             if (UserConfigParams::m_hq_mipmap && image &&
                 image->getDimension().Width > 1 &&
                 image->getDimension().Height > 1)
@@ -476,6 +477,7 @@ bool SPTexture::threadedLoad()
                 generateHQMipmap(image->lock(), mipmap_sizes,
                     (uint8_t*)mipmaps->lock());
             }
+#endif
             SPTextureManager::get()->increaseGLCommandFunctionCount(1);
             SPTextureManager::get()->addGLCommandFunction(
                 [this, image, mipmaps]()->bool
