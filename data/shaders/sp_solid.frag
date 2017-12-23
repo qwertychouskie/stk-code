@@ -35,22 +35,23 @@ void main(void)
     vec4 col = texture(tex_layer_0, uv);
 #endif
 
-    float mask = col.a;
-    vec3 old_hsv = rgbToHsv(col.rgb);
-    float mask_step = step(mask, 0.5);
-
+    if (hue_change > 0.0)
+    {
+        float mask = col.a;
+        vec3 old_hsv = rgbToHsv(col.rgb);
+        float mask_step = step(mask, 0.5);
 #if !defined(Advanced_Lighting_Enabled)
-    float saturation = mask * 2.1;
+        float saturation = mask * 2.1;
 #else
-    float saturation = mask * 2.5;
+        float saturation = mask * 2.5;
 #endif
-    vec2 new_xy = mix(vec2(old_hsv.x, old_hsv.y), vec2(hue_change,
-        max(old_hsv.y, saturation)), vec2(mask_step, mask_step));
-    float enabled = mix(mask_step, 0.0, step(hue_change, 0.0));
-    vec3 mixed = mix(col.xyz, hsvToRgb(vec3(new_xy.x, new_xy.y, old_hsv.z)),
-        enabled);
-    vec3 final_color = mixed.xyz * color.xyz;
+        vec2 new_xy = mix(vec2(old_hsv.x, old_hsv.y), vec2(hue_change,
+            max(old_hsv.y, saturation)), vec2(mask_step, mask_step));
+        vec3 new_color = hsvToRgb(vec3(new_xy.x, new_xy.y, old_hsv.z));
+        col = vec4(new_color.r, new_color.g, new_color.b, 1.0);
+    }
 
+    vec3 final_color = col.xyz * color.xyz;
 #if !defined(Advanced_Lighting_Enabled)
 #if !defined(sRGB_Framebuffer_Usable)
     final_color = final_color * 0.73; // 0.5 ^ (1. / 2.2)
