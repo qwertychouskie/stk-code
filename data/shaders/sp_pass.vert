@@ -63,7 +63,7 @@ void main()
     array_5 = float(i_array_texture_1.y);
 #endif
 
-    vec4 quaternion = vec4(i_rotation.xyz, i_scale.w);
+    vec4 quaternion = normalize(vec4(i_rotation.xyz, i_scale.w));
     vec4 world_position = getWorldPosition(i_origin, quaternion, i_scale.xyz,
         i_position);
     vec3 world_normal = rotateVector(quaternion, i_normal.xyz);

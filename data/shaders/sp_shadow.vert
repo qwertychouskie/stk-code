@@ -61,7 +61,7 @@ void main()
     gl_Layer = layer;
 #endif
 
-    vec4 quaternion = vec4(i_rotation.xyz, i_scale.w);
+    vec4 quaternion = normalize(vec4(i_rotation.xyz, i_scale.w));
     vec4 world_position = getWorldPosition(i_origin, quaternion, i_scale.xyz,
         i_position);
     uv = i_uv;

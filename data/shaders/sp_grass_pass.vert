@@ -61,7 +61,7 @@ void main()
     vec3 test = sin(wind_direction * (i_position.y * 0.1));
     test += cos(wind_direction) * 0.7;
 
-    vec4 quaternion = vec4(i_rotation.xyz, i_scale.w);
+    vec4 quaternion = normalize(vec4(i_rotation.xyz, i_scale.w));
     vec4 world_position = getWorldPosition(i_origin + test * i_color.r,
         quaternion, i_scale.xyz, i_position);
     vec3 world_normal = rotateVector(quaternion, i_normal.xyz);

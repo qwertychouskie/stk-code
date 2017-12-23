@@ -95,7 +95,7 @@ void main()
         skinned_position += i_weight[i] * joint_matrix * idle_position;
     }
 
-    vec4 quaternion = vec4(i_rotation.xyz, i_scale.w);
+    vec4 quaternion = normalize(vec4(i_rotation.xyz, i_scale.w));
     vec4 world_position = getWorldPosition(i_origin, quaternion, i_scale.xyz,
         skinned_position.xyz);
     uv = i_uv;
