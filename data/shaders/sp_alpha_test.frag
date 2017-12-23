@@ -42,15 +42,13 @@ void main(void)
     }
     col.xyz *= color.xyz;
 
-    if (hue_change > 0.0)
-    {
-        vec3 old_hsv = rgbToHsv(col.rgb);
-        vec2 new_xy = vec2(hue_change, old_hsv.y);
-        vec3 new_color = hsvToRgb(vec3(new_xy.x, new_xy.y, old_hsv.z));
-        col = vec4(new_color.r, new_color.g, new_color.b, col.a);
-    }
+    vec3 old_hsv = rgbToHsv(col.rgb);
+    vec2 new_xy = vec2(hue_change, old_hsv.y);
+    vec3 new_color = hsvToRgb(vec3(new_xy.x, new_xy.y, old_hsv.z));
+    float enabled = mix(1.0, 0.0, step(hue_change, 0.0));
+    vec3 final_color = mix(col.xyz,
+        hsvToRgb(vec3(new_xy.x, new_xy.y, old_hsv.z)), enabled);
 
-    vec3 final_color = col.xyz * color.xyz;
 #if !defined(Advanced_Lighting_Enabled)
 #if !defined(sRGB_Framebuffer_Usable)
     final_color = final_color * 0.73; // 0.5 ^ (1. / 2.2)
