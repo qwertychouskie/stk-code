@@ -225,6 +225,8 @@ bool SPTexture::compressedTexImage2d(std::shared_ptr<video::IImage> texture,
         format = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
     }
 #endif
+    glDeleteTextures(1, &m_texture_name);
+    glGenTextures(1, &m_texture_name);
     glBindTexture(GL_TEXTURE_2D, m_texture_name);
     uint8_t* compressed = (uint8_t*)texture->lock();
     unsigned cur_mipmap_size = 0;
@@ -335,6 +337,8 @@ bool SPTexture::texImage2d(std::shared_ptr<video::IImage> texture,
 #else
         unsigned upload_format = GL_BGRA;
 #endif
+        glDeleteTextures(1, &m_texture_name);
+        glGenTextures(1, &m_texture_name);
         glBindTexture(GL_TEXTURE_2D, m_texture_name);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
             texture->getDimension().Width, texture->getDimension().Height,
