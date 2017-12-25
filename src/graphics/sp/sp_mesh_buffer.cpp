@@ -322,7 +322,7 @@ void SPMeshBuffer::recreateVAO(unsigned i)
     if (GraphicsRestrictions::isDisabled
         (GraphicsRestrictions::GR_10BIT_VECTOR))
     {
-        glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, pitch, (void*)offset);
+        glVertexAttribIPointer(1, 1, GL_INT, pitch, (void*)offset);
     }
     else
     {
@@ -366,7 +366,8 @@ void SPMeshBuffer::recreateVAO(unsigned i)
         if (GraphicsRestrictions::isDisabled
             (GraphicsRestrictions::GR_10BIT_VECTOR))
         {
-            glVertexAttribIPointer(5, 1, GL_UNSIGNED_INT, pitch, (void*)offset);
+            glVertexAttribIPointer(5, 1, GL_INT, pitch,
+                (void*)offset);
         }
         else
         {
@@ -420,7 +421,7 @@ void SPMeshBuffer::recreateVAO(unsigned i)
     if (GraphicsRestrictions::isDisabled
         (GraphicsRestrictions::GR_10BIT_VECTOR))
     {
-        glVertexAttribIPointer(9, 1, GL_UNSIGNED_INT, 32, (void*)12);
+        glVertexAttribIPointer(9, 1, GL_INT, 32, (void*)12);
     }
     else
     {
@@ -437,7 +438,7 @@ void SPMeshBuffer::recreateVAO(unsigned i)
     if (GraphicsRestrictions::isDisabled
         (GraphicsRestrictions::GR_10BIT_VECTOR))
     {
-        glVertexAttribIPointer(11, 1, GL_UNSIGNED_INT, 32, (void*)24);
+        glVertexAttribIPointer(11, 1, GL_INT, 32, (void*)24);
     }
     else
     {

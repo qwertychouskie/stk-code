@@ -11,20 +11,20 @@ vec4 getWorldPosition(vec3 origin, vec4 rotation, vec3 scale, vec3 local_pos)
     return vec4(local_pos, 1.0);
 }
 
-vec4 convert10BitVector(uint pked)
+vec4 convert10BitVector(int pked)
 {
     vec4 ret;
-    uint part = pked & 1023;
+    int part = pked & 1023;
     float part_mix = float(clamp(int(part & 512), 0, 1));
-    ret.x = mix(float(part), float(-1024 + int(part)), part_mix) * 0.00195694715;
+    ret.x = mix(float(part), float(-1024 + part), part_mix) * 0.00195694715;
 
     part = (pked >> 10) & 1023;
     part_mix = float(clamp(int(part & 512), 0, 1));
-    ret.y = mix(float(part), float(-1024 + int(part)), part_mix) * 0.00195694715;
+    ret.y = mix(float(part), float(-1024 + part), part_mix) * 0.00195694715;
 
     part = (pked >> 20) & 1023;
     part_mix = float(clamp(int(part & 512), 0, 1));
-    ret.z = mix(float(part), float(-1024 + int(part)), part_mix) * 0.00195694715;
+    ret.z = mix(float(part), float(-1024 + part), part_mix) * 0.00195694715;
 
     part = pked >> 30;
     part_mix = float(clamp(int(part & 2), 0, 1));
