@@ -1,13 +1,36 @@
 layout(location = 0) in vec3 i_position;
+
+#if defined(Converts_10bit_Vector)
+layout(location = 1) in uint i_normal_pked;
+#else
 layout(location = 1) in vec4 i_normal;
+#endif
+
 layout(location = 2) in vec4 i_color;
 layout(location = 3) in vec2 i_uv;
 layout(location = 4) in vec2 i_uv_two;
+
+#if defined(Converts_10bit_Vector)
+layout(location = 5) in uint i_tangent_pked;
+#else
 layout(location = 5) in vec4 i_tangent;
+#endif
+
 layout(location = 8) in vec3 i_origin;
+
+#if defined(Converts_10bit_Vector)
+layout(location = 9) in uint i_rotation_pked;
+#else
 layout(location = 9) in vec4 i_rotation;
+#endif
+
 layout(location = 10) in vec4 i_scale;
+
+#if defined(Converts_10bit_Vector)
+layout(location = 11) in uint i_misc_data_pked;
+#else
 layout(location = 11) in vec4 i_misc_data;
+#endif
 
 #if defined(Use_Bindless_Texture)
 layout(location = 13) in uvec4 i_bindless_texture_0;
@@ -47,6 +70,14 @@ flat out float array_5;
 
 void main()
 {
+
+#if defined(Converts_10bit_Vector)
+    vec4 i_normal = convert10BitVector(i_normal_pked);
+    vec4 i_tangent = convert10BitVector(i_tangent_pked);
+    vec4 i_rotation = convert10BitVector(i_rotation_pked);
+    vec4 i_misc_data = convert10BitVector(i_misc_data_pked);
+#endif
+
 #if defined(Use_Bindless_Texture)
     tex_layer_0 = sampler2D(i_bindless_texture_0.xy);
     tex_layer_1 = sampler2D(i_bindless_texture_0.zw);

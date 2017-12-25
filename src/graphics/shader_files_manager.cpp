@@ -20,6 +20,7 @@
 #include "graphics/shader_files_manager.hpp"
 #include "config/stk_config.hpp"
 #include "graphics/central_settings.hpp"
+#include "graphics/graphics_restrictions.hpp"
 #include "io/file_manager.hpp"
 #include "utils/log.hpp"
 
@@ -162,6 +163,13 @@ GLuint ShaderFilesManager::loadShader(const std::string &file, unsigned type)
         code << "#extension GL_NV_gpu_shader5 : require\n";
         code << "#define Use_Bindless_Texture\n";
     }
+
+    if (GraphicsRestrictions::isDisabled
+        (GraphicsRestrictions::GR_10BIT_VECTOR))
+    {
+        code << "#define Converts_10bit_Vector\n";
+    }
+
     code << "//" << file << "\n";
     if (!CVS->isARBUniformBufferObjectUsable())
         code << "#define UBO_DISABLED\n";

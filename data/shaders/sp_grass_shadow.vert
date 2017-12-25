@@ -5,7 +5,13 @@ layout(location = 0) in vec3 i_position;
 layout(location = 2) in vec4 i_color;
 layout(location = 3) in vec2 i_uv;
 layout(location = 8) in vec3 i_origin;
+
+#if defined(Converts_10bit_Vector)
+layout(location = 9) in uint i_rotation_pked;
+#else
 layout(location = 9) in vec4 i_rotation;
+#endif
+
 layout(location = 10) in vec4 i_scale;
 
 #if defined(Use_Bindless_Texture)
@@ -39,6 +45,11 @@ flat out float array_5;
 
 void main()
 {
+
+#if defined(Converts_10bit_Vector)
+    vec4 i_rotation = convert10BitVector(i_rotation_pked);
+#endif
+
 #if defined(Use_Bindless_Texture)
     tex_layer_0 = sampler2D(i_bindless_texture_0.xy);
     tex_layer_1 = sampler2D(i_bindless_texture_0.zw);

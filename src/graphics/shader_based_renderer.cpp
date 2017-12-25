@@ -25,7 +25,6 @@
 #include "graphics/cpu_particle_manager.hpp"
 #include "graphics/frame_buffer_layer.hpp"
 #include "graphics/glwrap.hpp"
-#include "graphics/graphics_restrictions.hpp"
 #include "graphics/irr_driver.hpp"
 #include "graphics/lod_node.hpp"
 #include "graphics/post_processing.hpp"

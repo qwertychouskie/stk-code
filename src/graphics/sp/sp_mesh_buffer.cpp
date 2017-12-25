@@ -18,6 +18,7 @@
 #include "graphics/sp/sp_mesh_buffer.hpp"
 #include "graphics/sp/sp_texture.hpp"
 #include "graphics/central_settings.hpp"
+#include "graphics/graphics_restrictions.hpp"
 #include "graphics/material.hpp"
 #include "graphics/material_manager.hpp"
 #include "graphics/sp/sp_texture_manager.hpp"
@@ -318,8 +319,16 @@ void SPMeshBuffer::recreateVAO(unsigned i)
     offset += 12;
     // Normal
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 4, GL_INT_2_10_10_10_REV, GL_TRUE, pitch,
-        (void*)offset);
+    if (GraphicsRestrictions::isDisabled
+        (GraphicsRestrictions::GR_10BIT_VECTOR))
+    {
+        glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, pitch, (void*)offset);
+    }
+    else
+    {
+        glVertexAttribPointer(1, 4, GL_INT_2_10_10_10_REV, GL_TRUE, pitch,
+            (void*)offset);
+    }
     offset += 4;
     // Vertex color
     if (m_vertex_color)
@@ -354,8 +363,16 @@ void SPMeshBuffer::recreateVAO(unsigned i)
     {
         // Tangent and bi-tanget sign
         glEnableVertexAttribArray(5);
-        glVertexAttribPointer(5, 4, GL_INT_2_10_10_10_REV, GL_TRUE, pitch,
-            (void*)offset);
+        if (GraphicsRestrictions::isDisabled
+            (GraphicsRestrictions::GR_10BIT_VECTOR))
+        {
+            glVertexAttribIPointer(5, 1, GL_UNSIGNED_INT, pitch, (void*)offset);
+        }
+        else
+        {
+            glVertexAttribPointer(5, 4, GL_INT_2_10_10_10_REV, GL_TRUE, pitch,
+                (void*)offset);
+        }
         offset += 4;
     }
     if (m_skinned)
@@ -400,7 +417,16 @@ void SPMeshBuffer::recreateVAO(unsigned i)
     glVertexAttribDivisorARB(8, 1);
     // Rotation (quaternion .xyz)
     glEnableVertexAttribArray(9);
-    glVertexAttribPointer(9, 4, GL_INT_2_10_10_10_REV, GL_TRUE, 32, (void*)12);
+    if (GraphicsRestrictions::isDisabled
+        (GraphicsRestrictions::GR_10BIT_VECTOR))
+    {
+        glVertexAttribIPointer(9, 1, GL_UNSIGNED_INT, 32, (void*)12);
+    }
+    else
+    {
+        glVertexAttribPointer(9, 4, GL_INT_2_10_10_10_REV, GL_TRUE, 32,
+            (void*)12);
+    }
     glVertexAttribDivisorARB(9, 1);
     // Scale (3 half floats and .w for quaternion .w)
     glEnableVertexAttribArray(10);
@@ -408,8 +434,16 @@ void SPMeshBuffer::recreateVAO(unsigned i)
     glVertexAttribDivisorARB(10, 1);
     // Misc data (texture translation and hue change)
     glEnableVertexAttribArray(11);
-    glVertexAttribPointer(11, 4, GL_INT_2_10_10_10_REV, GL_TRUE, 32,
-        (void*)24);
+    if (GraphicsRestrictions::isDisabled
+        (GraphicsRestrictions::GR_10BIT_VECTOR))
+    {
+        glVertexAttribIPointer(11, 1, GL_UNSIGNED_INT, 32, (void*)24);
+    }
+    else
+    {
+        glVertexAttribPointer(11, 4, GL_INT_2_10_10_10_REV, GL_TRUE, 32,
+            (void*)24);
+    }
     glVertexAttribDivisorARB(11, 1);
     // Skinning offset
     glEnableVertexAttribArray(12);
