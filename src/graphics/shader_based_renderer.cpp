@@ -446,11 +446,6 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
     if (!forceRTT)
     {
         // We need a cleared depth buffer for some effect (eg particles depth blending)
-#if !defined(USE_GLES2)
-        if (GraphicsRestrictions::isDisabled(GraphicsRestrictions::GR_FRAMEBUFFER_SRGB_WORKAROUND1) &&
-            CVS->isARBSRGBFramebufferUsable())
-            glDisable(GL_FRAMEBUFFER_SRGB);
-#endif
         m_rtts->getFBO(FBO_NORMAL_AND_DEPTHS).bind();
         // Bind() modifies the viewport. In order not to affect anything else,
         // the viewport is just reset here and not removed in Bind().
@@ -460,11 +455,6 @@ void ShaderBasedRenderer::renderScene(scene::ICameraSceneNode * const camnode,
                    vp.LowerRightCorner.X - vp.UpperLeftCorner.X,
                    vp.LowerRightCorner.Y - vp.UpperLeftCorner.Y);
         glClear(GL_DEPTH_BUFFER_BIT);
-#if !defined(USE_GLES2)
-        if (GraphicsRestrictions::isDisabled(GraphicsRestrictions::GR_FRAMEBUFFER_SRGB_WORKAROUND1) &&
-            CVS->isARBSRGBFramebufferUsable())
-            glEnable(GL_FRAMEBUFFER_SRGB);
-#endif
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
     else
