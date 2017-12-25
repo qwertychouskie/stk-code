@@ -212,12 +212,6 @@ void CentralVideoSettings::init()
             hasPixelBufferObject = true;
             Log::info("GLDriver", "ARB Pixel Buffer Object Present");
         }
-        if (!GraphicsRestrictions::isDisabled(GraphicsRestrictions::GR_FRAMEBUFFER_SRGB) &&
-            (hasGLExtension("GL_ARB_framebuffer_sRGB") || m_glsl == true))
-        {
-            hasSRGBFramebuffer = false;
-            Log::info("GLDriver", "ARB framebuffer sRGB Present");
-        }
         if (hasGLExtension("GL_ARB_sampler_objects"))
         {
             hasSamplerObjects = true;
