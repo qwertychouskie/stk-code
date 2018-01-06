@@ -10,8 +10,8 @@
   <card contains="Intel"          os="osx"                         disable="GI"/>
   <card contains="Intel"          os="linux"    version="<11.2"    disable="ComputeShader"/>
   <card contains="Intel"          os="linux"    version="<11.2"    disable="GeometryShader"/>
-  <card contains="Ivybridge"      os="linux"                       disable="10BitVector"/>
-  <card contains="Sandybridge"    os="linux"                       disable="10BitVector"/>
+  <card contains="Ivybridge"      os="linux"    version="<17.4"    disable="10BitVector"/>
+  <card contains="Sandybridge"    os="linux"    version="<17.4"    disable="10BitVector"/>
   <card contains="Intel"          os="linux"    version="<11.2"    disable="TextureCompressionS3TC"/>
   <card contains="Intel"          os="osx"                         disable="TextureCompressionS3TC"/>
   <card contains="NVIDIA"         os="windows"  version="<344.65"  disable="BufferStorage"/>
