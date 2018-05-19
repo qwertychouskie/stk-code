@@ -190,7 +190,8 @@ private:
 #endif
 
 public:
-    void doScreenShot();    
+    void doScreenShot();
+    video::IImage* getScreenShot();
 public:
          IrrDriver();
         ~IrrDriver();

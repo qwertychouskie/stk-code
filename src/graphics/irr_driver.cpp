@@ -1820,6 +1820,24 @@ void IrrDriver::doScreenShot()
 }   // doScreenShot
 
 // ----------------------------------------------------------------------------
+/** Reqturns a screenshot from irrlicht.
+ */
+video::IImage* IrrDriver::getScreenShot()
+{
+    video::IImage* image = m_video_driver->createScreenShot();
+    if(!image)
+    {
+        Log::error("irr_driver", "Could not get screen shot.");
+        return NULL;
+    }
+    else
+    {
+        return image;
+    }
+//    image->drop();
+}   // getScreenShot
+
+// ----------------------------------------------------------------------------
 /** Update, called once per frame.
  *  \param dt Time since last update
  */

@@ -149,6 +149,9 @@ protected:
     /** Texture for the 'plunger in the face' texture. */
     video::ITexture* m_plunger_face;
 
+    /** Loading screen (for slideout animation) */
+    video::ITexture* m_loading_screen;
+
     /** State of the plunger: From the 'init' states the plunger switches
      *  between two slow moving states ('shakily moving') till the end of
      *  the plunger time is nearly reached, then it goes to a very fast
@@ -197,6 +200,7 @@ protected:
                                 const core::recti &viewport,
                                 const core::vector2df &scaling);
     void drawGlobalMusicDescription();
+    void drawDoneLoadingAnimation();
     void drawGlobalReadySetGo();
     void drawGlobalGoal();
     void drawPlungerInFace(const Camera *camera, float dt);

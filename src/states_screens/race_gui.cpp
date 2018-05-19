@@ -169,6 +169,10 @@ RaceGUI::RaceGUI()
     m_speed_meter_icon->getTexture(false,false);
     m_speed_bar_icon   = material_manager->getMaterial("speedfore.png");
     m_speed_bar_icon->getTexture(false,false);
+
+    m_loading_screen = irr_driver->getScreenShot();
+//    m_loading_screen->getTexture(false,false);
+
     //createMarkerTexture();
 }   // RaceGUI
 
@@ -266,6 +270,11 @@ void RaceGUI::renderGlobal(float dt)
 
     if (!m_is_tutorial)               drawGlobalPlayerIcons(m_map_height);
     if(Track::getCurrentTrack()->isSoccer()) drawScores();
+
+    if(world->getPhase() == WorldStatus::TRACK_INTRO_PHASE || true)
+    {
+        drawDoneLoadingAnimation();
+    }
 #endif
 }   // renderGlobal
 

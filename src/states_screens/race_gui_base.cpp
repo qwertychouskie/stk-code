@@ -76,6 +76,12 @@ RaceGUIBase::RaceGUIBase()
         Log::fatal("RaceGuiBase", "Can't find 'notes.png' texture, aborting.");
     }
 
+//    m_loading_screen = irr_driver->getTexture("loadingscreen.png");
+//    if (!m_loading_screen)
+//    {
+//        Log::fatal("RaceGuiBase", "Can't find 'loadingscreen.png' texture, aborting.");
+//    }
+
     m_plunger_face = irr_driver->getTexture("plungerface.png");
     if (!m_plunger_face)
     {
@@ -585,6 +591,21 @@ void RaceGUIBase::drawGlobalMusicDescription()
     draw2DImage(m_music_icon, dest, source, NULL, NULL, true);
 #endif
 }   // drawGlobalMusicDescription
+
+//-----------------------------------------------------------------------------
+/** Displays the description given for the music currently being played.
+ *  This is usually the title and composer.
+ */
+void RaceGUIBase::drawDoneLoadingAnimation()
+{
+//    core::position2d<s32> position(0,0);
+
+    core::rect<s32> dest(0,0,100,100);
+    const core::rect<s32> source(core::position2d<s32>(0,0),
+                                 m_loading_screen->getSize());
+
+    draw2DImage(m_loading_screen, dest, source, NULL, NULL, false);
+}
 
 //-----------------------------------------------------------------------------
 void RaceGUIBase::drawGlobalGoal()
