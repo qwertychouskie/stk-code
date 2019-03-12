@@ -2,6 +2,7 @@
 [![Build Status](https://travis-ci.org/supertuxkart/stk-code.svg?branch=master)](https://travis-ci.org/supertuxkart/stk-code)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/supertuxkart/stk-code?svg=true&branch=master)](https://ci.appveyor.com/project/supertuxkart/stk-code)
 [![#supertuxkart on the freenode IRC network](https://img.shields.io/badge/freenode-%23supertuxkart-brightgreen.svg)](https://webchat.freenode.net/?channels=supertuxkart)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fqwertychouskie%2Fstk-code.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fqwertychouskie%2Fstk-code?ref=badge_shield)
 
 SuperTuxKart is a free kart racing game. It focuses on fun and not on realistic kart physics. Instructions can be found on the in-game help page.
 
@@ -18,6 +19,9 @@ To run SuperTuxKart, make sure that your computer's specifications are equal or 
 
 ## License
 The software is released under the GNU General Public License (GPL) which can be found in the file [`COPYING`](/COPYING) in the same directory as this file. Information about the licenses for the artwork is contained in `data/licenses`.
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fqwertychouskie%2Fstk-code.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fqwertychouskie%2Fstk-code?ref=badge_large)
 
 ## 3D coordinates
 A reminder for those who are looking at the code and 3D models:
